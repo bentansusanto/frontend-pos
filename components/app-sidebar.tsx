@@ -1,166 +1,199 @@
-"use client"
+"use client";
 
-import * as React from "react"
 import {
-  IconCamera,
-  IconChartBar, IconCircle,
+  IconChartBar,
   IconDashboard,
-  IconFileAi,
-  IconFileDescription,
   IconFolder,
   IconInnerShadowTop,
-  IconListDetails,
   IconUsers
 } from "@tabler/icons-react";
+import * as React from "react";
 
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
+import { NavUser } from "@/components/nav-user";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem
+} from "@/components/ui/sidebar";
+import { CirclePercent, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const data = {
-  user: {
-    name: "Toby Belhome",
-    email: "m@example.com",
-    avatar: "https://www.tobybelhome.com/toby-belhome.png",
+  brand: {
+    name: "Nexus POS",
+    description: "Main Branch • Admin"
   },
-  navMain: [
+  user: {
+    name: "Alex Johnson",
+    email: "Manager",
+    avatar: "https://i.pravatar.cc/150?img=32"
+  },
+  primary: [
     {
       title: "Dashboard",
       url: "/dashboard",
-      icon: IconDashboard,
-    },
-    {
-      title: "Users",
-      url: "/dashboard/users",
-      icon: IconListDetails,
-    },
-    {
-      title: "Settings",
-      url: "/dashboard/settings",
-      icon: IconChartBar,
-    },
-    {
-      title: "Login",
-      url: "/login",
-      icon: IconFolder,
-    },
-    {
-      title: "Register",
-      url: "/register",
-      icon: IconUsers,
-    },
-    {
-      title: "404 Page",
-      url: "/404-page",
-      icon: IconFolder,
-    },
-    {
-      title: "500 Page",
-      url: "/500-page",
-      icon: IconUsers,
-    },
+      icon: IconDashboard
+    }
   ],
-  navClouds: [
+  sections: [
     {
-      title: "Capture",
-      icon: IconCamera,
-      isActive: true,
-      url: "#",
+      label: "Sales & Operations",
       items: [
         {
-          title: "Active Proposals",
-          url: "#",
+          title: "POS / Sales",
+          icon: CirclePercent,
+          defaultOpen: true,
+          items: [
+            { title: "New Order", url: "/dashboard/pos/new-order" },
+            { title: "Transactions", url: "#" }
+          ]
         },
         {
-          title: "Archived",
-          url: "#",
+          title: "Inventory",
+          icon: IconFolder,
+          defaultOpen: true,
+          items: [
+            { title: "Products", url: "#" },
+            { title: "Stock Overview", url: "#" },
+            { title: "Add Stock", url: "#" }
+          ]
         },
-      ],
+        {
+          title: "Reports",
+          icon: IconChartBar,
+          defaultOpen: true,
+          items: [{ title: "Sales Report", url: "#" }]
+        }
+      ]
     },
     {
-      title: "Proposal",
-      icon: IconFileDescription,
-      url: "#",
+      label: "Intelligence",
       items: [
         {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
+          title: "AI Insights",
+          icon: Sparkles,
+          defaultOpen: true,
+          items: [
+            { title: "Sales Trends", url: "#" },
+            { title: "Stock Recommendation", url: "#" },
+            { title: "Alerts", url: "#" },
+            { title: "AI Summary Report", url: "#" }
+          ]
+        }
+      ]
     },
     {
-      title: "Prompts",
-      icon: IconFileAi,
-      url: "#",
+      label: "System",
       items: [
         {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Get Pro",
-      url: "https://shadcnuikit.com/pricing",
-      icon: IconCircle,
-    },
-    {
-      title: "Shadcn UI Kit",
-      url: "https://shadcnuikit.com/",
-      icon: IconCircle,
-    },
-    {
-      title: "Bundui Component",
-      url: "https://bundui.io",
-      icon: IconCircle,
-    },
-  ],
-}
+          title: "Settings",
+          icon: IconUsers,
+          defaultOpen: true,
+          items: [
+            { title: "Users", url: "#" },
+            { title: "Branch", url: "#" }
+          ]
+        }
+      ]
+    }
+  ]
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname();
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
-            >
-              <a href="#">
-                <img src="https://shadcnuikit.com/logo.png" className="size-6 rounded-sm group-data-[collapsible=icon]:size-5" alt="shadcn ui kit svg logo" />
-                <span className="text-base font-medium">Shadcn UI Kit</span>
-              </a>
+            <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:p-1!">
+              <Link href="/dashboard" className="flex items-center gap-3">
+                <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-lg">
+                  <IconInnerShadowTop className="size-5" />
+                </span>
+                <span className="flex flex-col leading-tight">
+                  <span className="text-base font-semibold">{data.brand.name}</span>
+                  <span className="text-muted-foreground text-xs">{data.brand.description}</span>
+                </span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {data.primary.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={item.url !== "#" && pathname === item.url}
+                    tooltip={item.title}
+                    className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-semibold">
+                    <Link href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        {data.sections.map((section) => (
+          <SidebarGroup key={section.label}>
+            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {section.items.map((item) => (
+                  <Collapsible key={item.title} defaultOpen={item.defaultOpen}>
+                    <SidebarMenuItem>
+                      <CollapsibleTrigger asChild>
+                        <SidebarMenuButton tooltip={item.title}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </SidebarMenuButton>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <SidebarMenuSub>
+                          {item.items.map((subItem) => (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={subItem.url !== "#" && pathname === subItem.url}
+                                className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-semibold">
+                                <Link href={subItem.url}>
+                                  <span>{subItem.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      </CollapsibleContent>
+                    </SidebarMenuItem>
+                  </Collapsible>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }
