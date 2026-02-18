@@ -1,14 +1,18 @@
 "use client"
 
 import * as React from "react"
+import { Moon, Sun } from "lucide-react"
+import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const { setTheme, theme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
   const title = React.useMemo(() => {
     if (!pathname) {
       return "Dashboard";
@@ -36,15 +40,22 @@ export function SiteHeader() {
         />
         <h1 className="text-base font-medium">{title}</h1>
         <div className="ml-auto flex items-center gap-2">
-          <Button asChild size="sm" className="hidden sm:flex">
-            <Link
-              href="https://shadcnuikit.com/"
-              rel="noopener noreferrer"
-              target="_blank"
-              className="dark:text-foreground"
-            >
-              Get Pro
-            </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Toggle theme"
+            onClick={() => {
+              if (!mounted) {
+                return
+              }
+              setTheme(theme === "dark" ? "light" : "dark")
+            }}
+          >
+            {mounted && theme === "dark" ? (
+              <Sun className="size-4" />
+            ) : (
+              <Moon className="size-4" />
+            )}
           </Button>
         </div>
       </div>

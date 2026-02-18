@@ -65,7 +65,7 @@ const data = {
           icon: IconFolder,
           defaultOpen: true,
           items: [
-            { title: "Products", url: "#" },
+            { title: "Products", url: "/dashboard/inventory/products" },
             { title: "Stock Overview", url: "#" },
             { title: "Add Stock", url: "#" }
           ]
