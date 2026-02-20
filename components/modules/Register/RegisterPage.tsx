@@ -1,19 +1,10 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { generateMeta } from "@/lib/utils";
-import { GithubIcon } from "lucide-react";
-import { Metadata } from "next";
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import React from 'react'
+import { RegisterForm } from './RegisterForm'
 
-export async function generateMetadata(): Promise<Metadata> {
-  return generateMeta({
-    title: "Register Page",
-    description:
-      "A login form with email and password. There's an option to login with Google and a link to sign up if you don't have an account.",
-  });
-}
-
-export default function LoginPageV1() {
+export const RegisterPage = () => {
   return (
     <div className="flex pb-8 lg:h-screen lg:pb-0">
       <div className="hidden w-1/2 bg-gray-100 lg:block">
@@ -29,60 +20,10 @@ export default function LoginPageV1() {
             </p>
           </div>
 
-          <form className="mt-8 space-y-6">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name" className="sr-only">
-                  Name
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  className="w-full"
-                  placeholder="Name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email" className="sr-only">
-                  Email address
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="w-full"
-                  placeholder="Email address"
-                />
-              </div>
-              <div>
-                <Label htmlFor="password" className="sr-only">
-                  Password
-                </Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="w-full"
-                  placeholder="Password"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Button type="submit" className="w-full">
-                Sign in
-              </Button>
-            </div>
-          </form>
+          <RegisterForm />
 
           <div className="mt-6">
-            <div className="relative">
+            {/* <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300" />
               </div>
@@ -117,11 +58,11 @@ export default function LoginPageV1() {
                 <GithubIcon className="mr-2 h-4 w-4" />
                 GitHub
               </Button>
-            </div>
+            </div> */}
 
-            <p className="mt-6 text-center text-sm text-gray-600">
+            <p className="mt-6 text-center text-sm text-gray-500">
               Already have an account?{" "}
-              <a href="/login" className="text-primary hover:underline">
+              <a href="/login" className="text-primary font-medium">
                 Log in
               </a>
             </p>
@@ -129,5 +70,5 @@ export default function LoginPageV1() {
         </div>
       </div>
     </div>
-  );
+  )
 }

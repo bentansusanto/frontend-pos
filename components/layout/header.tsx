@@ -53,7 +53,7 @@ export default function Header() {
                 <CardContent className="space-y-2">
                   <Button
                     size="sm"
-                    className="w-full items-center bg-gradient-to-r from-indigo-700 via-purple-500 to-pink-700 hover:opacity-90"
+                    className="w-full items-center bg-linear-to-r from-indigo-700 via-purple-500 to-pink-700 hover:opacity-90"
                     asChild>
                     <Link href="https://shadcnuikit.com/pricing" target="_blank">
                       <LockIcon className="me-2 h-4 w-4" /> Get Pro
