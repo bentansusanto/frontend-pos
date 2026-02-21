@@ -77,7 +77,7 @@ export async function proxy(request: NextRequest) {
       // Atau sudah expired, coba refresh
       // NOTE: Tambahkan logging untuk debugging
       // UBAH DARI 300 KE ANGKA BESAR (MISAL 1 HARI = 86400) UNTUK TESTING AGAR SELALU REFRESH
-      const REFRESH_THRESHOLD = 300; // Testing mode: Selalu refresh jika umur token < 1 hari
+      const REFRESH_THRESHOLD = 30; // Testing mode: Selalu refresh jika umur token < 1 hari
       console.log(
         `[Middleware] Token Expiry Check: ${timeUntilExpiry}s remaining (Threshold: ${REFRESH_THRESHOLD}s)`
       );

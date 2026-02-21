@@ -14,6 +14,7 @@ export const baseAuth = createApi({
     },
     credentials: "include"
   }),
+  tagTypes: ["Users"],
   endpoints: (builder) => ({
     // register
     register: builder.mutation<any, any>({
@@ -62,9 +63,9 @@ export const baseAuth = createApi({
       query: () => ({
         url: "/users/me",
         method: "GET"
-      })
+      }),
+      providesTags: ["Users"]
     }),
-
     // refreh token
     refreshToken: builder.mutation<any, void>({
       query: () => ({
