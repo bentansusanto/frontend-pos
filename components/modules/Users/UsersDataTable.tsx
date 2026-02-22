@@ -38,101 +38,119 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
+import { EditProfileModal } from "./EditProfileModal";
+import { UserDetailsModal } from "./UserDetailsModal";
+
 export type User = {
   id: string;
   name: string;
   email: string;
   role: string;
   is_verified: boolean;
+  profile?: {
+    address: string;
+    phone: string;
+  } | null;
 };
-
-export const columns: ColumnDef<User>[] = [
-  {
-    accessorKey: "id",
-    header: "#",
-    cell: ({ row }) => <div className="w-[80px] truncate">{row.getValue("id")}</div>
-  },
-  {
-    accessorKey: "name",
-    header: "Name",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-4">
-        <Avatar>
-          <AvatarImage src="" alt={row.getValue("name")} />
-          <AvatarFallback>{row.original.name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
-        </Avatar>
-        <div className="capitalize">{row.getValue("name")}</div>
-      </div>
-    )
-  },
-  {
-    accessorKey: "email",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          Email
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>
-  },
-  {
-    accessorKey: "role",
-    header: "Role",
-    cell: ({ row }) => <div className="capitalize">{row.getValue("role")}</div>
-  },
-  {
-    accessorKey: "is_verified",
-    header: "Status",
-    cell: ({ row }) => {
-      const isVerified = row.original.is_verified;
-      return (
-        <Badge
-          variant={isVerified ? "default" : "secondary"}
-          className={cn({
-            "bg-green-100 text-green-700 hover:bg-green-100": isVerified,
-            "bg-yellow-100 text-yellow-700 hover:bg-yellow-100": !isVerified
-          })}>
-          {isVerified ? "Verified" : "Unverified"}
-        </Badge>
-      );
-    }
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original.id)}>
-              Copy ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View details</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    }
-  }
-];
 
 export default function UsersDataTable({ data }: { data: User[] }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+
+  const [editProfileUserId, setEditProfileUserId] = React.useState<string | null>(null);
+  const [viewDetailsUser, setViewDetailsUser] = React.useState<User | null>(null);
+
+  const columns: ColumnDef<User>[] = React.useMemo(
+    () => [
+      {
+        accessorKey: "id",
+        header: "#",
+        cell: ({ row }) => <div className="w-[80px] truncate">{row.getValue("id")}</div>
+      },
+      {
+        accessorKey: "name",
+        header: "Name",
+        cell: ({ row }) => (
+          <div className="flex items-center gap-4">
+            <Avatar>
+              <AvatarImage src="" alt={row.getValue("name")} />
+              <AvatarFallback>{row.original.name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
+            </Avatar>
+            <div className="capitalize">{row.getValue("name")}</div>
+          </div>
+        )
+      },
+      {
+        accessorKey: "email",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+              Email
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div className="lowercase">{row.getValue("email")}</div>
+      },
+      {
+        accessorKey: "role",
+        header: "Role",
+        cell: ({ row }) => <div className="capitalize">{row.getValue("role")}</div>
+      },
+      {
+        accessorKey: "is_verified",
+        header: "Status",
+        cell: ({ row }) => {
+          const isVerified = row.original.is_verified;
+          return (
+            <Badge
+              variant={isVerified ? "default" : "secondary"}
+              className={cn({
+                "bg-green-100 text-green-700 hover:bg-green-100": isVerified,
+                "bg-yellow-100 text-yellow-700 hover:bg-yellow-100": !isVerified
+              })}>
+              {isVerified ? "Verified" : "Unverified"}
+            </Badge>
+          );
+        }
+      },
+      {
+        id: "actions",
+        enableHiding: false,
+        cell: ({ row }) => {
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original.id)}>
+                  Copy ID
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setEditProfileUserId(row.original.id)}>
+                  Edit Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setViewDetailsUser(row.original)}>
+                  View details
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        }
+      }
+    ],
+    []
+  );
 
   const table = useReactTable({
     data,
@@ -224,6 +242,16 @@ export default function UsersDataTable({ data }: { data: User[] }) {
           </TableBody>
         </Table>
       </div>
+      <EditProfileModal
+        isOpen={!!editProfileUserId}
+        onClose={() => setEditProfileUserId(null)}
+        userId={editProfileUserId || ""}
+      />
+      <UserDetailsModal
+        isOpen={!!viewDetailsUser}
+        onClose={() => setViewDetailsUser(null)}
+        user={viewDetailsUser}
+      />
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="text-muted-foreground flex-1 text-sm">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}

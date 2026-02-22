@@ -26,7 +26,16 @@ export const productStockService = createApi({
       }),
       invalidatesTags: ["ProductStocks"],
     }),
+    // find all product stocks
+    getProductStocks: builder.query<any, { branch_id?: string } | void>({
+      query: (params) => ({
+        url: "/product-stocks/find-all",
+        method: "GET",
+        params: params || {}
+      }),
+      providesTags: ["ProductStocks"]
+    }),
   })
 });
 
-export const { useCreateProductStockMutation } = productStockService;
+export const { useCreateProductStockMutation, useGetProductStocksQuery } = productStockService;

@@ -13,9 +13,16 @@ export function generateAvatarFallback(string: string) {
   return mapped.join("");
 }
 
+export function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD"
+  }).format(amount);
+}
+
 export function generateMeta({
   title,
-  description,
+  description
 }: {
   title: string;
   description: string;

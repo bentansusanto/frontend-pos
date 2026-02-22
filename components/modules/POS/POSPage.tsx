@@ -1,10 +1,9 @@
 "use client";
 
-import { ChevronDown, Minus, Plus, Search, ShoppingCart, UserRoundPlus } from "lucide-react";
+import { ChevronDown, Minus, Plus, Search, Trash2, UserRoundPlus } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,6 +20,7 @@ import { useGetAllCategoriesQuery } from "@/store/services/category.service";
 import { useGetAllCustomersQuery } from "@/store/services/customer.service";
 import {
   useCreateOrderMutation,
+  useDeleteOrderItemMutation,
   useGetOrdersQuery,
   useUpdateOrderMutation,
   useUpdateOrderQuantityMutation
@@ -45,11 +45,14 @@ export const PosPage = () => {
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "credit_card">("cash");
   const [createdPayment, setCreatedPayment] = useState<any | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedProductForVariant, setSelectedProductForVariant] = useState<any | null>(null);
   const branchId = getCookie("pos_branch_id");
   const { data: productsData, isLoading: isProductsLoading } = useGetProductsQuery(
     branchId ? { branch_id: branchId } : undefined
   );
-  const { data: variantsData } = useGetVariantProductsQuery();
+  const { data: variantsData } = useGetVariantProductsQuery(
+    branchId ? { branch_id: branchId } : undefined
+  );
   const { data: categoriesData } = useGetAllCategoriesQuery();
   const {
     data: customersData,
@@ -59,11 +62,13 @@ export const PosPage = () => {
   const {
     data: ordersData,
     isLoading: isOrdersLoading,
+    isFetching: isOrdersFetching,
     refetch: refetchOrders
-  } = useGetOrdersQuery(undefined);
+  } = useGetOrdersQuery(branchId ? { branch_id: branchId } : undefined);
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateOrderMutation();
   const [updateOrder, { isLoading: isUpdatingOrder }] = useUpdateOrderMutation();
   const [updateOrderQuantity, { isLoading: isUpdatingQuantity }] = useUpdateOrderQuantityMutation();
+  const [deleteOrderItem, { isLoading: isDeletingItem }] = useDeleteOrderItemMutation();
   const [createPayment, { isLoading: isCreatingPayment }] = useCreatePaymentMutation();
   const [verifyPayment, { isLoading: isVerifyingPayment }] = useVerifyPaymentMutation();
 
@@ -123,6 +128,8 @@ export const PosPage = () => {
     });
   }, [pendingOrders]);
   useEffect(() => {
+    if (isOrdersLoading || isOrdersFetching) return;
+
     if (!sortedOrders.length) {
       if (selectedOrderId) {
         setSelectedOrderId(null);
@@ -133,7 +140,7 @@ export const PosPage = () => {
     if (!selectedOrderId || !hasSelected) {
       setSelectedOrderId(sortedOrders[0].id);
     }
-  }, [selectedOrderId, sortedOrders]);
+  }, [sortedOrders]);
   const currentOrder = useMemo(() => {
     if (!selectedOrderId) return null;
     return sortedOrders.find((order: any) => order.id === selectedOrderId) || null;
@@ -166,8 +173,9 @@ export const PosPage = () => {
     }
   });
 
-  const handleAddToCart = async (product: any) => {
+  const handleAddToCart = async (product: any, variant: any = null) => {
     try {
+      const price = variant ? Number(variant.price || 0) : Number(product.price || 0);
       const response = await createOrder({
         order_id: selectedOrderId || undefined,
         branch_id: branchId || undefined,
@@ -175,16 +183,23 @@ export const PosPage = () => {
         items: [
           {
             productId: product.id,
+            variantId: variant?.id,
             quantity: "1",
-            price: Number(product.price || 0)
+            price
           }
         ]
       }).unwrap();
-      const orderId = response?.data?.id;
-      if (orderId) {
+      // The backend response structure for create order might be returning { order, items } directly in data
+      // instead of { data: { id: ... } }. Let's check both possibilities or refetch to be safe.
+      const orderId = response?.data?.id || response?.order?.id;
+
+      if (orderId && orderId !== selectedOrderId) {
         setSelectedOrderId(orderId);
       }
       refetchOrders();
+      if (variant) {
+        setSelectedProductForVariant(null);
+      }
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to add product to order");
     }
@@ -201,6 +216,20 @@ export const PosPage = () => {
       refetchOrders();
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to update quantity");
+    }
+  };
+
+  const handleDeleteOrderItem = async (orderItemId: string) => {
+    if (!currentOrder?.id) return;
+    try {
+      await deleteOrderItem({
+        orderId: currentOrder.id,
+        orderItemId
+      }).unwrap();
+      refetchOrders();
+      toast.success("Item removed from order");
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to remove item");
     }
   };
 
@@ -317,6 +346,8 @@ export const PosPage = () => {
                   : variant?.product;
                 const itemName = variant?.name_variant || product?.name_product || "Item";
                 const itemImage =
+                  item.image ||
+                  variant?.thumbnail ||
                   product?.thumbnail ||
                   (Array.isArray(product?.images) ? product.images[0] : null) ||
                   "/placeholder-image.jpg";
@@ -356,6 +387,15 @@ export const PosPage = () => {
                           disabled={isUpdatingQuantity}
                           onClick={() => handleUpdateQuantity(item.id, Number(item.qty || 0) + 1)}>
                           <Plus className="size-3" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          className="ml-auto h-7 w-7"
+                          type="button"
+                          disabled={isDeletingItem}
+                          onClick={() => handleDeleteOrderItem(item.id)}>
+                          <Trash2 className="size-3" />
                         </Button>
                       </div>
                     </div>
@@ -443,41 +483,54 @@ export const PosPage = () => {
               product.thumbnail ||
               (Array.isArray(product.images) ? product.images[0] : null) ||
               "/placeholder-image.jpg";
+            const stock = typeof product.product_stock === "number" ? product.product_stock : 0;
+            const hasVariants = variants.length > 0;
 
             return (
-              <Card
+              <div
                 key={product.id}
-                className="hover:border-primary/30 overflow-hidden transition-all">
-                <div className="relative">
+                className="group hover:border-primary/50 relative flex cursor-pointer flex-col items-center rounded-md border-2 bg-white pb-4 shadow-sm transition-all hover:border-2 hover:shadow-md dark:bg-slate-900"
+                onClick={() => {
+                  if (hasVariants) {
+                    setSelectedProductForVariant(product);
+                  } else {
+                    handleAddToCart(product);
+                  }
+                }}>
+                <div className="relative mb-3 aspect-square h-40 w-full overflow-hidden rounded-md shadow-md">
                   <Image
                     src={imageSource}
                     alt={product.name_product}
-                    width={400}
-                    height={240}
-                    className="h-32 w-full object-cover"
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-110"
                   />
-                  <Button
-                    size="icon"
-                    type="button"
-                    className="absolute top-3 right-3 h-8 w-8 rounded-full"
-                    disabled={isCreatingOrder}
-                    onClick={() => handleAddToCart(product)}>
-                    <ShoppingCart className="size-4" />
-                  </Button>
+                  {stock === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs font-bold text-white">
+                      Out of Stock
+                    </div>
+                  )}
                 </div>
-                <CardContent className="gap-2 px-4 pt-4 pb-5">
+
+                <div className="w-full px-3 py-2">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">{product.name_product}</h3>
-                    <Badge variant="outline" className="text-[10px]">
-                      {product.stock || 0} in stock
-                    </Badge>
+                    <h3 className="line-clamp-1 text-card-foreground text-sm font-semibold">
+                      {product.name_product}
+                    </h3>
+                    <p className="text-primary mt-1 text-sm font-bold">
+                      ${Number(product.price || 0).toFixed(2)}
+                    </p>
                   </div>
-                  <div className="text-muted-foreground text-xs">{variants.length} variants</div>
-                  <div className="text-primary text-base font-semibold">
-                    ${Number(product.price || 0).toFixed(2)}
-                  </div>
-                </CardContent>
-              </Card>
+                  <p
+                    className={`mt-1 text-xs font-medium ${stock > 5 ? "text-green-600" : stock > 0 ? "text-yellow-600" : "text-red-600"}`}>
+                    {stock > 0 ? `${stock} in stock` : "Out of Stock"}
+                  </p>
+                  {hasVariants && (
+                    <p className="text-muted-foreground mt-1 text-[10px]">
+                      {variants.length} Variants
+                    </p>
+                  )}
+                </div>
+              </div>
             );
           })}
           {!isProductsLoading && products.length === 0 ? (
@@ -486,6 +539,37 @@ export const PosPage = () => {
         </div>
       </div>
 
+      <Dialog
+        open={!!selectedProductForVariant}
+        onOpenChange={(open) => !open && setSelectedProductForVariant(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Variant</DialogTitle>
+            <DialogDescription>
+              Choose a variant for {selectedProductForVariant?.name_product}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            {selectedProductForVariant &&
+              variantsByProductId.get(selectedProductForVariant.id)?.map((variant: any) => (
+                <Button
+                  key={variant.id}
+                  variant="outline"
+                  className="flex h-auto items-center justify-between p-4"
+                  onClick={() => handleAddToCart(selectedProductForVariant, variant)}>
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold">{variant.name_variant}</span>
+                    <span className="text-muted-foreground text-xs">SKU: {variant.sku || "-"}</span>
+                  </div>
+                  <span className="text-primary font-bold">
+                    ${Number(variant.price || 0).toFixed(2)}
+                  </span>
+                </Button>
+              ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isCustomerModalOpen} onOpenChange={setIsCustomerModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -493,6 +577,16 @@ export const PosPage = () => {
             <DialogDescription>Choose a customer for this order.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full border-dashed"
+              type="button"
+              onClick={() => {
+                setIsCustomerModalOpen(false);
+                setIsCreateCustomerOpen(true);
+              }}>
+              Create New Customer
+            </Button>
             {isCustomersLoading ? (
               <div className="text-muted-foreground text-sm">Loading customers...</div>
             ) : customers.length === 0 ? (
@@ -512,16 +606,6 @@ export const PosPage = () => {
                 </Button>
               ))
             )}
-            <Button
-              variant="outline"
-              className="w-full border-dashed"
-              type="button"
-              onClick={() => {
-                setIsCustomerModalOpen(false);
-                setIsCreateCustomerOpen(true);
-              }}>
-              Create New Customer
-            </Button>
           </div>
         </DialogContent>
       </Dialog>

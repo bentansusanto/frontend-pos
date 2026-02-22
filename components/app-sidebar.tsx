@@ -1,6 +1,7 @@
 "use client";
 
 import { useGetProfileQuery } from "@/store/services/auth.service";
+import { useGetBranchesQuery } from "@/store/services/branch.service";
 import {
   IconChartBar,
   IconDashboard,
@@ -102,13 +103,7 @@ const data = {
         {
           title: "AI Insights",
           icon: Sparkles,
-          defaultOpen: true,
-          items: [
-            { title: "Sales Trends", url: "#" },
-            { title: "Stock Recommendation", url: "#" },
-            { title: "Alerts", url: "#" },
-            { title: "AI Summary Report", url: "#" }
-          ],
+          url: "/dashboard/ai-insights",
           roles: ["owner", "super_admin"]
         }
       ]
@@ -136,24 +131,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: profileData } = useGetProfileQuery();
   const user = profileData?.data;
 
+  // Fetch all branches if user is owner
+  const { data: branchesData } = useGetBranchesQuery(undefined, {
+    skip: user?.role !== "owner"
+  });
+
+  const availableBranches =
+    user?.role === "owner" ? branchesData?.data || [] : user?.branches || [];
+
   // Branch Selection Logic
   const [selectedBranch, setSelectedBranch] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
-    if (user?.branches?.length > 0) {
+    if (availableBranches.length > 0) {
       const savedBranchId = getCookie("pos_branch_id");
-      const savedBranch = user.branches.find((b: any) => b.id === savedBranchId);
+      const savedBranch = availableBranches.find((b: any) => b.id === savedBranchId);
 
       if (savedBranch) {
         setSelectedBranch(savedBranch);
       } else {
         // Default to first branch
-        const defaultBranch = user.branches[0];
+        const defaultBranch = availableBranches[0];
         setSelectedBranch(defaultBranch);
         setCookie("pos_branch_id", defaultBranch.id);
       }
     }
-  }, [user]);
+  }, [availableBranches]);
 
   const handleBranchChange = (branch: { id: string; name: string }) => {
     setSelectedBranch(branch);
@@ -195,7 +198,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            {user?.branches?.length > 1 ? (
+            {availableBranches.length > 1 ||
+            (user?.role === "owner" && availableBranches.length > 0) ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
@@ -204,8 +208,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                       <IconInnerShadowTop className="size-4" />
                     </div>
-                    <div className="flex flex-1 text-left text-sm leading-tight">
+                    <div className="space-y-3">
+                    <div className="flex flex-1 text-left text-sm leading-tight"> <br />
                       <span className="truncate font-semibold">{data.brand.name}</span>
+                    </div>
                       <span className="truncate text-xs">
                         {selectedBranch?.name || "Select Branch"}
                       </span>
@@ -221,7 +227,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <DropdownMenuLabel className="text-muted-foreground text-xs">
                     Switch Branch
                   </DropdownMenuLabel>
-                  {user.branches.map((branch: any) => (
+                  {availableBranches.map((branch: any) => (
                     <DropdownMenuItem
                       key={branch.id}
                       onClick={() => handleBranchChange(branch)}
@@ -281,7 +287,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {section.items.map((item) =>
+                {section.items.map((item: any) =>
                   item.items ? (
                     <Collapsible key={item.title} defaultOpen={item.defaultOpen}>
                       <SidebarMenuItem>
@@ -293,7 +299,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         </CollapsibleTrigger>
                         <CollapsibleContent>
                           <SidebarMenuSub>
-                            {item.items.map((subItem) => (
+                            {item.items.map((subItem: any) => (
                               <SidebarMenuSubItem key={subItem.title}>
                                 <SidebarMenuSubButton
                                   asChild

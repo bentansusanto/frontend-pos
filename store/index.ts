@@ -13,6 +13,7 @@ import { profileService } from "./services/profile.service";
 import { salesReportService } from "./services/sales-report.service";
 import { stockMovementsService } from "./services/stock-movements.service";
 import { userService } from "./services/user.service";
+import { aiInsightService } from "./services/ai-insight.service";
 
 export const store = configureStore({
   reducer: {
@@ -27,7 +28,8 @@ export const store = configureStore({
     [customerService.reducerPath]: customerService.reducer,
     [paymentService.reducerPath]: paymentService.reducer,
     [salesReportService.reducerPath]: salesReportService.reducer,
-    [stockMovementsService.reducerPath]: stockMovementsService.reducer
+    [stockMovementsService.reducerPath]: stockMovementsService.reducer,
+    [aiInsightService.reducerPath]: aiInsightService.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -42,7 +44,8 @@ export const store = configureStore({
       customerService.middleware,
       paymentService.middleware,
       salesReportService.middleware,
-      stockMovementsService.middleware
+      stockMovementsService.middleware,
+      aiInsightService.middleware,
     )
 });
 

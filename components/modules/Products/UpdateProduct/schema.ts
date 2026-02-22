@@ -10,15 +10,6 @@ export const updateProductSchema = z.object({
     images: z.string().optional(),
     thumbnailFile: z.any().optional(),
     imageFiles: z.any().optional()
-  }),
-  variant: z.object({
-    productId: z.string().optional(),
-    name_variant: z.string().min(1, { message: "Name variant is required" }),
-    price: z.string().min(1, { message: "Price is required" }),
-    weight: z.string().min(1, { message: "Weight is required" }),
-    color: z.string().min(1, { message: "Color is required" }),
-    thumbnail: z.string().optional(),
-    thumbnailFile: z.any().optional()
   })
 });
 

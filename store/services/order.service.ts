@@ -17,10 +17,11 @@ export const orderService = createApi({
   tagTypes: ["Orders"],
   endpoints: (builder) => ({
     // get all orders
-    getOrders: builder.query<any, void>({
-      query: () => ({
+    getOrders: builder.query<any, { branch_id?: string } | void>({
+      query: (params) => ({
         url: "/orders/find-all",
-        method: "GET"
+        method: "GET",
+        params: params || {}
       }),
       providesTags: ["Orders"]
     }),
@@ -50,6 +51,14 @@ export const orderService = createApi({
         body
       }),
       invalidatesTags: ["Orders"]
+    }),
+    // delete order item
+    deleteOrderItem: builder.mutation({
+      query: ({ orderId, orderItemId }) => ({
+        url: `/orders/${orderId}/items/${orderItemId}`,
+        method: "DELETE"
+      }),
+      invalidatesTags: ["Orders"]
     })
   })
 });
@@ -58,5 +67,6 @@ export const {
   useCreateOrderMutation,
   useGetOrdersQuery,
   useUpdateOrderMutation,
-  useUpdateOrderQuantityMutation
+  useUpdateOrderQuantityMutation,
+  useDeleteOrderItemMutation
 } = orderService;

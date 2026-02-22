@@ -20,3 +20,10 @@ export const userSchema = z.object({
 });
 
 export type UserFormValues = z.infer<typeof userSchema>;
+
+export const profileSchema = z.object({
+  address: z.string().min(1, { message: "Address is required" }),
+  phone: z.string().min(1, { message: "Phone is required" })
+});
+
+export type ProfileFormValues = z.infer<typeof profileSchema>;

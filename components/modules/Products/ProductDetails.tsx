@@ -22,17 +22,58 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
-import { useGetProductByIdQuery } from "@/store/services/product.service";
-import { Loader2 } from "lucide-react";
+import {
+  useDeleteVariantProductMutation,
+  useGetProductByIdQuery
+} from "@/store/services/product.service";
+import { getCookie } from "@/utils/cookies";
+import { Edit, Loader2, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
+
+import { useState } from "react";
+import { AddVariantDialog } from "./AddVariant/AddVariantDialog";
+import { UpdateVariantDialog } from "./UpdateVariant/UpdateVariantDialog";
 
 export const ProductDetails = () => {
+  const [isAddVariantOpen, setIsAddVariantOpen] = useState(false);
+  const [isUpdateVariantOpen, setIsUpdateVariantOpen] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
+
   const params = useParams();
   const productId = params.productId as string;
-  const { data: productData, isLoading } = useGetProductByIdQuery(productId, {
-    skip: !productId
-  });
+  const cookieValue = getCookie("pos_branch_id");
+  const branchId = cookieValue ? cookieValue : undefined;
+  const {
+    data: productData,
+    isLoading,
+    refetch
+  } = useGetProductByIdQuery(
+    { id: productId, branch_id: branchId },
+    {
+      skip: !productId
+    }
+  );
+  const [deleteVariantProduct] = useDeleteVariantProductMutation();
+
   const product = productData?.data;
+
+  const handleEditVariant = (variant: any) => {
+    setSelectedVariant(variant);
+    setIsUpdateVariantOpen(true);
+  };
+
+  const handleDeleteVariant = async (variantId: string) => {
+    if (!confirm("Are you sure you want to delete this variant?")) return;
+
+    try {
+      await deleteVariantProduct({ id: variantId }).unwrap();
+      toast.success("Variant deleted successfully");
+      refetch();
+    } catch (error: any) {
+      toast.error("Failed to delete variant");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -53,8 +94,24 @@ export const ProductDetails = () => {
   const productImages = [product.thumbnail, ...(product.images || [])].filter(Boolean);
   const variants = product.variants || [];
 
+  const productStock = typeof product.product_stock === "number" ? product.product_stock : 0;
+
   return (
     <div className="space-y-6">
+      <AddVariantDialog
+        open={isAddVariantOpen}
+        onOpenChange={setIsAddVariantOpen}
+        productId={productId}
+        onSuccess={refetch}
+      />
+      <UpdateVariantDialog
+        open={isUpdateVariantOpen}
+        onOpenChange={setIsUpdateVariantOpen}
+        variantId={selectedVariant?.id || ""}
+        productId={productId}
+        initialData={selectedVariant}
+        onSuccess={refetch}
+      />
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Product Detail</h1>
@@ -97,41 +154,42 @@ export const ProductDetails = () => {
             <CardContent className="grid gap-6 lg:grid-cols-[1fr_240px]">
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-slate-500">Product Name</p>
-                  <p className="text-lg font-semibold text-slate-900">{product.name_product}</p>
+                  <p className="text-muted-foreground text-sm">Product Name</p>
+                  <p className="text-foreground text-lg font-semibold">{product.name_product}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Category</p>
+                  <p className="text-muted-foreground text-sm">Category</p>
                   <Badge className="mt-2 w-fit">{product.category_name || "Uncategorized"}</Badge>
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Description</p>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="text-muted-foreground text-sm">Description</p>
+                  <p className="text-muted-foreground mt-1 text-sm">
                     {product.description || "No description available."}
                   </p>
                 </div>
               </div>
               <div className="space-y-3 rounded-xl border p-4">
-                <p className="text-sm text-slate-500">Pricing</p>
-                <p className="text-2xl font-semibold text-slate-900">
+                <p className="text-muted-foreground text-sm">Pricing</p>
+                <p className="text-foreground text-2xl font-semibold">
                   ${Number(product.price).toLocaleString()}
                 </p>
-                <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+                <div className="text-muted-foreground flex flex-wrap gap-2 text-xs">
                   <span>SKU: {product.sku}</span>
                   <span>·</span>
                   <span>Slug: {product.slug}</span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                  <span className="text-slate-500">Stock</span>
-                  <span className="font-medium text-slate-900">{product.stock || 0}</span>
+                  <span>·</span>
+                  <span>Stock: {productStock}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">Variants</CardTitle>
+              <Button size="sm" onClick={() => setIsAddVariantOpen(true)}>
+                Add Variant
+              </Button>
             </CardHeader>
             <CardContent>
               {variants.length > 0 ? (
@@ -144,6 +202,7 @@ export const ProductDetails = () => {
                         <TableHead>SKU</TableHead>
                         <TableHead>Price</TableHead>
                         <TableHead>Stock</TableHead>
+                        <TableHead>Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -159,15 +218,34 @@ export const ProductDetails = () => {
                               />
                             </div>
                           </TableCell>
-                          <TableCell className="font-medium text-slate-900">
+                          <TableCell className="text-foreground font-medium">
                             {variant.name_variant}
                           </TableCell>
-                          <TableCell className="text-sm text-slate-500">{variant.sku}</TableCell>
-                          <TableCell className="text-sm text-slate-500">
+                          <TableCell className="text-muted-foreground text-sm">
+                            {variant.sku}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
                             ${Number(variant.price).toLocaleString()}
                           </TableCell>
-                          <TableCell className="text-sm text-slate-500">
+                          <TableCell className="text-muted-foreground text-sm">
                             {variant.stock || 0}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditVariant(variant)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-500 hover:text-red-600"
+                                onClick={() => handleDeleteVariant(variant.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}

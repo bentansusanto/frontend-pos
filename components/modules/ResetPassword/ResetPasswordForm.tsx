@@ -62,7 +62,7 @@ export const ResetPasswordForm = () => {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 focus:outline-none"
               disabled={isLoading}>
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
@@ -97,7 +97,7 @@ export const ResetPasswordForm = () => {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 focus:outline-none"
               disabled={isLoading}>
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
@@ -127,7 +127,7 @@ export const ResetPasswordForm = () => {
 
       <div className="text-center text-sm">
         my token expired,{" "}
-        <Link href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+        <Link href="/forgot-password" className="text-primary hover:text-primary/80 font-medium">
           Resend Reset Code
         </Link>
       </div>

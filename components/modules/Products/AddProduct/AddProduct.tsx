@@ -35,13 +35,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 import { HooksAddProduct } from "./hooks";
@@ -58,7 +51,6 @@ export const AddProduct = () => {
   const [categoryName, setCategoryName] = useState("");
   const productThumbnailInputRef = useRef<HTMLInputElement>(null);
   const productImagesInputRef = useRef<HTMLInputElement>(null);
-  const variantThumbnailInputRef = useRef<HTMLInputElement>(null);
 
   const handleCategoryCreate = async () => {
     if (!categoryName.trim()) {
@@ -116,15 +108,6 @@ export const AddProduct = () => {
     await formik.setFieldValue("product.thumbnailFile", files[0]);
   };
 
-  const handleVariantThumbnailFiles = async (files: FileList | null) => {
-    if (!files || !files.length) {
-      return;
-    }
-    const dataUrl = await readFileAsDataUrl(files[0]);
-    await formik.setFieldValue("variant.thumbnail", dataUrl);
-    await formik.setFieldValue("variant.thumbnailFile", files[0]);
-  };
-
   const handleProductImagesFiles = async (files: FileList | null) => {
     if (!files || !files.length) {
       return;
@@ -144,9 +127,6 @@ export const AddProduct = () => {
     : "";
   const parsedProductImages = parseImagesValue(formik.values.product.images);
   const productImagesPreview = parsedProductImages.filter(isValidImageSrc);
-  const variantThumbnailPreview = isValidImageSrc(formik.values.variant.thumbnail)
-    ? formik.values.variant.thumbnail
-    : "";
 
   const handleRemoveProductImage = (indexToRemove: number) => {
     const remainingImages = parsedProductImages.filter((_, index) => index !== indexToRemove);
@@ -247,7 +227,7 @@ export const AddProduct = () => {
             <CardHeader>
               <CardTitle className="text-base">Category & Pricing</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 lg:grid-cols-3">
+            <CardContent className="grid gap-4 lg:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="price">Base Price</Label>
                 <Input
@@ -259,24 +239,7 @@ export const AddProduct = () => {
                   onBlur={formik.handleBlur}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="discount-percentage">Discount Percentage (%)</Label>
-                <Input id="discount-percentage" placeholder="25%" />
-              </div>
-              <div className="space-y-2">
-                <Label>Discount Type</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a discount type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="seasonal">Seasonal</SelectItem>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="flash">Flash Sale</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-3 lg:col-span-3">
+              <div className="space-y-2 lg:col-span-2">
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button
@@ -353,90 +316,6 @@ export const AddProduct = () => {
                 </div>
                 {formik.touched.product?.category_id && formik.errors.product?.category_id && (
                   <p className="text-xs text-red-500">{formik.errors.product?.category_id}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Variation</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 lg:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name_variant">Name Variant</Label>
-                <Input
-                  id="name_variant"
-                  name="variant.name_variant"
-                  placeholder="Xiaomi Watch 2 Pro - Black"
-                  value={formik.values.variant.name_variant}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className={
-                    formik.touched.variant?.name_variant && formik.errors.variant?.name_variant
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
-                />
-                {formik.touched.variant?.name_variant && formik.errors.variant?.name_variant && (
-                  <p className="text-xs text-red-500">{formik.errors.variant?.name_variant}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="variant_price">Price</Label>
-                <Input
-                  id="variant_price"
-                  name="variant.price"
-                  placeholder="$ 118.89"
-                  value={formik.values.variant.price}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className={
-                    formik.touched.variant?.price && formik.errors.variant?.price
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
-                />
-                {formik.touched.variant?.price && formik.errors.variant?.price && (
-                  <p className="text-xs text-red-500">{formik.errors.variant?.price}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="weight">Weight</Label>
-                <Input
-                  id="weight"
-                  name="variant.weight"
-                  placeholder="250"
-                  value={formik.values.variant.weight}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className={
-                    formik.touched.variant?.weight && formik.errors.variant?.weight
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
-                />
-                {formik.touched.variant?.weight && formik.errors.variant?.weight && (
-                  <p className="text-xs text-red-500">{formik.errors.variant?.weight}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="color">Color</Label>
-                <Input
-                  id="color"
-                  name="variant.color"
-                  placeholder="Midnight Black"
-                  value={formik.values.variant.color}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className={
-                    formik.touched.variant?.color && formik.errors.variant?.color
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
-                />
-                {formik.touched.variant?.color && formik.errors.variant?.color && (
-                  <p className="text-xs text-red-500">{formik.errors.variant?.color}</p>
                 )}
               </div>
             </CardContent>
@@ -553,60 +432,6 @@ export const AddProduct = () => {
                 />
                 {formik.touched.product?.images && formik.errors.product?.images && (
                   <p className="text-xs text-red-500">{formik.errors.product?.images}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Variant Thumbnail</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-muted-foreground text-xs">Thumbnail previews</p>
-              <div className="grid gap-3">
-                <div className="relative h-40 overflow-hidden rounded-xl border">
-                  {variantThumbnailPreview ? (
-                    <Image
-                      src={variantThumbnailPreview}
-                      alt="Variant thumbnail"
-                      fill
-                      className="object-cover"
-                    />
-                  ) : null}
-                </div>
-                <div
-                  className="text-muted-foreground flex min-h-24 cursor-pointer items-center justify-center rounded-xl border border-dashed text-sm"
-                  onClick={() => variantThumbnailInputRef.current?.click()}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    void handleVariantThumbnailFiles(event.dataTransfer.files);
-                  }}>
-                  Drag & drop variant thumbnail or click to upload
-                </div>
-                <input
-                  ref={variantThumbnailInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(event) => void handleVariantThumbnailFiles(event.target.files)}
-                />
-                <Input
-                  id="variant_thumbnail"
-                  name="variant.thumbnail"
-                  placeholder="Variant thumbnail URL"
-                  value={formik.values.variant.thumbnail}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className={
-                    formik.touched.variant?.thumbnail && formik.errors.variant?.thumbnail
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
-                />
-                {formik.touched.variant?.thumbnail && formik.errors.variant?.thumbnail && (
-                  <p className="text-xs text-red-500">{formik.errors.variant?.thumbnail}</p>
                 )}
               </div>
             </CardContent>

@@ -62,15 +62,6 @@ export const HooksAddProduct = () => {
         images: "",
         thumbnailFile: undefined,
         imageFiles: []
-      },
-      variant: {
-        productId: "",
-        name_variant: "",
-        price: "",
-        weight: "",
-        color: "",
-        thumbnail: "",
-        thumbnailFile: undefined
       }
     },
     validate: (values) => {
@@ -108,21 +99,6 @@ export const HooksAddProduct = () => {
         if (!productId) {
           throw new Error("Product ID not returned");
         }
-
-        const variantFormData = new FormData();
-        variantFormData.append("productId", productId);
-        variantFormData.append("name_variant", values.variant.name_variant);
-        variantFormData.append("price", String(values.variant.price));
-        variantFormData.append("weight", String(values.variant.weight));
-        variantFormData.append("color", values.variant.color);
-
-        if (values.variant.thumbnailFile) {
-          variantFormData.append("thumbnail", values.variant.thumbnailFile);
-        } else if (values.variant.thumbnail) {
-          variantFormData.append("thumbnail", values.variant.thumbnail);
-        }
-
-        await createVariantProduct(variantFormData).unwrap();
 
         toast.success("Product created successfully");
         resetForm();

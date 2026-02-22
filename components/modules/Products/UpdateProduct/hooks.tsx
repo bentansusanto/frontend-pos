@@ -117,21 +117,6 @@ export const HooksUpdateProduct = () => {
 
         await updateProduct({ id: values.product_id, body: productFormData }).unwrap();
 
-        if (values.variant_id) {
-          const variantFormData = new FormData();
-          variantFormData.append("productId", values.product_id);
-          variantFormData.append("name_variant", values.variant.name_variant);
-          variantFormData.append("price", String(values.variant.price));
-          variantFormData.append("weight", String(values.variant.weight));
-          variantFormData.append("color", values.variant.color);
-
-          if (values.variant.thumbnailFile) {
-            variantFormData.append("thumbnail", values.variant.thumbnailFile);
-          }
-
-          await updateVariantProduct({ id: values.variant_id, body: variantFormData }).unwrap();
-        }
-
         toast.success("Product updated successfully");
       } catch (error: any) {
         const errorMessage =
@@ -150,6 +135,6 @@ export const HooksUpdateProduct = () => {
     formik,
     categories,
     isCategoriesLoading,
-    isSubmitting: isSubmitting || isUpdatingProduct || isUpdatingVariant
+    isSubmitting: isSubmitting || isUpdatingProduct
   };
 };

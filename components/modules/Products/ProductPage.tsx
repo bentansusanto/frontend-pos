@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -59,32 +60,8 @@ import { useGetBranchesQuery } from "@/store/services/branch.service";
 import { useGetAllCategoriesQuery } from "@/store/services/category.service";
 import { useDeleteProductMutation, useGetProductsQuery } from "@/store/services/product.service";
 import { getCookie } from "@/utils/cookies";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import AddStockDialog from "./AddStock/AddStockDialog";
-
-const stats = [
-  {
-    title: "In Stock",
-    value: "1,420",
-    helper: "Items",
-    tone: "bg-emerald-100 text-emerald-600",
-    icon: CheckCircle2
-  },
-  {
-    title: "Low Inventory",
-    value: "18",
-    helper: "Items",
-    tone: "bg-amber-100 text-amber-600",
-    icon: AlertTriangle
-  },
-  {
-    title: "Out of Stock",
-    value: "3",
-    helper: "Items",
-    tone: "bg-rose-100 text-rose-600",
-    icon: XCircle
-  }
-];
 
 export const ProductPage = () => {
   const { data: profileData } = useGetProfileQuery();
@@ -136,7 +113,6 @@ export const ProductPage = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: "asc" | "desc";
@@ -181,6 +157,47 @@ export const ProductPage = () => {
     }
   };
 
+  const stockStats = useMemo(() => {
+    const counts = products.reduce(
+      (acc: { inStock: number; low: number; out: number }, product: any) => {
+        const stock = typeof product.stock === "number" ? product.stock : 0;
+        if (stock === 0) {
+          acc.out += 1;
+        } else if (stock < 10) {
+          acc.low += 1;
+        } else {
+          acc.inStock += 1;
+        }
+        return acc;
+      },
+      { inStock: 0, low: 0, out: 0 }
+    );
+
+    return [
+      {
+        title: "In Stock",
+        value: counts.inStock.toLocaleString(),
+        helper: "Items",
+        tone: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+        icon: CheckCircle2
+      },
+      {
+        title: "Low Inventory",
+        value: counts.low.toLocaleString(),
+        helper: "Items",
+        tone: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
+        icon: AlertTriangle
+      },
+      {
+        title: "Out of Stock",
+        value: counts.out.toLocaleString(),
+        helper: "Items",
+        tone: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
+        icon: XCircle
+      }
+    ];
+  }, [products]);
+
   const filteredProducts = products
     .filter((product: any) => {
       // Search filter
@@ -194,11 +211,7 @@ export const ProductPage = () => {
       const matchesCategory =
         selectedCategory === "all" || product.category_id === selectedCategory;
 
-      // Status filter
-      const status = getStockStatus(product.stock || 0);
-      const matchesStatus = selectedStatus === "all" || status.value === selectedStatus;
-
-      return matchesSearch && matchesCategory && matchesStatus;
+      return matchesSearch && matchesCategory;
     })
     .sort((a: any, b: any) => {
       const { key, direction } = sortConfig;
@@ -207,7 +220,7 @@ export const ProductPage = () => {
       let bValue = b[key];
 
       // Handle nested or special fields
-      if (key === "price" || key === "stock") {
+      if (key === "price") {
         aValue = Number(aValue);
         bValue = Number(bValue);
       }
@@ -217,14 +230,27 @@ export const ProductPage = () => {
       return 0;
     });
 
+  const totalItems = filteredProducts.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredProducts, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory]);
+
+  const indexOfFirstItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const indexOfLastItem = Math.min(currentPage * itemsPerPage, totalItems);
+
   return (
     <div className="space-y-6">
       <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Inventory Product List
-          </h3>
-          <p className="mt-1 text-sm text-slate-500">
+          <h3 className="text-foreground text-2xl font-bold">Inventory Product List</h3>
+          <p className="text-muted-foreground mt-1 text-sm">
             Manage your storefront catalog and monitor real-time stock availability.
           </p>
         </div>
@@ -249,7 +275,7 @@ export const ProductPage = () => {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {stats.map((item) => {
+        {stockStats.map((item) => {
           const Icon = item.icon;
           return (
             <div
@@ -305,17 +331,6 @@ export const ProductPage = () => {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-full sm:w-32">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="in-stock">In Stock</SelectItem>
-                <SelectItem value="low">Low Stock</SelectItem>
-                <SelectItem value="out">Out of Stock</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           <Button
             variant="outline"
@@ -323,7 +338,6 @@ export const ProductPage = () => {
             onClick={() => {
               setSearchQuery("");
               setSelectedCategory("all");
-              setSelectedStatus("all");
               setSortConfig({ key: "name_product", direction: "asc" });
             }}>
             <Filter className="size-4" />
@@ -357,16 +371,6 @@ export const ProductPage = () => {
                     )}
                   </div>
                 </TableHead>
-                <TableHead
-                  className="cursor-pointer hover:bg-slate-50"
-                  onClick={() => handleSort("stock")}>
-                  <div className="flex items-center gap-2">
-                    Stock
-                    {sortConfig.key === "stock" && (
-                      <ArrowUpDown className="h-4 w-4 text-slate-500" />
-                    )}
-                  </div>
-                </TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="pr-6 text-right">Action</TableHead>
               </TableRow>
@@ -374,22 +378,21 @@ export const ProductPage = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
-                      <span className="text-slate-500">Loading products...</span>
+                      <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+                      <span className="text-muted-foreground">Loading products...</span>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : products.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-slate-500">
+                  <TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
                     No products found.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredProducts.map((product: any) => {
-                  const stockStatus = getStockStatus(product.stock || 0);
+                paginatedProducts.map((product: any) => {
                   return (
                     <TableRow key={product.id}>
                       <TableCell>
@@ -403,23 +406,24 @@ export const ProductPage = () => {
                             />
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-900">{product.name_product}</p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-foreground font-semibold">{product.name_product}</p>
+                            <p className="text-muted-foreground text-xs">
                               Updated {new Date(product.updatedAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm text-slate-600">{product.sku}</TableCell>
-                      <TableCell className="text-sm text-slate-600">
+                      <TableCell className="text-muted-foreground text-sm">{product.sku}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
                         {product.category_name}
                       </TableCell>
-                      <TableCell className="text-sm font-medium text-slate-900">
+                      <TableCell className="text-foreground text-sm font-medium">
                         ${Number(product.price).toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-sm text-slate-600">{product.stock || 0}</TableCell>
                       <TableCell>
-                        <Badge className={stockStatus.className}>{stockStatus.label}</Badge>
+                        <Badge className={getStockStatus(product.stock || 0).className}>
+                          {getStockStatus(product.stock || 0).label}
+                        </Badge>
                       </TableCell>
                       <TableCell className="pr-6">
                         <div className="flex items-center justify-end gap-2">
@@ -444,7 +448,7 @@ export const ProductPage = () => {
                                 <AlertDialogTitle>Delete Product?</AlertDialogTitle>
                                 <AlertDialogDescription>
                                   Are you sure you want to delete{" "}
-                                  <span className="font-semibold text-slate-900">
+                                  <span className="text-foreground font-semibold">
                                     "{product.name_product}"
                                   </span>
                                   ? This action cannot be undone.
@@ -471,21 +475,65 @@ export const ProductPage = () => {
         </div>
 
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-          <p className="text-sm text-slate-500">
-            Showing {products.length > 0 ? 1 : 0} to {products.length} of {products.length} entries
+          <p className="text-muted-foreground text-sm">
+            Showing {indexOfFirstItem} to {indexOfLastItem} of {totalItems} entries
           </p>
           <Pagination className="mx-0 w-auto justify-end">
             <PaginationContent>
               <PaginationItem>
-                <PaginationPrevious href="#" />
+                <PaginationPrevious
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage > 1) setCurrentPage(currentPage - 1);
+                  }}
+                  className={
+                    currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"
+                  }
+                />
               </PaginationItem>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((page) => {
+                  return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
+                })
+                .map((page, index, array) => {
+                  const prevPage = array[index - 1];
+                  const showEllipsis = prevPage && page - prevPage > 1;
+
+                  return (
+                    <React.Fragment key={page}>
+                      {showEllipsis && (
+                        <PaginationItem>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      )}
+                      <PaginationItem>
+                        <PaginationLink
+                          href="#"
+                          isActive={currentPage === page}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(page);
+                          }}>
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    </React.Fragment>
+                  );
+                })}
+
               <PaginationItem>
-                <PaginationLink href="#" isActive>
-                  1
-                </PaginationLink>
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext href="#" />
+                <PaginationNext
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                  }}
+                  className={
+                    currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"
+                  }
+                />
               </PaginationItem>
             </PaginationContent>
           </Pagination>

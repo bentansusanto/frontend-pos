@@ -53,7 +53,6 @@ export const UpdateProduct = () => {
   const { formik, categories, isCategoriesLoading, isSubmitting } = HooksUpdateProduct();
   const productThumbnailInputRef = useRef<HTMLInputElement>(null);
   const productImagesInputRef = useRef<HTMLInputElement>(null);
-  const variantThumbnailInputRef = useRef<HTMLInputElement>(null);
 
   const readFileAsDataUrl = (file: File) =>
     new Promise<string>((resolve, reject) => {
@@ -103,15 +102,6 @@ export const UpdateProduct = () => {
     await formik.setFieldValue("product.thumbnailFile", files[0]);
   };
 
-  const handleVariantThumbnailFiles = async (files: FileList | null) => {
-    if (!files || !files.length) {
-      return;
-    }
-    const dataUrl = await readFileAsDataUrl(files[0]);
-    await formik.setFieldValue("variant.thumbnail", dataUrl);
-    await formik.setFieldValue("variant.thumbnailFile", files[0]);
-  };
-
   const handleProductImagesFiles = async (files: FileList | null) => {
     if (!files || !files.length) {
       return;
@@ -135,9 +125,6 @@ export const UpdateProduct = () => {
     parsedProductImages.filter(isValidImageSrc).length > 0
       ? parsedProductImages.filter(isValidImageSrc)
       : productImages;
-  const variantThumbnailPreview = isValidImageSrc(formik.values.variant.thumbnail || "")
-    ? formik.values.variant.thumbnail || ""
-    : thumbnailImages[0];
 
   const handleRemoveProductImage = (indexToRemove: number) => {
     const remainingImages = parsedProductImages.filter((_, index) => index !== indexToRemove);
@@ -309,90 +296,6 @@ export const UpdateProduct = () => {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Variation</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 lg:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name_variant">Name Variant</Label>
-                <Input
-                  id="name_variant"
-                  name="variant.name_variant"
-                  placeholder="Xiaomi Watch 2 Pro - Black"
-                  value={formik.values.variant.name_variant}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className={
-                    formik.touched.variant?.name_variant && formik.errors.variant?.name_variant
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
-                />
-                {formik.touched.variant?.name_variant && formik.errors.variant?.name_variant && (
-                  <p className="text-xs text-red-500">{formik.errors.variant?.name_variant}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="variant_price">Price</Label>
-                <Input
-                  id="variant_price"
-                  name="variant.price"
-                  placeholder="$ 118.89"
-                  value={formik.values.variant.price}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className={
-                    formik.touched.variant?.price && formik.errors.variant?.price
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
-                />
-                {formik.touched.variant?.price && formik.errors.variant?.price && (
-                  <p className="text-xs text-red-500">{formik.errors.variant?.price}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="weight">Weight</Label>
-                <Input
-                  id="weight"
-                  name="variant.weight"
-                  placeholder="250"
-                  value={formik.values.variant.weight}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className={
-                    formik.touched.variant?.weight && formik.errors.variant?.weight
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
-                />
-                {formik.touched.variant?.weight && formik.errors.variant?.weight && (
-                  <p className="text-xs text-red-500">{formik.errors.variant?.weight}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="color">Color</Label>
-                <Input
-                  id="color"
-                  name="variant.color"
-                  placeholder="Midnight Black"
-                  value={formik.values.variant.color}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className={
-                    formik.touched.variant?.color && formik.errors.variant?.color
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
-                />
-                {formik.touched.variant?.color && formik.errors.variant?.color && (
-                  <p className="text-xs text-red-500">{formik.errors.variant?.color}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         <div className="space-y-6">
@@ -503,58 +406,6 @@ export const UpdateProduct = () => {
                 />
                 {formik.touched.product?.images && formik.errors.product?.images && (
                   <p className="text-xs text-red-500">{formik.errors.product?.images}</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Variant Thumbnail</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-muted-foreground text-xs">Thumbnail previews</p>
-              <div className="grid gap-3">
-                <div className="relative h-40 overflow-hidden rounded-xl border">
-                  <Image
-                    src={variantThumbnailPreview}
-                    alt="Variant thumbnail"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div
-                  className="text-muted-foreground flex min-h-24 cursor-pointer items-center justify-center rounded-xl border border-dashed text-sm"
-                  onClick={() => variantThumbnailInputRef.current?.click()}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    void handleVariantThumbnailFiles(event.dataTransfer.files);
-                  }}>
-                  Drag & drop variant thumbnail or click to upload
-                </div>
-                <input
-                  ref={variantThumbnailInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(event) => void handleVariantThumbnailFiles(event.target.files)}
-                />
-                <Input
-                  id="variant_thumbnail"
-                  name="variant.thumbnail"
-                  placeholder="Variant thumbnail URL"
-                  value={formik.values.variant.thumbnail}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className={
-                    formik.touched.variant?.thumbnail && formik.errors.variant?.thumbnail
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
-                />
-                {formik.touched.variant?.thumbnail && formik.errors.variant?.thumbnail && (
-                  <p className="text-xs text-red-500">{formik.errors.variant?.thumbnail}</p>
                 )}
               </div>
             </CardContent>

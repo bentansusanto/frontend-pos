@@ -120,4 +120,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  h1{
+    @apply dark:text-foreground;
+  }
+  h2{
+    @apply dark:text-foreground;
+  }
+  p{
+    @apply dark:text-foreground;
+  }
 }

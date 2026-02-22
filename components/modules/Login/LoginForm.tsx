@@ -57,7 +57,7 @@ export const LoginForm = () => {
             <button
               type="button"
               onClick={togglePasswordVisibility}
-              className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none">
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 focus:outline-none">
               {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
             </button>
           </div>
@@ -68,7 +68,7 @@ export const LoginForm = () => {
         <div className="text-end">
           <Link
             href="/forgot-password"
-            className="ml-auto inline-block text-sm font-medium text-blue-600 hover:text-blue-500">
+            className="text-primary hover:text-primary/80 ml-auto inline-block text-sm font-medium">
             Forgot your password?
           </Link>
         </div>

@@ -8,6 +8,8 @@ export interface Product {
   sku: string;
   thumbnail: string;
   images: string[];
+  stock?: number;
+  product_stock?: number;
   variants: ProductVariant[];
 }
 

@@ -17,14 +17,15 @@ export const stockMovementService = createApi({
   tagTypes: ["StockMovements"],
   endpoints: (builder) => ({
     // find all stock movements
-    findAll: builder.query({
-      query: () => ({
+    findAll: builder.query<any, { branch_id?: string } | void>({
+      query: (params) => ({
         url: "/stock-movements",
-        method: "GET"
+        method: "GET",
+        params: params || {}
       }),
       providesTags: ["StockMovements"]
     })
   })
 });
 
-export const {} = stockMovementService;
+export const { useFindAllQuery } = stockMovementService;

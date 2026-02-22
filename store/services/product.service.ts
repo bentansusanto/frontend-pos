@@ -26,11 +26,16 @@ export const productService = createApi({
       providesTags: ["Products"]
     }),
     // get product by id
-    getProductById: builder.query<any, string>({
-      query: (id) => ({
-        url: `/products/${id}`,
-        method: "GET"
-      }),
+    getProductById: builder.query<any, string | { id: string; branch_id?: string }>({
+      query: (arg) => {
+        const id = typeof arg === "string" ? arg : arg.id;
+        const params = typeof arg !== "string" && arg.branch_id ? { branch_id: arg.branch_id } : {};
+        return {
+          url: `/products/${id}`,
+          method: "GET",
+          params
+        };
+      },
       providesTags: ["Products"]
     }),
     // create product
@@ -97,10 +102,11 @@ export const productService = createApi({
       providesTags: ["Products"]
     }),
     // get all variant products
-    getVariantProducts: builder.query<any, void>({
-      query: () => ({
+    getVariantProducts: builder.query<any, { branch_id?: string } | void>({
+      query: (params) => ({
         url: "/variants/find-all",
-        method: "GET"
+        method: "GET",
+        params: params || {}
       }),
       providesTags: ["Products"]
     })

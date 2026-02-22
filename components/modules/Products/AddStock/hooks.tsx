@@ -49,9 +49,10 @@ export const useAddStock = ({ onSuccess }: { onSuccess?: () => void } = {}) => {
   }, [availableBranches, form]);
 
   const selectedProductId = form.watch("productId");
+  const selectedBranchId = form.watch("branchId");
 
   const { data: productDetailData, isLoading: isProductDetailLoading } = useGetProductByIdQuery(
-    selectedProductId,
+    { id: selectedProductId, branch_id: selectedBranchId },
     { skip: !selectedProductId }
   );
 
@@ -70,12 +71,18 @@ export const useAddStock = ({ onSuccess }: { onSuccess?: () => void } = {}) => {
 
   const onSubmit = async (values: AddStockValues) => {
     try {
-      await createProductStock({
+      const payload: any = {
         branchId: values.branchId,
-        variantId: values.variantId,
+        productId: values.productId,
         stock: values.stock,
         minStock: values.minStock
-      }).unwrap();
+      };
+
+      if (values.variantId) {
+        payload.variantId = values.variantId;
+      }
+
+      await createProductStock(payload).unwrap();
 
       toast.success("Stock added successfully");
       form.reset();

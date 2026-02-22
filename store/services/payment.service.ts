@@ -32,8 +32,18 @@ export const paymentService = createApi({
         method: "PUT"
       }),
       invalidatesTags: ["Payments"]
+    }),
+    // get all payments
+    getPayments: builder.query<any, { branch_id?: string } | void>({
+      query: (params) => ({
+        url: "/payments/find-all",
+        method: "GET",
+        params: params || {}
+      }),
+      providesTags: ["Payments"]
     })
   })
 });
 
-export const { useCreatePaymentMutation, useVerifyPaymentMutation } = paymentService;
+export const { useCreatePaymentMutation, useVerifyPaymentMutation, useGetPaymentsQuery } =
+  paymentService;

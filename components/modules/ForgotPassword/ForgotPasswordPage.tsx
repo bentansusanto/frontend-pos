@@ -12,15 +12,15 @@ export const ForgotPasswordPage = () => {
 
   return (
     <div className="flex pb-8 lg:h-screen lg:pb-0">
-      <div className="hidden w-1/2 bg-gray-100 lg:block">
+      <div className="bg-muted hidden w-1/2 lg:block dark:bg-slate-950">
         <img src={`/images/cover.png`} alt="Login visual" className="h-full w-full object-cover" />
       </div>
 
       <div className="flex w-full items-center justify-center lg:w-1/2">
         <div className="w-full max-w-md space-y-8 px-4">
           <div className="text-center">
-            <h2 className="mt-6 text-3xl font-bold text-gray-900">Forgot Password</h2>
-            <p className="mt-2 text-sm text-gray-600">
+            <h2 className="text-foreground mt-6 text-3xl font-bold">Forgot Password</h2>
+            <p className="text-muted-foreground mt-2 text-sm">
               Enter your email address and we'll send you a link to reset your password.
             </p>
           </div>
@@ -70,7 +70,9 @@ export const ForgotPasswordPage = () => {
             </div>
 
             <div className="text-center">
-              <Link href="/login" className="text-sm font-medium text-blue-600 hover:text-blue-500">
+              <Link
+                href="/login"
+                className="text-primary hover:text-primary/80 text-sm font-medium">
                 Back to Login
               </Link>
             </div>

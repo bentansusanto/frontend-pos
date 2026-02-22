@@ -48,7 +48,7 @@ export default function TransactionsPage() {
   const { data: salesData, isLoading: isSalesLoading } = useGetSalesReportQuery(branchParams);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 6;
 
   const allTransactions = useMemo(() => {
     return (salesData || [])
@@ -88,8 +88,8 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Transaction History</h3>
-        <p className="text-sm text-slate-500">View and manage past transactions.</p>
+        <h3 className="text-foreground text-2xl font-bold">Transaction History</h3>
+        <p className="text-muted-foreground text-sm">View and manage past transactions.</p>
       </div>
 
       <Card>

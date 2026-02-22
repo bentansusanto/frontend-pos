@@ -119,7 +119,7 @@ export default function SalesReportPage() {
 
   const paymentMethodSummary = summaryData?.paymentMethodSummary || {};
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 6;
   const totalEntries = salesRows.length;
   const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
   const currentPageSafe = Math.min(currentPage, totalPages);
@@ -141,8 +141,8 @@ export default function SalesReportPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
-        <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Sales Report</h3>
-        <p className="text-sm text-slate-500">
+        <h3 className="text-foreground text-2xl font-bold">Sales Report</h3>
+        <p className="text-muted-foreground text-sm">
           Monitor revenue performance and payment trends across periods.
         </p>
       </div>

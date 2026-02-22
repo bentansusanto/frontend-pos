@@ -39,72 +39,89 @@ export type Branch = {
   name: string;
   address: string;
   phone: string;
+  email?: string;
+  city?: string;
+  province?: string;
   created_at: string;
   updated_at: string;
 };
 
-export const columns: ColumnDef<Branch>[] = [
-  {
-    accessorKey: "id",
-    header: "#",
-    cell: ({ row }) => <div className="w-[80px] truncate">{row.getValue("id")}</div>
-  },
-  {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
-    cell: ({ row }) => <div className="capitalize">{row.getValue("name")}</div>
-  },
-  {
-    accessorKey: "address",
-    header: "Address",
-    cell: ({ row }) => <div className="lowercase">{row.getValue("address")}</div>
-  },
-  {
-    accessorKey: "phone",
-    header: "Phone",
-    cell: ({ row }) => <div className="lowercase">{row.getValue("phone")}</div>
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original.id)}>
-              Copy ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View details</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    }
-  }
-];
+import { BranchDetailsModal } from "./BranchDetailsModal";
+import { EditBranchModal } from "./EditBranchModal";
 
 export default function BranchesDataTable({ data }: { data: Branch[] }) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
+
+  const [editingBranch, setEditingBranch] = React.useState<Branch | null>(null);
+  const [viewDetailsBranch, setViewDetailsBranch] = React.useState<Branch | null>(null);
+
+  const columns: ColumnDef<Branch>[] = React.useMemo(
+    () => [
+      {
+        accessorKey: "id",
+        header: "#",
+        cell: ({ row }) => <div className="w-[80px] truncate">{row.getValue("id")}</div>
+      },
+      {
+        accessorKey: "name",
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+              Name
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          );
+        },
+        cell: ({ row }) => <div className="capitalize">{row.getValue("name")}</div>
+      },
+      {
+        accessorKey: "address",
+        header: "Address",
+        cell: ({ row }) => <div className="lowercase">{row.getValue("address")}</div>
+      },
+      {
+        accessorKey: "phone",
+        header: "Phone",
+        cell: ({ row }) => <div className="lowercase">{row.getValue("phone")}</div>
+      },
+      {
+        id: "actions",
+        enableHiding: false,
+        cell: ({ row }) => {
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original.id)}>
+                  Copy ID
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setEditingBranch(row.original)}>
+                  Edit Branch
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setViewDetailsBranch(row.original)}>
+                  View details
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        }
+      }
+    ],
+    []
+  );
 
   const table = useReactTable({
     data,
@@ -127,7 +144,17 @@ export default function BranchesDataTable({ data }: { data: Branch[] }) {
 
   return (
     <div className="w-full">
-      <div className="flex items-center pb-4">
+      <EditBranchModal
+        isOpen={!!editingBranch}
+        onClose={() => setEditingBranch(null)}
+        branch={editingBranch}
+      />
+      <BranchDetailsModal
+        isOpen={!!viewDetailsBranch}
+        onClose={() => setViewDetailsBranch(null)}
+        branch={viewDetailsBranch}
+      />
+      <div className="flex items-center py-4">
         <Input
           placeholder="Filter names..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
