@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ResetPasswordForm } from "./ResetPasswordForm";
 
 export const ResetPasswordPage = () => {
@@ -14,7 +15,9 @@ export const ResetPasswordPage = () => {
             <p className="text-muted-foreground mt-2 text-sm">Please enter your new password</p>
           </div>
 
-          <ResetPasswordForm />
+          <Suspense fallback={<div>Loading...</div>}>
+            <ResetPasswordForm />
+          </Suspense>
         </div>
       </div>
     </div>

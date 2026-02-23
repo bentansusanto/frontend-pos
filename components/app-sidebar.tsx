@@ -40,6 +40,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from "./ui/dropdown-menu";
+import Image from "next/image";
 
 const data = {
   brand: {
@@ -205,8 +206,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <SidebarMenuButton
                     size="lg"
                     className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-                    <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                      <IconInnerShadowTop className="size-4" />
+                    <div className="bg-white text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                      <img src="/logo-pos.svg" alt="POS App Logo" className="block w-6 h-6" />
                     </div>
                     <div className="space-y-3">
                     <div className="flex flex-1 text-left text-sm leading-tight"> <br />

@@ -1,6 +1,7 @@
 import { VerifyAccountPage } from "@/components/modules/VerifyAccount/VerifyAccountPage";
 import { generateMeta } from "@/lib/utils";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 export async function generateMetadata(): Promise<Metadata> {
   return generateMeta({
@@ -11,5 +12,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function VerifyAccount() {
-  return <VerifyAccountPage />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VerifyAccountPage />
+    </Suspense>
+  );
 }

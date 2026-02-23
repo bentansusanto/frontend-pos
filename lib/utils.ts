@@ -31,7 +31,7 @@ export function generateMeta({
     title: `${title} - Shadcn UI Kit Free Dashboard Template`,
     description: description,
     openGraph: {
-      images: [`/seo.jpg`]
+      images: [`/logo-pos.svg`]
     }
   };
 }

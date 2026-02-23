@@ -40,7 +40,14 @@ export async function proxy(request: NextRequest) {
   }
 
   // Path public yang tidak butuh proteksi
-  const publicPaths = ["/login", "/register", "/verify-account", "/resend-verify-account", "/forgot-password", "/reset-password"];
+  const publicPaths = [
+    "/login",
+    "/register",
+    "/verify-account",
+    "/resend-verify-account",
+    "/forgot-password",
+    "/reset-password"
+  ];
   const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
   const isRoot = pathname === "/";
 
@@ -77,68 +84,64 @@ export async function proxy(request: NextRequest) {
       // Atau sudah expired, coba refresh
       // NOTE: Tambahkan logging untuk debugging
       // UBAH DARI 300 KE ANGKA BESAR (MISAL 1 HARI = 86400) UNTUK TESTING AGAR SELALU REFRESH
-      const REFRESH_THRESHOLD = 30; // Testing mode: Selalu refresh jika umur token < 1 hari
-      console.log(
-        `[Middleware] Token Expiry Check: ${timeUntilExpiry}s remaining (Threshold: ${REFRESH_THRESHOLD}s)`
-      );
+      // const REFRESH_THRESHOLD = 30; // Testing mode: Selalu refresh jika umur token < 1 hari
+      console.log(`[Middleware] Token Expiry Check: ${timeUntilExpiry}s remaining`);
 
-      if (timeUntilExpiry < REFRESH_THRESHOLD) {
-        console.log("[Middleware] Token expiring soon, attempting refresh...");
+      console.log("[Middleware] Token expiring soon, attempting refresh...");
 
-        // Kita butuh sessionToken untuk refresh
-        if (sessionToken) {
-          try {
-            // Panggil endpoint refresh token backend
-            // Gunakan backendUrl langsung karena kita di server side
-            const refreshResponse = await fetch(`${backendUrl}/auth/refresh-token`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-                Cookie: `session_pos=${sessionToken}`
-              }
-            });
-
-            console.log(`[Middleware] Refresh Response Status: ${refreshResponse.status}`);
-
-            if (refreshResponse.ok) {
-              const data = await refreshResponse.json();
-              const newToken = data?.data?.token;
-
-              if (newToken) {
-                console.log("[Middleware] Refresh successful, setting new token");
-
-                // Update token di cookie response
-                const response = NextResponse.next();
-
-                // Set Access Token (pos_token)
-                response.cookies.set("pos_token", newToken, {
-                  httpOnly: false,
-                  secure: process.env.NODE_ENV === "production",
-                  sameSite: "lax",
-                  maxAge: 60 * 60 * 24 // 1 hari
-                });
-
-                // Forward Set-Cookie header from backend response (session_pos)
-                // Backend sudah mengatur HttpOnly, Secure, SameSite, MaxAge, dll.
-                const setCookieHeader = refreshResponse.headers.get("set-cookie");
-                if (setCookieHeader) {
-                  response.headers.append("Set-Cookie", setCookieHeader);
-                }
-
-                return response;
-              }
-            } else {
-              console.error("[Middleware] Refresh failed with status:", refreshResponse.status);
+      // Kita butuh sessionToken untuk refresh
+      if (sessionToken) {
+        try {
+          // Panggil endpoint refresh token backend
+          // Gunakan backendUrl langsung karena kita di server side
+          const refreshResponse = await fetch(`${backendUrl}/auth/refresh-token`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              Cookie: `session_pos=${sessionToken}`
             }
-          } catch (error) {
-            console.error("Auto refresh token failed:", error);
-            // Opsional: Redirect ke login jika refresh gagal total?
-            // return NextResponse.redirect(new URL("/auth/login", request.url));
+          });
+
+          console.log(`[Middleware] Refresh Response Status: ${refreshResponse.status}`);
+
+          if (refreshResponse.ok) {
+            const data = await refreshResponse.json();
+            const newToken = data?.data?.token;
+
+            if (newToken) {
+              console.log("[Middleware] Refresh successful, setting new token");
+
+              // Update token di cookie response
+              const response = NextResponse.next();
+
+              // Set Access Token (pos_token)
+              response.cookies.set("pos_token", newToken, {
+                httpOnly: false,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "lax",
+                maxAge: 60 * 60 * 24 // 1 hari
+              });
+
+              // Forward Set-Cookie header from backend response (session_pos)
+              // Backend sudah mengatur HttpOnly, Secure, SameSite, MaxAge, dll.
+              const setCookieHeader = refreshResponse.headers.get("set-cookie");
+              if (setCookieHeader) {
+                response.headers.append("Set-Cookie", setCookieHeader);
+              }
+
+              return response;
+            }
+          } else {
+            console.error("[Middleware] Refresh failed with status:", refreshResponse.status);
           }
-        } else {
-          console.log("[Middleware] No session token found, cannot refresh");
+        } catch (error) {
+          console.error("Auto refresh token failed:", error);
+          // Opsional: Redirect ke login jika refresh gagal total?
+          // return NextResponse.redirect(new URL("/auth/login", request.url));
         }
+      } else {
+        console.log("[Middleware] No session token found, cannot refresh");
       }
     }
   }
