@@ -1,8 +1,5 @@
 "use client";
 
-import { Eye } from "lucide-react";
-import React, { useMemo, useState } from "react";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,8 +28,11 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
+
 import { useGetSalesReportQuery } from "@/store/services/sales-report.service";
 import { getCookie } from "@/utils/cookies";
+import { Eye } from "lucide-react";
+import React, { useMemo, useState } from "react";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",

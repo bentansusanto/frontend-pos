@@ -287,7 +287,7 @@ export const ProductPage = () => {
               <div>
                 <p className="text-sm font-medium text-slate-500">{item.title}</p>
                 <div className="flex items-end gap-2">
-                  <p className="text-xl font-semibold text-slate-900">{item.value}</p>
+                  <p className="text-xl font-semibold text-slate-900 dark:text-slate-300">{item.value}</p>
                   <span className="text-xs text-slate-400">{item.helper}</span>
                 </div>
               </div>

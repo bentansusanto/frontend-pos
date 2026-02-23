@@ -70,7 +70,7 @@ const data = {
             { title: "New Order", url: "/dashboard/pos/new-order" },
             { title: "Transactions", url: "/dashboard/pos/transactions" }
           ],
-          roles: ["owner", "super_admin", "admin", "cashier"]
+          roles: ["cashier"]
         },
         {
           title: "Customers",
@@ -86,14 +86,14 @@ const data = {
             { title: "Products", url: "/dashboard/inventory/products" },
             { title: "Stock Overview", url: "/dashboard/inventory/stock-overview" }
           ],
-          roles: ["owner", "super_admin", "admin"]
+          roles: ["owner", "admin", "cashier"]
         },
         {
           title: "Reports",
           icon: IconChartBar,
           defaultOpen: true,
           items: [{ title: "Sales Report", url: "/dashboard/reports/sales-report" }],
-          roles: ["owner", "super_admin", "admin"]
+          roles: ["owner", "admin"]
         }
       ]
     },
@@ -104,7 +104,7 @@ const data = {
           title: "AI Insights",
           icon: Sparkles,
           url: "/dashboard/ai-insights",
-          roles: ["owner", "super_admin"]
+          roles: ["owner"]
         }
       ]
     },
@@ -119,7 +119,7 @@ const data = {
             { title: "Users", url: "/dashboard/users" },
             { title: "Branch", url: "/dashboard/branches" }
           ],
-          roles: ["owner", "super_admin", "admin"]
+          roles: ["owner"]
         }
       ]
     }

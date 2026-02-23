@@ -66,7 +66,11 @@ export function SalesTable({ data }: SalesTableProps) {
                 <TableCell>{formatCurrency(sale.totalAmount)}</TableCell>
                 <TableCell className="capitalize">{sale.paymentMethod}</TableCell>
                 <TableCell>
-                  <Badge variant={sale.status === "success" ? "default" : "secondary"}>
+                  <Badge
+                    variant={sale.status === "success" ? "default" : "secondary"}
+                    className={
+                      sale.status === "success" ? "bg-green-500 hover:bg-green-600" : ""
+                    }>
                     {sale.status}
                   </Badge>
                 </TableCell>

@@ -2,6 +2,7 @@
 
 import { ChevronDown, Minus, Plus, Search, Trash2, UserRoundPlus } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { useGetProfileQuery } from "@/store/services/auth.service";
 import { useGetAllCategoriesQuery } from "@/store/services/category.service";
 import { useGetAllCustomersQuery } from "@/store/services/customer.service";
 import {
@@ -36,6 +38,16 @@ import { useCustomerForm } from "../Customers/hooks";
 import { usePosOrder } from "./hooks";
 
 export const PosPage = () => {
+  const router = useRouter();
+  const { data: profileData } = useGetProfileQuery();
+  const userRole = profileData?.data?.role;
+
+  useEffect(() => {
+    if (userRole && userRole !== "cashier") {
+      router.push("/access-denied");
+    }
+  }, [userRole, router]);
+
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
@@ -151,7 +163,7 @@ export const PosPage = () => {
     orderItems.reduce((sum: number, item: any) => {
       return sum + Number(item.subtotal || 0);
     }, 0);
-  const taxAmount = currentOrder?.tax_amount ?? 0;
+  const taxAmount = currentOrder?.tax_amount ?? subtotal * 0.05;
   const discountAmount = currentOrder?.discount_amount ?? 0;
   const totalAmount = currentOrder?.total_amount ?? subtotal + taxAmount - discountAmount;
 
@@ -413,7 +425,7 @@ export const PosPage = () => {
               <span>${Number(subtotal || 0).toFixed(2)}</span>
             </div>
             <div className="text-muted-foreground flex items-center justify-between">
-              <span>Service Tax</span>
+              <span>Service Tax (5%)</span>
               <span>${Number(taxAmount || 0).toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between text-base font-semibold">
@@ -423,14 +435,6 @@ export const PosPage = () => {
           </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-3">
-          <div className="grid w-full grid-cols-2 gap-3">
-            <Button variant="outline" className="w-full" type="button">
-              Bill Split
-            </Button>
-            <Button variant="outline" className="w-full" type="button">
-              Coupon
-            </Button>
-          </div>
           <Button
             className="w-full"
             type="submit"
@@ -513,7 +517,7 @@ export const PosPage = () => {
 
                 <div className="w-full px-3 py-2">
                   <div className="flex items-center justify-between">
-                    <h3 className="line-clamp-1 text-card-foreground text-sm font-semibold">
+                    <h3 className="text-card-foreground line-clamp-1 text-sm font-semibold">
                       {product.name_product}
                     </h3>
                     <p className="text-primary mt-1 text-sm font-bold">
