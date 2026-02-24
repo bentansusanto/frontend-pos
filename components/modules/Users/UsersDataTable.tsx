@@ -37,9 +37,12 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useDeleteUserMutation } from "@/store/services/user.service";
+import { toast } from "sonner";
 
 import { EditProfileModal } from "./EditProfileModal";
 import { UserDetailsModal } from "./UserDetailsModal";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogDescription, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export type User = {
   id: string;
@@ -61,6 +64,19 @@ export default function UsersDataTable({ data }: { data: User[] }) {
 
   const [editProfileUserId, setEditProfileUserId] = React.useState<string | null>(null);
   const [viewDetailsUser, setViewDetailsUser] = React.useState<User | null>(null);
+  const [deleteUserId, setDeleteUserId] = React.useState<string | null>(null);
+
+  const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteUser(id).unwrap();
+      toast.success("User deleted successfully");
+      setDeleteUserId(null);
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to delete user");
+    }
+  };
 
   const columns: ColumnDef<User>[] = React.useMemo(
     () => [
@@ -142,7 +158,11 @@ export default function UsersDataTable({ data }: { data: User[] }) {
                 <DropdownMenuItem onClick={() => setViewDetailsUser(row.original)}>
                   View details
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-red-600 focus:text-red-600"
+                  onClick={() => setDeleteUserId(row.original.id)}>
+                  Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           );
@@ -252,6 +272,33 @@ export default function UsersDataTable({ data }: { data: User[] }) {
         onClose={() => setViewDetailsUser(null)}
         user={viewDetailsUser}
       />
+
+      <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the user account and remove
+              their data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteUserId) {
+                  handleDelete(deleteUserId);
+                }
+              }}
+              disabled={isDeleting}>
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="text-muted-foreground flex-1 text-sm">
           {table.getFilteredSelectedRowModel().rows.length} of{" "}

@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import {
   Select,
   SelectContent,
@@ -56,6 +57,9 @@ export default function AiInsightsDashboardPage() {
   } = useGetAiInsightsQuery(branchId ? { branchId } : {});
   const [generateAiInsights, { isLoading: isGenerating }] = useGenerateAiInsightsMutation();
   const [timeRange, setTimeRange] = useState("monthly");
+  const [recommendationsPage, setRecommendationsPage] = useState(1);
+  const [alertsPage, setAlertsPage] = useState(1);
+  const ITEMS_PER_PAGE = 7;
 
   const insights = Array.isArray(aiData) ? aiData : [];
 
@@ -68,6 +72,18 @@ export default function AiInsightsDashboardPage() {
   );
   const summary = insights.find((i: any) => i.type === "report_summary") || {};
   const summaryMetadata = summary.metadata || {};
+
+  const totalRecommendationPages = Math.ceil(recommendations.length / ITEMS_PER_PAGE);
+  const paginatedRecommendations = recommendations.slice(
+    (recommendationsPage - 1) * ITEMS_PER_PAGE,
+    recommendationsPage * ITEMS_PER_PAGE
+  );
+
+  const totalAlertPages = Math.ceil(alerts.length / ITEMS_PER_PAGE);
+  const paginatedAlerts = alerts.slice(
+    (alertsPage - 1) * ITEMS_PER_PAGE,
+    alertsPage * ITEMS_PER_PAGE
+  );
 
   const handleGenerateAnalysis = async () => {
     try {
@@ -278,7 +294,7 @@ export default function AiInsightsDashboardPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        recommendations.map((item: any, index: number) => {
+                        paginatedRecommendations.map((item: any, index: number) => {
                           const meta = item.metadata || {};
                           return (
                             <TableRow key={index}>
@@ -310,6 +326,85 @@ export default function AiInsightsDashboardPage() {
                       )}
                     </TableBody>
                   </Table>
+                  {/* Pagination Controls */}
+                  {recommendations.length > 0 && (
+                    <div className="flex items-center justify-between py-4">
+                      <div className="text-muted-foreground text-sm">
+                        Showing {(recommendationsPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
+                        {Math.min(recommendationsPage * ITEMS_PER_PAGE, recommendations.length)} of{" "}
+                        {recommendations.length} entries
+                      </div>
+                      <Pagination className="mx-0 w-auto justify-end">
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (recommendationsPage > 1)
+                                  setRecommendationsPage(recommendationsPage - 1);
+                              }}
+                              className={
+                                recommendationsPage === 1
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
+
+                          {Array.from({ length: totalRecommendationPages }, (_, i) => i + 1)
+                            .filter((page) => {
+                              return (
+                                page === 1 ||
+                                page === totalRecommendationPages ||
+                                Math.abs(page - recommendationsPage) <= 1
+                              );
+                            })
+                            .map((page, index, array) => {
+                              const prevPage = array[index - 1];
+                              const showEllipsis = prevPage && page - prevPage > 1;
+
+                              return (
+                                <div key={page} className="flex items-center">
+                                  {showEllipsis && (
+                                    <PaginationItem>
+                                      <PaginationEllipsis />
+                                    </PaginationItem>
+                                  )}
+                                  <PaginationItem>
+                                    <PaginationLink
+                                      href="#"
+                                      isActive={recommendationsPage === page}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        setRecommendationsPage(page);
+                                      }}>
+                                      {page}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                </div>
+                              );
+                            })}
+
+                          <PaginationItem>
+                            <PaginationNext
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (recommendationsPage < totalRecommendationPages)
+                                  setRecommendationsPage(recommendationsPage + 1);
+                              }}
+                              className={
+                                recommendationsPage === totalRecommendationPages
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -341,7 +436,7 @@ export default function AiInsightsDashboardPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        alerts.map((alert: any, index: number) => {
+                        paginatedAlerts.map((alert: any, index: number) => {
                           const meta = alert.metadata || {};
                           return (
                             <TableRow key={index}>
@@ -388,6 +483,83 @@ export default function AiInsightsDashboardPage() {
                       )}
                     </TableBody>
                   </Table>
+                  {/* Pagination Controls */}
+                  {alerts.length > 0 && (
+                    <div className="flex items-center justify-between py-4">
+                      <div className="text-muted-foreground text-sm">
+                        Showing {(alertsPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
+                        {Math.min(alertsPage * ITEMS_PER_PAGE, alerts.length)} of {alerts.length}{" "}
+                        entries
+                      </div>
+                      <Pagination className="mx-0 w-auto justify-end">
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (alertsPage > 1) setAlertsPage(alertsPage - 1);
+                              }}
+                              className={
+                                alertsPage === 1
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
+
+                          {Array.from({ length: totalAlertPages }, (_, i) => i + 1)
+                            .filter((page) => {
+                              return (
+                                page === 1 ||
+                                page === totalAlertPages ||
+                                Math.abs(page - alertsPage) <= 1
+                              );
+                            })
+                            .map((page, index, array) => {
+                              const prevPage = array[index - 1];
+                              const showEllipsis = prevPage && page - prevPage > 1;
+
+                              return (
+                                <div key={page} className="flex items-center">
+                                  {showEllipsis && (
+                                    <PaginationItem>
+                                      <PaginationEllipsis />
+                                    </PaginationItem>
+                                  )}
+                                  <PaginationItem>
+                                    <PaginationLink
+                                      href="#"
+                                      isActive={alertsPage === page}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        setAlertsPage(page);
+                                      }}>
+                                      {page}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                </div>
+                              );
+                            })}
+
+                          <PaginationItem>
+                            <PaginationNext
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (alertsPage < totalAlertPages) setAlertsPage(alertsPage + 1);
+                              }}
+                              className={
+                                alertsPage === totalAlertPages
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
