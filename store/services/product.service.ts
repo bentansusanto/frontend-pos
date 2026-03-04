@@ -1,19 +1,9 @@
-import { getCookie } from "@/utils/cookies";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./baseQuery";
 
 export const productService = createApi({
   reducerPath: "productService",
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL,
-    prepareHeaders: (headers) => {
-      const token = getCookie("pos_token");
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-    credentials: "include"
-  }),
+  baseQuery,
   tagTypes: ["Products"],
   endpoints: (builder) => ({
     // get all products
@@ -23,6 +13,7 @@ export const productService = createApi({
         method: "GET",
         params: params || {}
       }),
+      transformResponse: (response: any) => response.data || response.datas || [],
       providesTags: ["Products"]
     }),
     // get product by id
@@ -36,6 +27,7 @@ export const productService = createApi({
           params
         };
       },
+      transformResponse: (response: any) => response.data || response.datas || response,
       providesTags: ["Products"]
     }),
     // create product
@@ -108,6 +100,7 @@ export const productService = createApi({
         method: "GET",
         params: params || {}
       }),
+      transformResponse: (response: any) => response.data || response.datas || [],
       providesTags: ["Products"]
     })
   })

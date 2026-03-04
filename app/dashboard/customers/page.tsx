@@ -7,7 +7,7 @@ import { CreateCustomerDialog } from "./create-customer-dialog";
 
 export default function CustomersPage() {
   const { data: customersResponse, isLoading, isError } = useGetAllCustomersQuery();
-  const customers = customersResponse?.data || [];
+  const customers = customersResponse || [];
 
   return (
     <div className="flex flex-col gap-5 p-5">

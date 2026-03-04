@@ -63,7 +63,10 @@ export default function TransactionsPage() {
         cashierName: sale.cashier?.name || "-",
         customerName: sale.customer?.name || "-",
         itemsCount: sale.items?.length || 0,
-        items: sale.items || []
+        items: sale.items || [],
+        subtotal: sale.subtotal || 0,
+        taxAmount: sale.taxAmount || 0,
+        discountAmount: sale.discountAmount || 0
       }))
       .sort((a: any, b: any) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
   }, [salesData]);
@@ -206,6 +209,38 @@ export default function TransactionsPage() {
                                           </TableCell>
                                         </TableRow>
                                       ))}
+                                      <TableRow>
+                                        <TableCell
+                                          colSpan={3}
+                                          className="text-muted-foreground text-right">
+                                          Subtotal
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                          {formatCurrency(row.subtotal)}
+                                        </TableCell>
+                                      </TableRow>
+                                      <TableRow>
+                                        <TableCell
+                                          colSpan={3}
+                                          className="text-muted-foreground text-right">
+                                          Tax Amount
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                          {formatCurrency(row.taxAmount)}
+                                        </TableCell>
+                                      </TableRow>
+                                      {row.discountAmount > 0 && (
+                                        <TableRow>
+                                          <TableCell
+                                            colSpan={3}
+                                            className="text-destructive text-right">
+                                            Discount
+                                          </TableCell>
+                                          <TableCell className="text-destructive text-right">
+                                            -{formatCurrency(row.discountAmount)}
+                                          </TableCell>
+                                        </TableRow>
+                                      )}
                                       <TableRow>
                                         <TableCell colSpan={3} className="text-right font-bold">
                                           Total Amount

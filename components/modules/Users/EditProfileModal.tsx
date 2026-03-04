@@ -26,7 +26,7 @@ export function EditProfileModal({ isOpen, onClose, userId }: EditProfileModalPr
     skip: !isOpen || !userId
   });
 
-  const profile = profileData?.data;
+  const profile = profileData;
 
   const { formik, isLoading: isSaving } = useProfileForm({
     userId,

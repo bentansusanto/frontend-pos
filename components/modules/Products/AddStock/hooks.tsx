@@ -16,16 +16,16 @@ export const useAddStock = ({ onSuccess }: { onSuccess?: () => void } = {}) => {
 
   const [variants, setVariants] = useState<any[]>([]);
 
-  const userRole = profileData?.data?.role;
-  const userBranches = profileData?.data?.branches || [];
+  const userRole = profileData?.role;
+  const userBranches = profileData?.branches || [];
 
   const availableBranches = useMemo(() => {
-    if (!branchesData?.data) return [];
+    if (!branchesData) return [];
     if (userRole === "owner" || userRole === "super_admin") {
-      return branchesData.data;
+      return branchesData;
     }
     // Filter branches based on user's assigned branches
-    return branchesData.data.filter((branch: any) =>
+    return branchesData.filter((branch: any) =>
       userBranches.some((ub: any) => ub.id === branch.id)
     );
   }, [branchesData, userRole, userBranches]);
@@ -57,8 +57,8 @@ export const useAddStock = ({ onSuccess }: { onSuccess?: () => void } = {}) => {
   );
 
   useEffect(() => {
-    if (selectedProductId && productDetailData?.data?.variants) {
-      setVariants(productDetailData.data.variants);
+    if (selectedProductId && productDetailData?.variants) {
+      setVariants(productDetailData.variants);
     } else {
       setVariants([]);
     }
@@ -99,7 +99,7 @@ export const useAddStock = ({ onSuccess }: { onSuccess?: () => void } = {}) => {
     form,
     onSubmit,
     isLoading,
-    products: productsData?.data || [],
+    products: productsData || [],
     isProductsLoading,
     branches: availableBranches,
     isBranchesLoading,

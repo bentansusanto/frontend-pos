@@ -53,8 +53,8 @@ export const HooksUpdateProduct = () => {
     useUpdateVariantProductMutation();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const product = (productData as any)?.data;
-  const categories = (categoriesData as any)?.data ?? [];
+  const product = productData;
+  const categories = categoriesData ?? [];
 
   const initialValues = useMemo<UpdateProductFormValues>(
     () => ({

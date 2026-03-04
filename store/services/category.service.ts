@@ -1,19 +1,9 @@
-import { getCookie } from "@/utils/cookies";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./baseQuery";
 
 export const categoryService = createApi({
   reducerPath: "categoryService",
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL,
-    prepareHeaders: (headers) => {
-      const token = getCookie("pos_token");
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-    credentials: "include"
-  }),
+  baseQuery,
   tagTypes: ["Categories"],
   endpoints: (builder) => ({
     getAllCategories: builder.query<any, void>({
@@ -21,6 +11,7 @@ export const categoryService = createApi({
         url: "/categories/find-all",
         method: "POST"
       }),
+      transformResponse: (response: any) => response.data || response.datas || [],
       providesTags: ["Categories"]
     }),
     createCategory: builder.mutation<any, { name: string }>({

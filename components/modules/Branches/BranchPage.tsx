@@ -9,7 +9,7 @@ import BranchesDataTable from "./BranchesDataTable";
 export const BranchPage = () => {
   const { data: branchesData, isLoading, isError } = useGetBranchesQuery();
 
-  const branches = branchesData?.data || [];
+  const branches = branchesData || [];
 
   if (isLoading) {
     return (

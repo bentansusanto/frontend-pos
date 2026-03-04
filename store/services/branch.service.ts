@@ -1,19 +1,9 @@
-import { getCookie } from "@/utils/cookies";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./baseQuery";
 
 export const branchService = createApi({
   reducerPath: "branchService",
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL,
-    prepareHeaders: (headers) => {
-      const token = getCookie("pos_token");
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-    credentials: "include"
-  }),
+  baseQuery,
   tagTypes: ["Branches"],
   endpoints: (builder) => ({
     // get all branches
@@ -22,6 +12,7 @@ export const branchService = createApi({
         url: "/branches/find-all",
         method: "GET"
       }),
+      transformResponse: (response: any) => response.data || response.datas || [],
       providesTags: ["Branches"]
     }),
     // get branch by id
@@ -30,6 +21,7 @@ export const branchService = createApi({
         url: `/branches/${id}`,
         method: "GET"
       }),
+      transformResponse: (response: any) => response.data || response.datas || response,
       providesTags: ["Branches"]
     }),
     // create branch
@@ -43,7 +35,7 @@ export const branchService = createApi({
     }),
     // update branch
     updateBranch: builder.mutation<any, any>({
-      query: ({id,data}) => ({
+      query: ({ id, data }) => ({
         url: `/branches/update/${id}`,
         method: "PUT",
         body: data
@@ -57,8 +49,14 @@ export const branchService = createApi({
         method: "DELETE"
       }),
       invalidatesTags: ["Branches"]
-    }),
+    })
   })
 });
 
-export const { useGetBranchesQuery, useGetBranchByIdQuery, useCreateBranchMutation, useUpdateBranchMutation, useDeleteBranchMutation } = branchService;
+export const {
+  useGetBranchesQuery,
+  useGetBranchByIdQuery,
+  useCreateBranchMutation,
+  useUpdateBranchMutation,
+  useDeleteBranchMutation
+} = branchService;

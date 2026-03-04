@@ -1,20 +1,10 @@
 import { CreateProductStockRequest, ProductStockResponse } from "@/types/product-stock.type";
-import { getCookie } from "@/utils/cookies";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./baseQuery";
 
 export const productStockService = createApi({
   reducerPath: "productStockService",
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL,
-    prepareHeaders: (headers) => {
-      const token = getCookie("pos_token");
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-    credentials: "include"
-  }),
+  baseQuery,
   tagTypes: ["ProductStocks"],
   endpoints: (builder) => ({
     // create product stock
@@ -22,9 +12,9 @@ export const productStockService = createApi({
       query: (body) => ({
         url: "/product-stocks/create",
         method: "POST",
-        body,
+        body
       }),
-      invalidatesTags: ["ProductStocks"],
+      invalidatesTags: ["ProductStocks"]
     }),
     // find all product stocks
     getProductStocks: builder.query<any, { branch_id?: string } | void>({
@@ -33,8 +23,9 @@ export const productStockService = createApi({
         method: "GET",
         params: params || {}
       }),
+      transformResponse: (response: any) => response.data || response.datas || [],
       providesTags: ["ProductStocks"]
-    }),
+    })
   })
 });
 

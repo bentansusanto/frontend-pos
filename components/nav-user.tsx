@@ -1,18 +1,11 @@
 "use client";
 
-import {
-  IconCreditCard,
-  IconDotsVertical,
-  IconLogout,
-  IconNotification,
-  IconUserCircle
-} from "@tabler/icons-react";
+import { IconDotsVertical, IconLogout } from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -24,7 +17,17 @@ import {
   SidebarMenuItem,
   useSidebar
 } from "@/components/ui/sidebar";
-import { useGetProfileQuery, useLogoutMutation } from "@/store/services/auth.service";
+import { useAppDispatch } from "@/store/hooks";
+import { baseAuth, useGetProfileQuery, useLogoutMutation } from "@/store/services/auth.service";
+import { branchService } from "@/store/services/branch.service";
+import { discountService } from "@/store/services/discount.service";
+import { orderService } from "@/store/services/order.service";
+import { productService } from "@/store/services/product.service";
+import { profileService } from "@/store/services/profile.service";
+import { supplierService } from "@/store/services/supplier.service";
+import { taxService } from "@/store/services/tax.service";
+import { userLogService } from "@/store/services/user-log.service";
+import { userService } from "@/store/services/user.service";
 import { removeCookie } from "@/utils/cookies";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -40,30 +43,43 @@ export function NavUser({
 }) {
   const { isMobile } = useSidebar();
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [logout, { isLoading: isLogoutLoading }] = useLogoutMutation();
 
   // Fetch user profile
   const { data: profileData, isLoading: isProfileLoading } = useGetProfileQuery();
 
   // Use fetched data if available, otherwise fallback to initialUser
-  const user = profileData?.data
+  const user = profileData
     ? {
-        name: profileData.data.name,
-        email: profileData.data.email,
-        avatar: profileData.data.avatar || initialUser.avatar // Fallback avatar if backend doesn't return one
+        name: profileData.name,
+        email: profileData.email,
+        avatar: profileData.avatar || initialUser.avatar
       }
     : initialUser;
 
   const handleLogout = async () => {
     try {
       await logout({}).unwrap();
+    } catch {
+      // no-op — still clean up session below
+    } finally {
+      // Remove auth cookie
       removeCookie("pos_token");
+
+      // ── Clear ALL RTK Query caches so the next user starts fresh ──────────
+      dispatch(baseAuth.util.resetApiState());
+      dispatch(profileService.util.resetApiState());
+      dispatch(userService.util.resetApiState());
+      dispatch(branchService.util.resetApiState());
+      dispatch(orderService.util.resetApiState());
+      dispatch(productService.util.resetApiState());
+      dispatch(supplierService.util.resetApiState());
+      dispatch(taxService.util.resetApiState());
+      dispatch(discountService.util.resetApiState());
+      dispatch(userLogService.util.resetApiState());
+
       toast.success("Logged out successfully");
-      router.push("/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-      // Force logout on error
-      removeCookie("pos_token");
       router.push("/login");
     }
   };
@@ -113,21 +129,6 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {/* <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconUserCircle />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator /> */}
             <DropdownMenuItem onClick={handleLogout} disabled={isLogoutLoading}>
               <IconLogout />
               {isLogoutLoading ? "Logging out..." : "Log out"}

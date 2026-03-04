@@ -38,8 +38,8 @@ export const HooksLogin = () => {
         const response = await login(values).unwrap();
 
         // Save token to cookie
-        if (response?.data?.token) {
-          setCookie("pos_token", response.data.token, { expires: 1 }); // Expires in 1 day
+        if (response?.token) {
+          setCookie("pos_token", response.token, { expires: 1 }); // Expires in 1 day
           toast.success("Login successful! Redirecting...");
 
           setTimeout(() => {
@@ -49,7 +49,6 @@ export const HooksLogin = () => {
           toast.error("Login failed. No token received.");
         }
       } catch (err: any) {
-        console.error("Login error:", err);
         const errorMessage =
           (err as any)?.data?.Error?.body ||
           (err as any)?.data?.message ||

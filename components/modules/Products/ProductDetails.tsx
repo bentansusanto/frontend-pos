@@ -45,6 +45,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { AddVariantDialog } from "./AddVariant/AddVariantDialog";
 import { UpdateVariantDialog } from "./UpdateVariant/UpdateVariantDialog";
+import { useGetProfileQuery } from "@/store/services/auth.service";
 
 export const ProductDetails = () => {
   const [isAddVariantOpen, setIsAddVariantOpen] = useState(false);
@@ -55,6 +56,9 @@ export const ProductDetails = () => {
   const productId = params.productId as string;
   const cookieValue = getCookie("pos_branch_id");
   const branchId = cookieValue ? cookieValue : undefined;
+  const { data: profileData } = useGetProfileQuery();
+  const userRole = profileData?.role;
+
   const {
     data: productData,
     isLoading,
@@ -67,7 +71,7 @@ export const ProductDetails = () => {
   );
   const [deleteVariantProduct] = useDeleteVariantProductMutation();
 
-  const product = productData?.data;
+  const product = productData;
 
   const handleEditVariant = (variant: any) => {
     setSelectedVariant(variant);
@@ -148,9 +152,11 @@ export const ProductDetails = () => {
           <Button variant="outline" asChild>
             <Link href="/dashboard/inventory/products">Back to List</Link>
           </Button>
-          <Button asChild>
-            <Link href={`/dashboard/inventory/products/${productId}/edit`}>Edit Product</Link>
-          </Button>
+          {userRole !== "cashier" && (
+            <Button asChild>
+              <Link href={`/dashboard/inventory/products/${productId}/edit`}>Edit Product</Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -178,16 +184,13 @@ export const ProductDetails = () => {
                 </div>
               </div>
               <div className="space-y-3 rounded-xl border p-4">
-                <p className="text-muted-foreground text-sm">Pricing</p>
-                <p className="text-foreground text-2xl font-semibold">
-                  ${Number(product.price).toLocaleString()}
-                </p>
-                <div className="text-muted-foreground flex flex-wrap gap-2 text-xs">
-                  <span>SKU: {product.sku}</span>
-                  <span>·</span>
-                  <span>Slug: {product.slug}</span>
-                  <span>·</span>
-                  <span>Stock: {productStock}</span>
+                <div>
+                  <p className="text-muted-foreground text-sm">SKU</p>
+                  <p className="text-foreground font-mono text-sm font-medium">{product.sku}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Slug</p>
+                  <p className="text-foreground font-mono text-sm">{product.slug}</p>
                 </div>
               </div>
             </CardContent>
@@ -196,9 +199,11 @@ export const ProductDetails = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">Variants</CardTitle>
-              <Button size="sm" onClick={() => setIsAddVariantOpen(true)}>
-                Add Variant
-              </Button>
+              {userRole !== "cashier" && (
+                <Button size="sm" onClick={() => setIsAddVariantOpen(true)}>
+                  Add Variant
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {variants.length > 0 ? (
@@ -240,44 +245,46 @@ export const ProductDetails = () => {
                             {variant.stock || 0}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEditVariant(variant)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-red-500 hover:text-red-600">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Variant?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to delete{" "}
-                                      <span className="text-foreground font-semibold">
-                                        "{variant.name_variant}"
-                                      </span>
-                                      ? This action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      className="bg-red-600 hover:bg-red-700"
-                                      onClick={() => handleDeleteVariant(variant.id)}>
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
+                            {userRole !== "cashier" && (
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEditVariant(variant)}>
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-red-500 hover:text-red-600">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Variant?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete the variant{" "}
+                                        <span className="text-foreground font-semibold">
+                                          "{variant.name_variant}"
+                                        </span>
+                                        ? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        className="bg-red-600 hover:bg-red-700"
+                                        onClick={() => handleDeleteVariant(variant.id)}>
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}

@@ -3,6 +3,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Pagination,
@@ -33,6 +41,7 @@ import {
   ArrowDownRight,
   ArrowRightLeft,
   ArrowUpRight,
+  Eye,
   Filter,
   Package,
   RefreshCcw,
@@ -59,8 +68,8 @@ export default function StockOverviewPage() {
     if (!movementsData) return [];
 
     return movementsData.filter((movement: any) => {
-      const productName = movement.product?.name || "";
-      const variantName = movement.productVariant?.name || "";
+      const productName = movement.product?.name_product || "";
+      const variantName = movement.productVariant?.name_variant || "";
       const searchString = `${productName} ${variantName} ${movement.referenceId}`.toLowerCase();
 
       const matchesSearch = searchString.includes(searchTerm.toLowerCase());
@@ -211,18 +220,19 @@ export default function StockOverviewPage() {
                     <TableHead className="text-right">Qty</TableHead>
                     <TableHead>Branch</TableHead>
                     <TableHead className="text-right">Reference</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
+                      <TableCell colSpan={8} className="h-24 text-center">
                         Loading stock movements...
                       </TableCell>
                     </TableRow>
                   ) : currentItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
+                      <TableCell colSpan={8} className="h-24 text-center">
                         No movements found.
                       </TableCell>
                     </TableRow>
@@ -244,10 +254,12 @@ export default function StockOverviewPage() {
                               minute: "2-digit"
                             })}
                           </TableCell>
-                          <TableCell>{movement.product?.name || "-"}</TableCell>
+                          <TableCell>{movement.product?.name_product || "-"}</TableCell>
                           <TableCell>
-                            {movement.productVariant?.name ? (
-                              <Badge variant="outline">{movement.productVariant.name}</Badge>
+                            {movement.productVariant?.name_variant ? (
+                              <Badge variant="outline">
+                                {movement.productVariant.name_variant}
+                              </Badge>
                             ) : (
                               "-"
                             )}
@@ -276,6 +288,80 @@ export default function StockOverviewPage() {
                           <TableCell>{movement.branch?.name || "-"}</TableCell>
                           <TableCell className="text-muted-foreground text-right font-mono text-xs">
                             {movement.referenceId}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Stock Movement Details</DialogTitle>
+                                  <DialogDescription>
+                                    Movement Record: {movement.id}
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                      <p className="text-muted-foreground">Date</p>
+                                      <p className="font-semibold">
+                                        {new Date(movement.createdAt).toLocaleString()}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground">Reference Number</p>
+                                      <p className="font-semibold">{movement.referenceId || "-"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground">Movement Type</p>
+                                      <Badge variant={typeConfig.color as any} className="mt-1">
+                                        <TypeIcon className="mr-1 h-3 w-3" />
+                                        {typeConfig.label}
+                                      </Badge>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground">Quantity</p>
+                                      <p
+                                        className={`font-semibold ${
+                                          movement.referenceType === "sale" ||
+                                          (movement.referenceType === "adjust" && movement.qty < 0)
+                                            ? "text-destructive"
+                                            : "text-green-600"
+                                        }`}>
+                                        {movement.referenceType === "sale"
+                                          ? `-${movement.qty}`
+                                          : movement.qty > 0
+                                            ? `+${movement.qty}`
+                                            : movement.qty}
+                                      </p>
+                                    </div>
+                                    <div className="col-span-2">
+                                      <p className="text-muted-foreground">Product</p>
+                                      <p className="font-semibold whitespace-normal">
+                                        {movement.product?.name_product || "-"}
+                                      </p>
+                                    </div>
+                                    <div className="col-span-2">
+                                      <p className="text-muted-foreground">Variant Info</p>
+                                      <p className="font-semibold whitespace-normal">
+                                        {movement.productVariant?.name_variant || "-"}
+                                        {movement.productVariant?.sku &&
+                                          ` (SKU: ${movement.productVariant.sku})`}
+                                      </p>
+                                    </div>
+                                    <div className="col-span-2">
+                                      <p className="text-muted-foreground">Branch</p>
+                                      <p className="font-semibold">
+                                        {movement.branch?.name || "-"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
                           </TableCell>
                         </TableRow>
                       );

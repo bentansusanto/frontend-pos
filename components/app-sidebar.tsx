@@ -30,7 +30,15 @@ import {
   SidebarMenuSubItem
 } from "@/components/ui/sidebar";
 import { getCookie, setCookie } from "@/utils/cookies";
-import { Check, ChevronsUpDown, CirclePercent, Sparkles } from "lucide-react";
+import {
+  Check,
+  ChevronsUpDown,
+  CirclePercent,
+  ClipboardList,
+  Sparkles,
+  Tag,
+  Truck
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -40,7 +48,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger
 } from "./ui/dropdown-menu";
-import Image from "next/image";
 
 const data = {
   brand: {
@@ -99,6 +106,27 @@ const data = {
       ]
     },
     {
+      label: "Finance & Catalog",
+      items: [
+        {
+          title: "Finance",
+          icon: Tag,
+          defaultOpen: false,
+          items: [
+            { title: "Discounts", url: "/dashboard/finance/discounts" },
+            { title: "Taxes", url: "/dashboard/finance/taxes" }
+          ],
+          roles: ["owner", "admin"]
+        },
+        {
+          title: "Suppliers",
+          icon: Truck,
+          url: "/dashboard/suppliers",
+          roles: ["owner", "admin"]
+        }
+      ]
+    },
+    {
       label: "Intelligence",
       items: [
         {
@@ -118,9 +146,17 @@ const data = {
           defaultOpen: true,
           items: [
             { title: "Users", url: "/dashboard/users" },
-            { title: "Branch", url: "/dashboard/branches" }
+            { title: "Branch", url: "/dashboard/branches", roles: ["owner"] },
+            { title: "Roles", url: "/dashboard/settings/roles" },
+            { title: "Permissions", url: "/dashboard/settings/permissions" }
           ],
-          roles: ["owner"]
+          roles: ["owner", "admin"]
+        },
+        {
+          title: "Activity Logs",
+          icon: ClipboardList,
+          url: "/dashboard/user-logs",
+          roles: ["owner", "admin"]
         }
       ]
     }
@@ -129,16 +165,14 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
-  const { data: profileData } = useGetProfileQuery();
-  const user = profileData?.data;
+  const { data: user, isLoading: isLoadingProfile } = useGetProfileQuery();
 
   // Fetch all branches if user is owner
-  const { data: branchesData } = useGetBranchesQuery(undefined, {
+  const { data: branchesData, isLoading: isLoadingBranches } = useGetBranchesQuery(undefined, {
     skip: user?.role !== "owner"
   });
 
-  const availableBranches =
-    user?.role === "owner" ? branchesData?.data || [] : user?.branches || [];
+  const availableBranches = user?.role === "owner" ? branchesData || [] : user?.branches || [];
 
   // Branch Selection Logic
   const [selectedBranch, setSelectedBranch] = useState<{ id: string; name: string } | null>(null);
@@ -171,62 +205,90 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         email: user.email,
         avatar: data.user.avatar
       }
-    : data.user;
+    : {
+        name: isLoadingProfile ? "Loading..." : data.user.name,
+        email: isLoadingProfile ? "Please wait" : data.user.email,
+        avatar: data.user.avatar
+      };
 
   const userRole = user?.role;
 
   // Filter sections based on user role
-  const filteredSections = data.sections
-    .map((section) => ({
-      ...section,
-      items: section.items.filter((item) => {
-        if (!item.roles) return true;
-        return item.roles.includes(userRole);
-      })
-    }))
-    .filter((section) => section.items.length > 0);
+  const filteredSections =
+    !userRole && isLoadingProfile
+      ? []
+      : data.sections
+          .map((section) => ({
+            ...section,
+            items: section.items
+              .filter((item) => {
+                if (!item.roles) return true;
+                return item.roles.includes(userRole);
+              })
+              .map((item: any) => ({
+                ...item,
+                items: item.items
+                  ? item.items.filter((subItem: any) => {
+                      if (!subItem.roles) return true;
+                      return subItem.roles.includes(userRole);
+                    })
+                  : undefined
+              }))
+          }))
+          .filter((section) => section.items.length > 0);
 
   // Filter primary items based on user role
-  const filteredPrimary = data.primary.filter((item) => {
-    // @ts-ignore
-    if (!item.roles) return true;
-    // @ts-ignore
-    return item.roles.includes(userRole);
-  });
+  const filteredPrimary =
+    !userRole && isLoadingProfile
+      ? []
+      : data.primary.filter((item) => {
+          // @ts-ignore
+          if (!item.roles) return true;
+          // @ts-ignore
+          return item.roles.includes(userRole);
+        });
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            {availableBranches.length > 1 ||
-            (user?.role === "owner" && availableBranches.length > 0) ? (
+            {isLoadingProfile || isLoadingBranches ? (
+              <SidebarMenuButton size="lg">
+                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">Nexus POS</span>
+                  <span className="truncate text-xs">Loading context...</span>
+                </div>
+              </SidebarMenuButton>
+            ) : availableBranches.length > 1 ||
+              (user?.role === "owner" && availableBranches.length > 0) ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
                     size="lg"
                     className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-                    <div className="bg-white text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                      <img src="/logo-pos.svg" alt="POS App Logo" className="block w-6 h-6" />
+                    <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                      <IconInnerShadowTop className="size-4" />
                     </div>
-                    <div className="space-y-3">
-                    <div className="flex flex-1 text-left text-sm leading-tight"> <br />
+                    <div className="grid flex-1 text-left text-sm leading-tight">
                       <span className="truncate font-semibold">{data.brand.name}</span>
-                    </div>
                       <span className="truncate text-xs">
-                        {selectedBranch?.name || "Select Branch"}
+                        {selectedBranch?.name || data.brand.description}
                       </span>
                     </div>
-                    <ChevronsUpDown className="ml-auto" />
+                    <ChevronsUpDown className="ml-auto size-4" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+                  className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
                   align="start"
                   side="bottom"
                   sideOffset={4}>
                   <DropdownMenuLabel className="text-muted-foreground text-xs">
-                    Switch Branch
+                    Branches
                   </DropdownMenuLabel>
                   {availableBranches.map((branch: any) => (
                     <DropdownMenuItem
@@ -243,11 +305,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:p-1!">
-                <Link href="/dashboard" className="flex items-center gap-3">
-                  <span className="bg-primary text-primary-foreground flex size-9 items-center justify-center rounded-lg">
-                    <IconInnerShadowTop className="size-5" />
-                  </span>
+              <SidebarMenuButton
+                size="lg"
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                asChild>
+                <Link href="/dashboard">
+                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                    <IconInnerShadowTop className="size-4" />
+                  </div>
                   <span className="flex flex-col leading-tight">
                     <span className="text-base font-semibold">{data.brand.name}</span>
                     <span className="text-muted-foreground text-xs">

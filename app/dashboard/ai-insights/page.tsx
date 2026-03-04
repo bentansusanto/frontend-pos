@@ -3,7 +3,15 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious
+} from "@/components/ui/pagination";
 import {
   Select,
   SelectContent,
@@ -70,6 +78,7 @@ export default function AiInsightsDashboardPage() {
   const alerts = insights.filter((i: any) =>
     ["low_stock_alert", "expiry_alert", "anomaly_alert"].includes(i.type)
   );
+  const promoSuggestions = insights.filter((i: any) => i.type === "promo_suggestion");
   const summary = insights.find((i: any) => i.type === "report_summary") || {};
   const summaryMetadata = summary.metadata || {};
 
@@ -83,6 +92,13 @@ export default function AiInsightsDashboardPage() {
   const paginatedAlerts = alerts.slice(
     (alertsPage - 1) * ITEMS_PER_PAGE,
     alertsPage * ITEMS_PER_PAGE
+  );
+
+  const [promoPage, setPromoPage] = useState(1);
+  const totalPromoPages = Math.ceil(promoSuggestions.length / ITEMS_PER_PAGE);
+  const paginatedPromos = promoSuggestions.slice(
+    (promoPage - 1) * ITEMS_PER_PAGE,
+    promoPage * ITEMS_PER_PAGE
   );
 
   const handleGenerateAnalysis = async () => {
@@ -259,11 +275,12 @@ export default function AiInsightsDashboardPage() {
             </CardContent>
           </Card>
 
-          {/* Bottom Section: Tabs for Stock & Alerts */}
+          {/* Bottom Section: Tabs for Stock & Alerts & Promos */}
           <Tabs defaultValue="stock" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+            <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
               <TabsTrigger value="stock">Stock Recommendations</TabsTrigger>
               <TabsTrigger value="alerts">System Alerts</TabsTrigger>
+              <TabsTrigger value="promos">Promo Suggestions</TabsTrigger>
             </TabsList>
 
             <TabsContent value="stock" className="mt-4">
@@ -551,6 +568,150 @@ export default function AiInsightsDashboardPage() {
                               }}
                               className={
                                 alertsPage === totalAlertPages
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="promos" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-emerald-500" />
+                    Promo Suggestions
+                  </CardTitle>
+                  <CardDescription>Actions to boost sales or move inventory</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Suggested Discount</TableHead>
+                        <TableHead>Promo Type</TableHead>
+                        <TableHead>Urgency</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {promoSuggestions.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
+                            No promo suggestions at this time.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        paginatedPromos.map((promo: any, index: number) => {
+                          const meta = promo.metadata || {};
+                          return (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">
+                                {meta.product_name || promo.summary || "-"}
+                              </TableCell>
+                              <TableCell className="capitalize">
+                                {meta.reason?.replace(/_/g, " ") || "-"}
+                              </TableCell>
+                              <TableCell className="font-bold text-emerald-600">
+                                {meta.recommended_discount_pct
+                                  ? `${meta.recommended_discount_pct}%`
+                                  : "-"}
+                              </TableCell>
+                              <TableCell>{meta.promo_type || "-"}</TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={
+                                    meta.urgency === "high" || meta.urgency === "critical"
+                                      ? "destructive"
+                                      : meta.urgency === "medium"
+                                        ? "secondary"
+                                        : "outline"
+                                  }
+                                  className="capitalize">
+                                  {meta.urgency || "low"}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                  {/* Pagination Controls */}
+                  {promoSuggestions.length > 0 && (
+                    <div className="flex items-center justify-between py-4">
+                      <div className="text-muted-foreground text-sm">
+                        Showing {(promoPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
+                        {Math.min(promoPage * ITEMS_PER_PAGE, promoSuggestions.length)} of{" "}
+                        {promoSuggestions.length} entries
+                      </div>
+                      <Pagination className="mx-0 w-auto justify-end">
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (promoPage > 1) setPromoPage(promoPage - 1);
+                              }}
+                              className={
+                                promoPage === 1
+                                  ? "pointer-events-none opacity-50"
+                                  : "cursor-pointer"
+                              }
+                            />
+                          </PaginationItem>
+
+                          {Array.from({ length: totalPromoPages }, (_, i) => i + 1)
+                            .filter((page) => {
+                              return (
+                                page === 1 ||
+                                page === totalPromoPages ||
+                                Math.abs(page - promoPage) <= 1
+                              );
+                            })
+                            .map((page, index, array) => {
+                              const prevPage = array[index - 1];
+                              const showEllipsis = prevPage && page - prevPage > 1;
+
+                              return (
+                                <div key={page} className="flex items-center">
+                                  {showEllipsis && (
+                                    <PaginationItem>
+                                      <PaginationEllipsis />
+                                    </PaginationItem>
+                                  )}
+                                  <PaginationItem>
+                                    <PaginationLink
+                                      href="#"
+                                      isActive={promoPage === page}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        setPromoPage(page);
+                                      }}>
+                                      {page}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                </div>
+                              );
+                            })}
+
+                          <PaginationItem>
+                            <PaginationNext
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (promoPage < totalPromoPages) setPromoPage(promoPage + 1);
+                              }}
+                              className={
+                                promoPage === totalPromoPages
                                   ? "pointer-events-none opacity-50"
                                   : "cursor-pointer"
                               }

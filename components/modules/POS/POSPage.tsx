@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { useGetProfileQuery } from "@/store/services/auth.service";
 import { useGetAllCategoriesQuery } from "@/store/services/category.service";
 import { useGetAllCustomersQuery } from "@/store/services/customer.service";
+import { useGetActiveDiscountsQuery } from "@/store/services/discount.service";
 import {
   useCreateOrderMutation,
   useDeleteOrderItemMutation,
@@ -32,6 +33,7 @@ import {
   useVerifyPaymentMutation
 } from "@/store/services/payment.service";
 import { useGetProductsQuery, useGetVariantProductsQuery } from "@/store/services/product.service";
+import { useGetActiveTaxesQuery } from "@/store/services/tax.service";
 import { getCookie } from "@/utils/cookies";
 import { toast } from "sonner";
 import { useCustomerForm } from "../Customers/hooks";
@@ -40,7 +42,7 @@ import { usePosOrder } from "./hooks";
 export const PosPage = () => {
   const router = useRouter();
   const { data: profileData } = useGetProfileQuery();
-  const userRole = profileData?.data?.role;
+  const userRole = profileData?.role;
 
   useEffect(() => {
     if (userRole && userRole !== "cashier") {
@@ -51,6 +53,7 @@ export const PosPage = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
   const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isVerifyPaymentOpen, setIsVerifyPaymentOpen] = useState(false);
@@ -83,10 +86,12 @@ export const PosPage = () => {
   const [deleteOrderItem, { isLoading: isDeletingItem }] = useDeleteOrderItemMutation();
   const [createPayment, { isLoading: isCreatingPayment }] = useCreatePaymentMutation();
   const [verifyPayment, { isLoading: isVerifyingPayment }] = useVerifyPaymentMutation();
+  const { data: activeTaxesData } = useGetActiveTaxesQuery();
+  const { data: activeDiscounts } = useGetActiveDiscountsQuery();
 
   const variantsByProductId = useMemo(() => {
     const grouped = new Map<string, any[]>();
-    const variants = variantsData?.data || [];
+    const variants = variantsData || [];
     variants.forEach((variant: any) => {
       const productId = variant.product_id;
       if (!productId) return;
@@ -98,24 +103,24 @@ export const PosPage = () => {
   }, [variantsData]);
 
   const variantsById = useMemo(() => {
-    const entries = variantsData?.data || [];
+    const entries = variantsData || [];
     return new Map<string, any>(entries.map((variant: any) => [variant.id, variant]));
   }, [variantsData]);
 
   const categories = useMemo(() => {
-    const items = categoriesData?.data || [];
+    const items = categoriesData || [];
     return [{ id: "all", name: "All Items" }, ...items];
   }, [categoriesData]);
 
-  const customers = useMemo(() => customersData?.data || [], [customersData]);
+  const customers = useMemo(() => customersData || [], [customersData]);
 
   const productsById = useMemo(() => {
-    const entries = productsData?.data || [];
+    const entries = productsData || [];
     return new Map<string, any>(entries.map((product: any) => [product.id, product]));
   }, [productsData]);
 
   const products = useMemo(() => {
-    const data = productsData?.data || [];
+    const data = productsData || [];
     return data.filter((product: any) => {
       const matchesCategory =
         selectedCategory === "all" || product.category_id === selectedCategory;
@@ -128,7 +133,7 @@ export const PosPage = () => {
     });
   }, [productsData, searchQuery, selectedCategory]);
 
-  const orders = useMemo(() => ordersData?.data || [], [ordersData]);
+  const orders = useMemo(() => ordersData || [], [ordersData]);
   const pendingOrders = useMemo(() => {
     return orders.filter((order: any) => order.status === "pending");
   }, [orders]);
@@ -163,8 +168,14 @@ export const PosPage = () => {
     orderItems.reduce((sum: number, item: any) => {
       return sum + Number(item.subtotal || 0);
     }, 0);
-  const taxAmount = currentOrder?.tax_amount ?? subtotal * 0.05;
+  const activeTax = activeTaxesData?.[0];
+  const taxRatePercent = activeTax ? Number(activeTax.rate) : 5;
+  const taxRate = taxRatePercent / 100;
+  const taxName = activeTax ? `${activeTax.name} (${taxRatePercent}%)` : `Service Tax (5%)`;
+
+  const taxAmount = currentOrder?.tax_amount ?? subtotal * taxRate;
   const discountAmount = currentOrder?.discount_amount ?? 0;
+  const discountName = currentOrder?.discount?.name ?? "Discount";
   const totalAmount = currentOrder?.total_amount ?? subtotal + taxAmount - discountAmount;
 
   const { formik, isLoading } = usePosOrder({ initialItems: [] });
@@ -203,7 +214,7 @@ export const PosPage = () => {
       }).unwrap();
       // The backend response structure for create order might be returning { order, items } directly in data
       // instead of { data: { id: ... } }. Let's check both possibilities or refetch to be safe.
-      const orderId = response?.data?.id || response?.order?.id;
+      const orderId = response?.id || response?.order?.id;
 
       if (orderId && orderId !== selectedOrderId) {
         setSelectedOrderId(orderId);
@@ -270,6 +281,25 @@ export const PosPage = () => {
     }
   };
 
+  const handleApplyDiscount = async (discountId: string) => {
+    if (!currentOrder?.id) return;
+    try {
+      await updateOrder({
+        id: currentOrder.id,
+        body: { discount_id: discountId }
+      }).unwrap();
+      refetchOrders();
+      setIsDiscountModalOpen(false);
+      if (discountId === "remove") {
+        toast.success("Discount removed");
+      } else {
+        toast.success("Discount applied successfully");
+      }
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to apply discount");
+    }
+  };
+
   const handleCreatePayment = async () => {
     if (!currentOrder?.id) {
       toast.error("No active order found");
@@ -280,7 +310,7 @@ export const PosPage = () => {
         orderId: currentOrder.id,
         method: paymentMethod
       }).unwrap();
-      setCreatedPayment(response?.data || null);
+      setCreatedPayment(response?.data || response || null);
       setIsPaymentModalOpen(false);
       setIsVerifyPaymentOpen(true);
       toast.success("Payment created");
@@ -425,16 +455,30 @@ export const PosPage = () => {
               <span>${Number(subtotal || 0).toFixed(2)}</span>
             </div>
             <div className="text-muted-foreground flex items-center justify-between">
-              <span>Service Tax (5%)</span>
+              <span>{taxName}</span>
               <span>${Number(taxAmount || 0).toFixed(2)}</span>
             </div>
+            {discountAmount > 0 && (
+              <div className="flex items-center justify-between font-medium text-red-500">
+                <span>{discountName}</span>
+                <span>-${Number(discountAmount || 0).toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between text-base font-semibold">
               <span>Total</span>
               <span className="text-primary">${Number(totalAmount || 0).toFixed(2)}</span>
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col gap-3">
+        <CardFooter className="flex flex-col gap-3 pb-6">
+          <Button
+            variant="outline"
+            className="w-full border-dashed"
+            type="button"
+            onClick={() => setIsDiscountModalOpen(true)}
+            disabled={isLoading || isUpdatingOrder || !currentOrder?.id || orderItems.length === 0}>
+            {discountAmount > 0 ? "Change / Remove Discount" : "Apply Discount"}
+          </Button>
           <Button
             className="w-full"
             type="submit"
@@ -466,12 +510,12 @@ export const PosPage = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="scrollbar-none flex gap-2 overflow-x-auto pb-2">
             {categories.map((category: any) => (
               <Button
                 key={category.id}
                 variant={selectedCategory === category.id ? "default" : "outline"}
-                className={selectedCategory === category.id ? "shadow-sm" : ""}
+                className={`shrink-0 ${selectedCategory === category.id ? "shadow-sm" : ""}`}
                 type="button"
                 onClick={() => setSelectedCategory(category.id)}>
                 {category.name}
@@ -487,8 +531,22 @@ export const PosPage = () => {
               product.thumbnail ||
               (Array.isArray(product.images) ? product.images[0] : null) ||
               "/placeholder-image.jpg";
-            const stock = typeof product.product_stock === "number" ? product.product_stock : 0;
             const hasVariants = variants.length > 0;
+
+            // ── Stock: use sum of variant stocks when variants exist ──────────────
+            const stock = hasVariants
+              ? variants.reduce((sum: number, v: any) => sum + (Number(v.stock) || 0), 0)
+              : typeof product.product_stock === "number"
+                ? product.product_stock
+                : 0;
+
+            // ── Price: show min variant price or product price ────────────────────
+            const displayPrice = hasVariants
+              ? Math.min(...variants.map((v: any) => Number(v.price) || 0))
+              : Number(product.price || 0);
+            const priceLabel = hasVariants
+              ? `from $${displayPrice.toFixed(2)}`
+              : `$${displayPrice.toFixed(2)}`;
 
             return (
               <div
@@ -508,7 +566,7 @@ export const PosPage = () => {
                     fill
                     className="object-cover transition-transform duration-300 group-hover:scale-110"
                   />
-                  {stock === 0 && (
+                  {stock === 0 && !hasVariants && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs font-bold text-white">
                       Out of Stock
                     </div>
@@ -520,14 +578,14 @@ export const PosPage = () => {
                     <h3 className="text-card-foreground line-clamp-1 text-sm font-semibold">
                       {product.name_product}
                     </h3>
-                    <p className="text-primary mt-1 text-sm font-bold">
-                      ${Number(product.price || 0).toFixed(2)}
-                    </p>
+                    <p className="text-primary mt-1 text-sm font-bold">{priceLabel}</p>
                   </div>
-                  <p
-                    className={`mt-1 text-xs font-medium ${stock > 5 ? "text-green-600" : stock > 0 ? "text-yellow-600" : "text-red-600"}`}>
-                    {stock > 0 ? `${stock} in stock` : "Out of Stock"}
-                  </p>
+                  {!hasVariants && (
+                    <p
+                      className={`mt-1 text-xs font-medium ${stock > 5 ? "text-green-600" : stock > 0 ? "text-yellow-600" : "text-red-600"}`}>
+                      {stock > 0 ? `${stock} in stock` : "Out of Stock"}
+                    </p>
+                  )}
                   {hasVariants && (
                     <p className="text-muted-foreground mt-1 text-[10px]">
                       {variants.length} Variants
@@ -560,10 +618,14 @@ export const PosPage = () => {
                   key={variant.id}
                   variant="outline"
                   className="flex h-auto items-center justify-between p-4"
+                  disabled={Number(variant.stock || 0) === 0}
                   onClick={() => handleAddToCart(selectedProductForVariant, variant)}>
-                  <div className="flex flex-col items-start">
+                  <div className="flex flex-col items-start gap-1">
                     <span className="font-semibold">{variant.name_variant}</span>
                     <span className="text-muted-foreground text-xs">SKU: {variant.sku || "-"}</span>
+                    {Number(variant.stock || 0) === 0 && (
+                      <span className="text-xs font-bold text-red-500">Out of Stock</span>
+                    )}
                   </div>
                   <span className="text-primary font-bold">
                     ${Number(variant.price || 0).toFixed(2)}
@@ -607,6 +669,50 @@ export const PosPage = () => {
                     setIsCustomerModalOpen(false);
                   }}>
                   {customer.name}
+                </Button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDiscountModalOpen} onOpenChange={setIsDiscountModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Discount</DialogTitle>
+            <DialogDescription>Apply a discount to the current order.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {discountAmount > 0 && (
+              <Button
+                variant="destructive"
+                className="w-full"
+                type="button"
+                onClick={() => handleApplyDiscount("remove")}>
+                Remove Current Discount
+              </Button>
+            )}
+            {activeDiscounts?.length === 0 ? (
+              <div className="text-muted-foreground py-4 text-center text-sm">
+                No active discounts available.
+              </div>
+            ) : (
+              activeDiscounts?.map((discount: any) => (
+                <Button
+                  key={discount.id}
+                  variant="outline"
+                  className="h-auto w-full items-center justify-between p-4"
+                  type="button"
+                  onClick={() => handleApplyDiscount(discount.id)}>
+                  <div className="flex flex-col items-start gap-1">
+                    <span className="font-semibold">{discount.name}</span>
+                    <span className="text-muted-foreground text-xs">{discount.description}</span>
+                  </div>
+                  <span className="text-primary font-bold">
+                    {discount.type === "percentage"
+                      ? `${discount.value}%`
+                      : `$${Number(discount.value).toFixed(2)}`}
+                  </span>
                 </Button>
               ))
             )}

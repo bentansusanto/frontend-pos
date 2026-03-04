@@ -18,9 +18,9 @@ import {
 import { useGetBranchesQuery } from "@/store/services/branch.service";
 import { useGetAllRolesQuery } from "@/store/services/user.service";
 import { PlusCircledIcon } from "@radix-ui/react-icons";
+import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useAddUser } from "./hooks";
-import { Eye, EyeOff } from "lucide-react";
 
 export const AddUserDialog = () => {
   const [open, setOpen] = useState(false);
@@ -29,10 +29,10 @@ export const AddUserDialog = () => {
     onSuccess: () => setOpen(false)
   });
   const { data: rolesData } = useGetAllRolesQuery();
-  const roles = rolesData?.data || [];
+  const roles = rolesData || [];
 
   const { data: branchesData } = useGetBranchesQuery();
-  const branches = branchesData?.data || [];
+  const branches = branchesData || [];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

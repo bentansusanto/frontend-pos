@@ -49,7 +49,7 @@ export const HooksAddProduct = () => {
     useCreateVariantProductMutation();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const categories = (categoriesData as any)?.data ?? [];
+  const categories = categoriesData ?? [];
 
   const formik = useFormik<AddProductSchema>({
     initialValues: {

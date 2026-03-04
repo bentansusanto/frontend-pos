@@ -1,19 +1,9 @@
-import { getCookie } from "@/utils/cookies";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./baseQuery";
 
 export const profileService = createApi({
   reducerPath: "profileService",
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL,
-    prepareHeaders: (headers) => {
-      const token = getCookie("pos_token");
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-    credentials: "include"
-  }),
+  baseQuery,
   tagTypes: ["Profiles"],
   endpoints: (builder) => ({
     // create profile
@@ -40,6 +30,7 @@ export const profileService = createApi({
         url: "/profiles/me",
         method: "GET"
       }),
+      transformResponse: (response: any) => response.data || response.datas || response,
       providesTags: ["Profiles"]
     }),
     // find profile by user id
@@ -48,6 +39,7 @@ export const profileService = createApi({
         url: `/profiles/user/${userId}`,
         method: "GET"
       }),
+      transformResponse: (response: any) => response.data || response.datas || response,
       providesTags: ["Profiles"]
     })
     // find

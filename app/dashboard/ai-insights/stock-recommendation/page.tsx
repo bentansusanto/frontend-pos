@@ -22,7 +22,7 @@ import { AlertCircle, ArrowRight, Package } from "lucide-react";
 
 export default function StockRecommendationPage() {
   const { data: aiData, isLoading } = useGetAiInsightsQuery({});
-  const recommendations = aiData?.data?.stock_recommendations || [];
+  const recommendations = aiData?.stock_recommendations || [];
 
   return (
     <div className="space-y-6 p-6">

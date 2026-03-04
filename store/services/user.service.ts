@@ -1,20 +1,9 @@
-import { getCookie } from "@/utils/cookies";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./baseQuery";
 
 export const userService = createApi({
   reducerPath: "userService",
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL,
-    prepareHeaders: (headers) => {
-      const token = getCookie("pos_token");
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-    credentials: "include"
-  }),
+  baseQuery,
   tagTypes: ["Users"],
   endpoints: (builder) => ({
     // get all users
@@ -23,6 +12,7 @@ export const userService = createApi({
         url: "/users/find-all",
         method: "GET"
       }),
+      transformResponse: (response: any) => response.data || response.datas || [],
       providesTags: ["Users"]
     }),
     // get user by id
@@ -31,6 +21,7 @@ export const userService = createApi({
         url: `/users/${id}`,
         method: "GET"
       }),
+      transformResponse: (response: any) => response.data || response.datas || response,
       providesTags: ["Users"]
     }),
     // create user
@@ -44,7 +35,7 @@ export const userService = createApi({
     }),
     // update users
     updateUser: builder.mutation<any, any>({
-      query: ({id,data}) => ({
+      query: ({ id, data }) => ({
         url: `/users/update/${id}`,
         method: "PUT",
         body: data
@@ -65,9 +56,17 @@ export const userService = createApi({
       query: () => ({
         url: "/roles/find-all",
         method: "GET"
-      })
+      }),
+      transformResponse: (response: any) => response.data || response.datas || []
     })
   })
 });
 
-export const { useGetAllUsersQuery, useGetUserByIdQuery, useCreateUserMutation, useUpdateUserMutation, useDeleteUserMutation, useGetAllRolesQuery } = userService;
+export const {
+  useGetAllUsersQuery,
+  useGetUserByIdQuery,
+  useCreateUserMutation,
+  useUpdateUserMutation,
+  useDeleteUserMutation,
+  useGetAllRolesQuery
+} = userService;

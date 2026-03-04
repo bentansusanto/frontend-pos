@@ -11,7 +11,7 @@ export const UserPage = () => {
 
   // Extract users from the API response
   // The API returns { message: string, data: User[] }
-  const users = usersData?.data || [];
+  const users = usersData || [];
 
   if (isLoading) {
     return (

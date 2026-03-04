@@ -67,20 +67,20 @@ export const ProductPage = () => {
   const { data: profileData } = useGetProfileQuery();
   const { data: branchesData } = useGetBranchesQuery();
 
-  const userRole = profileData?.data?.role;
-  const userBranches = profileData?.data?.branches || [];
+  const userRole = profileData?.role;
+  const userBranches = profileData?.branches || [];
 
   const [selectedBranchId, setSelectedBranchId] = useState<string>(() => {
     return getCookie("pos_branch_id") || "all";
   });
 
   const availableBranches = useMemo(() => {
-    if (!branchesData?.data) return [];
+    if (!branchesData) return [];
     if (userRole === "owner" || userRole === "super_admin") {
-      return branchesData.data;
+      return branchesData;
     }
     // For restricted users, filter branches based on assignment
-    const filtered = branchesData.data.filter((branch: any) =>
+    const filtered = branchesData.filter((branch: any) =>
       userBranches.some((ub: any) => ub.id === branch.id)
     );
     return filtered;
@@ -108,8 +108,8 @@ export const ProductPage = () => {
   );
   const { data: categoriesData } = useGetAllCategoriesQuery();
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
-  const products = productsData?.data || [];
-  const categories = categoriesData?.data || [];
+  const products = productsData || [];
+  const categories = categoriesData || [];
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -264,13 +264,17 @@ export const ProductPage = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <AddStockDialog onStockAdded={refetch} />
-          <Button className="gap-2" asChild>
-            <Link href="/dashboard/inventory/products/add">
-              <Plus className="size-4" />
-              Add Product
-            </Link>
-          </Button>
+          {userRole !== "cashier" && (
+            <>
+              <AddStockDialog onStockAdded={refetch} />
+              <Button className="gap-2" asChild>
+                <Link href="/dashboard/inventory/products/add">
+                  <Plus className="size-4" />
+                  Add Product
+                </Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -287,7 +291,9 @@ export const ProductPage = () => {
               <div>
                 <p className="text-sm font-medium text-slate-500">{item.title}</p>
                 <div className="flex items-end gap-2">
-                  <p className="text-xl font-semibold text-slate-900 dark:text-slate-300">{item.value}</p>
+                  <p className="text-xl font-semibold text-slate-900 dark:text-slate-300">
+                    {item.value}
+                  </p>
                   <span className="text-xs text-slate-400">{item.helper}</span>
                 </div>
               </div>
@@ -361,16 +367,6 @@ export const ProductPage = () => {
                 </TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Category</TableHead>
-                <TableHead
-                  className="cursor-pointer hover:bg-slate-50"
-                  onClick={() => handleSort("price")}>
-                  <div className="flex items-center gap-2">
-                    Price
-                    {sortConfig.key === "price" && (
-                      <ArrowUpDown className="h-4 w-4 text-slate-500" />
-                    )}
-                  </div>
-                </TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="pr-6 text-right">Action</TableHead>
               </TableRow>
@@ -378,7 +374,7 @@ export const ProductPage = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={5} className="h-24 text-center">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
                       <span className="text-muted-foreground">Loading products...</span>
@@ -387,7 +383,7 @@ export const ProductPage = () => {
                 </TableRow>
               ) : products.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-muted-foreground h-24 text-center">
+                  <TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
                     No products found.
                   </TableCell>
                 </TableRow>
@@ -417,9 +413,6 @@ export const ProductPage = () => {
                       <TableCell className="text-muted-foreground text-sm">
                         {product.category_name}
                       </TableCell>
-                      <TableCell className="text-foreground text-sm font-medium">
-                        ${Number(product.price).toLocaleString()}
-                      </TableCell>
                       <TableCell>
                         <Badge className={getStockStatus(product.stock || 0).className}>
                           {getStockStatus(product.stock || 0).label}
@@ -432,38 +425,42 @@ export const ProductPage = () => {
                               <Eye className="size-4" />
                             </Link>
                           </Button>
-                          <Button size="icon" variant="ghost" asChild>
-                            <Link href={`/dashboard/inventory/products/${product.id}/edit`}>
-                              <PencilLine className="size-4" />
-                            </Link>
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button size="icon" variant="ghost" disabled={isDeleting}>
-                                <Trash2 className="size-4" />
+                          {userRole !== "cashier" && (
+                            <>
+                              <Button size="icon" variant="ghost" asChild>
+                                <Link href={`/dashboard/inventory/products/${product.id}/edit`}>
+                                  <PencilLine className="size-4" />
+                                </Link>
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Product?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete{" "}
-                                  <span className="text-foreground font-semibold">
-                                    "{product.name_product}"
-                                  </span>
-                                  ? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-red-600 hover:bg-red-700"
-                                  onClick={() => handleDelete(product.id)}>
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="icon" variant="ghost" disabled={isDeleting}>
+                                    <Trash2 className="size-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Product?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete{" "}
+                                      <span className="text-foreground font-semibold">
+                                        "{product.name_product}"
+                                      </span>
+                                      ? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-red-600 hover:bg-red-700"
+                                      onClick={() => handleDelete(product.id)}>
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

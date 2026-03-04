@@ -15,7 +15,7 @@ import {
 export default function SalesTrendsPage() {
   const { data: aiData, isLoading } = useGetAiInsightsQuery({});
 
-  const salesTrends = aiData?.data?.sales_trends || [];
+  const salesTrends = aiData?.sales_trends || [];
 
   return (
     <div className="space-y-6 p-6">

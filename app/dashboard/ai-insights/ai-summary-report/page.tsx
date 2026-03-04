@@ -6,7 +6,7 @@ import { AlertTriangle, BrainCircuit, CheckCircle, TrendingUp } from "lucide-rea
 
 export default function AiSummaryReportPage() {
   const { data: aiData, isLoading } = useGetAiInsightsQuery({});
-  const summary = aiData?.data?.summary || {};
+  const summary = aiData?.summary || {};
 
   return (
     <div className="space-y-6 p-6">

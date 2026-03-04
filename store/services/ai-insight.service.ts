@@ -1,19 +1,9 @@
-import { getCookie } from "@/utils/cookies";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./baseQuery";
 
 export const aiInsightService = createApi({
   reducerPath: "aiInsightService",
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL,
-    prepareHeaders: (headers) => {
-      const token = getCookie("pos_token");
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-    credentials: "include"
-  }),
+  baseQuery,
   tagTypes: ["AiInsights"],
   endpoints: (builder) => ({
     // Get AI Insights
@@ -22,6 +12,8 @@ export const aiInsightService = createApi({
         url: "/ai-insight/find",
         params
       }),
+      transformResponse: (response: any) =>
+        response.data || response.datas || (Array.isArray(response) ? response : []),
       providesTags: ["AiInsights"]
     }),
     // Generate AI Insights

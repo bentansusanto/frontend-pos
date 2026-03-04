@@ -1,5 +1,5 @@
-import { getCookie } from "@/utils/cookies";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./baseQuery";
 
 const buildQuery = (params?: Record<string, string | undefined>) => {
   const searchParams = new URLSearchParams();
@@ -14,17 +14,7 @@ const buildQuery = (params?: Record<string, string | undefined>) => {
 
 export const salesReportService = createApi({
   reducerPath: "salesReportService",
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL,
-    prepareHeaders: (headers) => {
-      const token = getCookie("pos_token");
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-    credentials: "include"
-  }),
+  baseQuery,
   tagTypes: ["SalesReports"],
   endpoints: (builder) => ({
     getSalesSummary: builder.query<
@@ -35,6 +25,7 @@ export const salesReportService = createApi({
         url: `/sales-reports/summary${buildQuery(params || {})}`,
         method: "GET"
       }),
+      transformResponse: (response: any) => response,
       providesTags: ["SalesReports"]
     }),
     getSalesReport: builder.query<
@@ -45,6 +36,7 @@ export const salesReportService = createApi({
         url: `/sales-reports${buildQuery(params || {})}`,
         method: "GET"
       }),
+      transformResponse: (response: any) => response || [],
       providesTags: ["SalesReports"]
     }),
     getWeeklySalesReport: builder.query<any, { branchId?: string } | void>({
@@ -52,6 +44,7 @@ export const salesReportService = createApi({
         url: `/sales-reports/weekly${buildQuery(params || {})}`,
         method: "GET"
       }),
+      transformResponse: (response: any) => response || [],
       providesTags: ["SalesReports"]
     }),
     getMonthlySalesReport: builder.query<any, { branchId?: string } | void>({
@@ -59,6 +52,7 @@ export const salesReportService = createApi({
         url: `/sales-reports/monthly${buildQuery(params || {})}`,
         method: "GET"
       }),
+      transformResponse: (response: any) => response || [],
       providesTags: ["SalesReports"]
     }),
     getYearlySalesReport: builder.query<any, { branchId?: string } | void>({
@@ -66,6 +60,7 @@ export const salesReportService = createApi({
         url: `/sales-reports/yearly${buildQuery(params || {})}`,
         method: "GET"
       }),
+      transformResponse: (response: any) => response || [],
       providesTags: ["SalesReports"]
     })
   })

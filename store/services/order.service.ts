@@ -1,19 +1,9 @@
-import { getCookie } from "@/utils/cookies";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQuery } from "./baseQuery";
 
 export const orderService = createApi({
   reducerPath: "orderService",
-  baseQuery: fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL,
-    prepareHeaders: (headers) => {
-      const token = getCookie("pos_token");
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-    credentials: "include"
-  }),
+  baseQuery,
   tagTypes: ["Orders"],
   endpoints: (builder) => ({
     // get all orders
@@ -23,6 +13,7 @@ export const orderService = createApi({
         method: "GET",
         params: params || {}
       }),
+      transformResponse: (response: any) => response.data || response.datas || [],
       providesTags: ["Orders"]
     }),
     // create order

@@ -40,9 +40,18 @@ import { cn } from "@/lib/utils";
 import { useDeleteUserMutation } from "@/store/services/user.service";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import { EditProfileModal } from "./EditProfileModal";
 import { UserDetailsModal } from "./UserDetailsModal";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogDescription, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export type User = {
   id: string;
@@ -50,6 +59,7 @@ export type User = {
   email: string;
   role: string;
   is_verified: boolean;
+  isActive: boolean;
   profile?: {
     address: string;
     phone: string;
@@ -118,22 +128,31 @@ export default function UsersDataTable({ data }: { data: User[] }) {
         cell: ({ row }) => <div className="capitalize">{row.getValue("role")}</div>
       },
       {
-        accessorKey: "is_verified",
-        header: "Status",
+        accessorKey: "isActive",
+        header: "Online",
         cell: ({ row }) => {
-          const isVerified = row.original.is_verified;
+          const isActive = row.original.isActive;
           return (
             <Badge
-              variant={isVerified ? "default" : "secondary"}
-              className={cn({
-                "bg-green-100 text-green-700 hover:bg-green-100": isVerified,
-                "bg-yellow-100 text-yellow-700 hover:bg-yellow-100": !isVerified
-              })}>
-              {isVerified ? "Verified" : "Unverified"}
+              variant="outline"
+              className={cn(
+                "flex w-fit items-center gap-1.5 border font-medium",
+                isActive
+                  ? "border-green-200 bg-green-50 text-green-700"
+                  : "border-gray-200 bg-gray-50 text-gray-500"
+              )}>
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full",
+                  isActive ? "animate-pulse bg-green-500" : "bg-gray-400"
+                )}
+              />
+              {isActive ? "Online" : "Offline"}
             </Badge>
           );
         }
       },
+
       {
         id: "actions",
         enableHiding: false,

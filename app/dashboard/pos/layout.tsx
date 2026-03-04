@@ -8,7 +8,7 @@ import React, { useEffect } from "react";
 export default function PosLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { data: profileData, isLoading } = useGetProfileQuery();
-  const userRole = profileData?.data?.role;
+  const userRole = profileData?.role;
 
   useEffect(() => {
     if (!isLoading && userRole && userRole !== "cashier") {

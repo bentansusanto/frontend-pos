@@ -22,7 +22,7 @@ import { AlertTriangle, Bell, Info } from "lucide-react";
 
 export default function AlertsPage() {
   const { data: aiData, isLoading } = useGetAiInsightsQuery({});
-  const alerts = aiData?.data?.alerts || [];
+  const alerts = aiData?.alerts || [];
 
   return (
     <div className="space-y-6 p-6">
