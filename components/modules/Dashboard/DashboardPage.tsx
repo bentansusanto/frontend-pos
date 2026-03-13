@@ -4,10 +4,20 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { SectionCards } from "@/components/section-cards"
 import { SalesTable } from "@/components/modules/Dashboard/SalesTable"
 import { useGetSalesSummaryQuery } from "@/store/services/sales-report.service"
+import { useGetProfileQuery } from "@/store/services/auth.service"
+import { useRouter } from "next/navigation"
 import { useMemo } from "react"
 
 export function DashboardPage() {
+  const { data: userProfile } = useGetProfileQuery()
+  const router = useRouter()
   const { data: summaryData, isLoading } = useGetSalesSummaryQuery()
+
+  useMemo(() => {
+    if (userProfile?.role === "cashier") {
+      router.push("/dashboard/pos/new-order")
+    }
+  }, [userProfile, router])
 
   const chartData = useMemo(() => {
     if (!summaryData?.salesData) return []

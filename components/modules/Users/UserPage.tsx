@@ -7,7 +7,14 @@ import { AddUserDialog } from "./AddUserDialog";
 import UsersDataTable from "./UsersDataTable";
 
 export const UserPage = () => {
-  const { data: usersData, isLoading, isError } = useGetAllUsersQuery();
+  const {
+    data: usersData,
+    isLoading,
+    isError
+  } = useGetAllUsersQuery(undefined, {
+    refetchOnFocus: true,
+    refetchOnReconnect: true
+  });
 
   // Extract users from the API response
   // The API returns { message: string, data: User[] }

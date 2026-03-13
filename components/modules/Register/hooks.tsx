@@ -11,6 +11,7 @@ export const UseRegisterForm = () => {
   const formik = useFormik<RegisterSchema>({
     initialValues: {
       name: "",
+      username: "",
       email: "",
       password: ""
     },

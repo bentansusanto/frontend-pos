@@ -1,10 +1,11 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQuery } from "./baseQuery";
+import { posSessionApi } from "./pos-session.service";
 
 export const paymentService = createApi({
   reducerPath: "paymentService",
   baseQuery,
-  tagTypes: ["Payments"],
+  tagTypes: ["Payments", "PosSession"],
   endpoints: (builder) => ({
     // create payment
     createPayment: builder.mutation<any, any>({
@@ -13,7 +14,13 @@ export const paymentService = createApi({
         method: "POST",
         body: data
       }),
-      invalidatesTags: ["Payments"]
+      invalidatesTags: ["Payments"],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(posSessionApi.util.invalidateTags(["PosSession"]));
+        } catch {}
+      }
     }),
     // verify payment
     verifyPayment: builder.mutation<any, string>({
@@ -21,7 +28,13 @@ export const paymentService = createApi({
         url: `/payments/verify-payment/${paymentId}`,
         method: "PUT"
       }),
-      invalidatesTags: ["Payments"]
+      invalidatesTags: ["Payments"],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(posSessionApi.util.invalidateTags(["PosSession"]));
+        } catch {}
+      }
     }),
     // get all payments
     getPayments: builder.query<any, { branch_id?: string } | void>({

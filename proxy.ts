@@ -18,11 +18,13 @@ function parseJwt(token: string) {
   }
 }
 
-function isTokenExpired(token: string): boolean {
+function isTokenExpired(token: string, bufferSeconds = 0): boolean {
   const payload = parseJwt(token);
+  // Jika payload invalid atau tdak ada exp, anggap saja token sudah expired
   if (!payload || !payload.exp) return true;
   const currentTime = Math.floor(Date.now() / 1000);
-  return payload.exp < currentTime;
+  // Mengecek apakah expiration time lebih kecil dari waktu sekarang + buffer
+  return payload.exp < currentTime + bufferSeconds;
 }
 
 const LOGIN_URL = "/login";
@@ -42,7 +44,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("pos_token")?.value;
   const sessionToken = request.cookies.get("session_pos")?.value;
-  const backendUrl = process.env.BACKEND_URL || "http://localhost:8080/api/v1";
+  const backendUrl = process.env.BACKEND_URL || "http://localhost:8082/api/v1";
 
   // ─── 0. API Proxy ────────────────────────────────────────────────────────────
   if (pathname.startsWith("/api")) {
@@ -77,8 +79,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // ─── 4. Protected path: token expired → coba refresh, gagal → redirect login ─
-  if (isTokenExpired(token)) {
+  // ─── 4. Protected path: token expired atau waktu hidup sisa < 2 menit (120 detik) → coba refresh, gagal → redirect login ─
+  if (isTokenExpired(token, 120)) {
     if (sessionToken) {
       try {
         const refreshResponse = await fetch(`${backendUrl}/auth/refresh-token`, {

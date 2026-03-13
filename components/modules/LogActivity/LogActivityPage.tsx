@@ -139,7 +139,8 @@ export function LogActivityPage() {
     toggleActionFilter,
     clearFilters,
     nextPage,
-    prevPage
+    prevPage,
+    total
   } = useLogActivity();
 
   return (
@@ -175,7 +176,7 @@ export function LogActivityPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-400">
-                {logs.length}
+                {total}
               </p>
               <p className="text-muted-foreground mt-0.5 text-xs">Total Events</p>
             </div>
@@ -392,7 +393,8 @@ export function LogActivityPage() {
         {filtered.length > 0 && (
           <div className="flex items-center justify-between border-t px-4 py-3">
             <p className="text-muted-foreground text-xs">
-              Showing {filtered.length} of {logs.length} events • Page {filters.page}
+              Showing {(filters.page - 1) * filters.limit + 1} -{" "}
+              {Math.min(filters.page * filters.limit, total)} of {total} events • Page {filters.page}
             </p>
             <div className="flex gap-2">
               <Button
@@ -405,7 +407,7 @@ export function LogActivityPage() {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={logs.length < (filters.limit ?? 50)}
+                disabled={filters.page * filters.limit >= total}
                 onClick={nextPage}>
                 Next
               </Button>

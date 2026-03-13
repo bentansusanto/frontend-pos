@@ -3,8 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
-import { useGetProfileQuery } from "@/store/services/auth.service";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePathname } from "next/navigation";
@@ -14,8 +12,6 @@ export function SiteHeader() {
   const pathname = usePathname();
   const { setTheme, theme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
-  const { data: profile } = useGetProfileQuery();
-  const isActive = profile?.isActive ?? false;
   React.useEffect(() => setMounted(true), []);
   const title = React.useMemo(() => {
     if (!pathname) {
@@ -41,23 +37,6 @@ export function SiteHeader() {
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
         <h1 className="text-base font-medium">{title}</h1>
         <div className="ml-auto flex items-center gap-2">
-          {/* Online / Offline badge */}
-          <div
-            className={cn(
-              "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
-              isActive
-                ? "border-green-200 bg-green-50 text-green-700"
-                : "border-gray-200 bg-gray-50 text-gray-500"
-            )}>
-            <span
-              className={cn(
-                "h-1.5 w-1.5 rounded-full",
-                isActive ? "animate-pulse bg-green-500" : "bg-gray-400"
-              )}
-            />
-            {isActive ? "Online" : "Offline"}
-          </div>
-
           <Button
             variant="ghost"
             size="icon"

@@ -31,10 +31,12 @@ import {
 } from "@/components/ui/sidebar";
 import { getCookie, setCookie } from "@/utils/cookies";
 import {
+  BookOpen,
   Check,
   ChevronsUpDown,
   CirclePercent,
   ClipboardList,
+  Receipt,
   Sparkles,
   Tag,
   Truck
@@ -63,7 +65,8 @@ const data = {
     {
       title: "Dashboard",
       url: "/dashboard",
-      icon: IconDashboard
+      icon: IconDashboard,
+      roles: ["owner", "admin", "super_admin"]
     }
   ],
   sections: [
@@ -94,7 +97,7 @@ const data = {
             { title: "Products", url: "/dashboard/inventory/products" },
             { title: "Stock Overview", url: "/dashboard/inventory/stock-overview" }
           ],
-          roles: ["owner", "admin", "cashier"]
+          roles: ["owner", "admin"]
         },
         {
           title: "Reports",
@@ -119,9 +122,40 @@ const data = {
           roles: ["owner", "admin"]
         },
         {
+          title: "Expenses",
+          icon: Receipt,
+          url: "/dashboard/finance/expenses",
+          roles: ["owner", "admin"]
+        },
+        {
+          title: "Accounting",
+          icon: BookOpen,
+          defaultOpen: false,
+          items: [
+            { title: "Journal", url: "/dashboard/finance/accounting/journal" },
+            { title: "Balance Sheet", url: "/dashboard/finance/accounting/balance-sheet" },
+            {
+              title: "Cashflow Statement",
+              url: "/dashboard/finance/accounting/cashflow-statement"
+            },
+            { title: "Income Statement", url: "/dashboard/finance/accounting/income-statement" }
+          ],
+          roles: ["owner", "admin"]
+        },
+        {
           title: "Suppliers",
           icon: Truck,
           url: "/dashboard/suppliers",
+          roles: ["owner", "admin"]
+        },
+        {
+          title: "Purchasing",
+          icon: Truck,
+          defaultOpen: false,
+          items: [
+            { title: "Purchase Orders", url: "/dashboard/purchasing" },
+            { title: "Purchase Receiving", url: "/dashboard/purchasing/receiving" }
+          ],
           roles: ["owner", "admin"]
         }
       ]
@@ -134,6 +168,12 @@ const data = {
           icon: Sparkles,
           url: "/dashboard/ai-insights",
           roles: ["owner"]
+        },
+        {
+          title: "POS Log",
+          icon: ClipboardList,
+          url: "/dashboard/pos-log",
+          roles: ["owner", "admin"]
         }
       ]
     },

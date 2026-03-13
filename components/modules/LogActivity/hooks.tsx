@@ -32,17 +32,21 @@ export const ENTITY_ICONS: Record<string, string> = {
   customer: "�",
   supplier: "🚚",
   expense: "�",
-  user: "�"
+  user: "�",
+  tax: "🧾",
+  discount: "🎟️"
 };
 
 export function useLogActivity() {
   const [filters, setFilters] = useState<UserLogFilters & { page: number; limit: number }>({
     page: 1,
-    limit: 50
+    limit: 10
   });
   const [search, setSearch] = useState("");
 
-  const { data: logs = [], isLoading, isFetching, refetch } = useGetUserLogsQuery(filters);
+  const { data, isLoading, isFetching, refetch } = useGetUserLogsQuery(filters);
+  const logs = data?.datas || [];
+  const total = data?.total || 0;
   const { data: users = [] } = useGetAllUsersQuery();
 
   // Build a map userId → displayName for O(1) lookup in table rows
@@ -107,6 +111,7 @@ export function useLogActivity() {
     toggleActionFilter,
     clearFilters,
     nextPage,
-    prevPage
+    prevPage,
+    total
   };
 }

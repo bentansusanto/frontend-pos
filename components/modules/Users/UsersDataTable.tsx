@@ -39,6 +39,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useDeleteUserMutation } from "@/store/services/user.service";
 import { toast } from "sonner";
+import { UserDetailsModal } from "./UserDetailsModal";
 
 import {
   AlertDialog,
@@ -50,8 +51,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog";
-import { EditProfileModal } from "./EditProfileModal";
-import { UserDetailsModal } from "./UserDetailsModal";
 
 export type User = {
   id: string;
@@ -59,7 +58,6 @@ export type User = {
   email: string;
   role: string;
   is_verified: boolean;
-  isActive: boolean;
   profile?: {
     address: string;
     phone: string;
@@ -71,9 +69,8 @@ export default function UsersDataTable({ data }: { data: User[] }) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = React.useState({});
-
-  const [editProfileUserId, setEditProfileUserId] = React.useState<string | null>(null);
-  const [viewDetailsUser, setViewDetailsUser] = React.useState<User | null>(null);
+  
+  const [viewDetailsUserId, setViewDetailsUserId] = React.useState<string | null>(null);
   const [deleteUserId, setDeleteUserId] = React.useState<string | null>(null);
 
   const [deleteUser, { isLoading: isDeleting }] = useDeleteUserMutation();
@@ -128,26 +125,26 @@ export default function UsersDataTable({ data }: { data: User[] }) {
         cell: ({ row }) => <div className="capitalize">{row.getValue("role")}</div>
       },
       {
-        accessorKey: "isActive",
-        header: "Online",
+        accessorKey: "is_verified",
+        header: "Status",
         cell: ({ row }) => {
-          const isActive = row.original.isActive;
+          const isVerified = row.original.is_verified;
           return (
             <Badge
               variant="outline"
               className={cn(
                 "flex w-fit items-center gap-1.5 border font-medium",
-                isActive
+                isVerified
                   ? "border-green-200 bg-green-50 text-green-700"
-                  : "border-gray-200 bg-gray-50 text-gray-500"
+                  : "border-yellow-200 bg-yellow-50 text-yellow-700"
               )}>
               <span
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
-                  isActive ? "animate-pulse bg-green-500" : "bg-gray-400"
+                  isVerified ? "bg-green-500" : "bg-yellow-400"
                 )}
               />
-              {isActive ? "Online" : "Offline"}
+              {isVerified ? "Verified" : "Pending"}
             </Badge>
           );
         }
@@ -171,11 +168,8 @@ export default function UsersDataTable({ data }: { data: User[] }) {
                   Copy ID
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setEditProfileUserId(row.original.id)}>
-                  Edit Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setViewDetailsUser(row.original)}>
-                  View details
+                <DropdownMenuItem onClick={() => setViewDetailsUserId(row.original.id)}>
+                  View / Edit Detail
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-red-600 focus:text-red-600"
@@ -191,8 +185,11 @@ export default function UsersDataTable({ data }: { data: User[] }) {
     []
   );
 
+  // Only show verified users as requested
+  const verifiedData = React.useMemo(() => data.filter((user) => user.is_verified), [data]);
+
   const table = useReactTable({
-    data,
+    data: verifiedData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -281,15 +278,10 @@ export default function UsersDataTable({ data }: { data: User[] }) {
           </TableBody>
         </Table>
       </div>
-      <EditProfileModal
-        isOpen={!!editProfileUserId}
-        onClose={() => setEditProfileUserId(null)}
-        userId={editProfileUserId || ""}
-      />
       <UserDetailsModal
-        isOpen={!!viewDetailsUser}
-        onClose={() => setViewDetailsUser(null)}
-        user={viewDetailsUser}
+        isOpen={!!viewDetailsUserId}
+        onClose={() => setViewDetailsUserId(null)}
+        userId={viewDetailsUserId}
       />
 
       <AlertDialog open={!!deleteUserId} onOpenChange={() => setDeleteUserId(null)}>

@@ -1,24 +1,28 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 
-import { aiInsightService } from "./services/ai-insight.service";
 import { baseAuth } from "./services/auth.service";
-import { branchService } from "./services/branch.service";
-import { categoryService } from "./services/category.service";
-import { customerService } from "./services/customer.service";
-import { discountService } from "./services/discount.service";
-import { orderService } from "./services/order.service";
-import { paymentService } from "./services/payment.service";
-import { productStockService } from "./services/product-stock.service";
-import { productService } from "./services/product.service";
 import { profileService } from "./services/profile.service";
-import { roleService } from "./services/role.service";
+import { categoryService } from "./services/category.service";
+import { productService } from "./services/product.service";
+import { productStockService } from "./services/product-stock.service";
+import { branchService } from "./services/branch.service";
+import { userService } from "./services/user.service";
+import { orderService } from "./services/order.service";
+import { customerService } from "./services/customer.service";
+import { paymentService } from "./services/payment.service";
 import { salesReportService } from "./services/sales-report.service";
 import { stockMovementsService } from "./services/stock-movements.service";
-import { supplierService } from "./services/supplier.service";
+import { aiInsightService } from "./services/ai-insight.service";
+import { roleService } from "./services/role.service";
 import { taxService } from "./services/tax.service";
+import { discountService } from "./services/discount.service";
+import { supplierService } from "./services/supplier.service";
 import { userLogService } from "./services/user-log.service";
-import { userService } from "./services/user.service";
+import { purchasingApi } from "./services/purchasing.service";
+import { posSessionApi } from "./services/pos-session.service";
+import { accountingApi } from "./services/accounting.service";
+import { expenseApi } from "./services/expense.service";
 
 export const store = configureStore({
   reducer: {
@@ -39,7 +43,11 @@ export const store = configureStore({
     [taxService.reducerPath]: taxService.reducer,
     [discountService.reducerPath]: discountService.reducer,
     [supplierService.reducerPath]: supplierService.reducer,
-    [userLogService.reducerPath]: userLogService.reducer
+    [userLogService.reducerPath]: userLogService.reducer,
+    [purchasingApi.reducerPath]: purchasingApi.reducer,
+    [posSessionApi.reducerPath]: posSessionApi.reducer,
+    [accountingApi.reducerPath]: accountingApi.reducer,
+    [expenseApi.reducerPath]: expenseApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -60,11 +68,44 @@ export const store = configureStore({
       taxService.middleware,
       discountService.middleware,
       supplierService.middleware,
-      userLogService.middleware
+      userLogService.middleware,
+      purchasingApi.middleware,
+      posSessionApi.middleware,
+      accountingApi.middleware,
+      expenseApi.middleware
     )
 });
 
-setupListeners(store.dispatch);
-
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+
+export const allApis = [
+  baseAuth,
+  profileService,
+  categoryService,
+  productService,
+  productStockService,
+  branchService,
+  userService,
+  orderService,
+  customerService,
+  paymentService,
+  salesReportService,
+  stockMovementsService,
+  aiInsightService,
+  roleService,
+  taxService,
+  discountService,
+  supplierService,
+  userLogService,
+  purchasingApi,
+  posSessionApi,
+  accountingApi,
+  expenseApi
+];
+
+export const resetAllApiStates = (dispatch: AppDispatch) => {
+  allApis.forEach((api) => dispatch(api.util.resetApiState()));
+};
+
+setupListeners(store.dispatch);

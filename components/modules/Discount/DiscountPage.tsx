@@ -96,7 +96,7 @@ function CreateDiscountDialog({ trigger }: { trigger: React.ReactNode }) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="percentage">Percentage (%)</SelectItem>
-                  <SelectItem value="fixed">Fixed (Rp)</SelectItem>
+                  <SelectItem value="fixed">Fixed ($)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -104,7 +104,7 @@ function CreateDiscountDialog({ trigger }: { trigger: React.ReactNode }) {
               <Label htmlFor="value">Value *</Label>
               <div className="relative">
                 <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">
-                  {formik.values.type === "percentage" ? "%" : "Rp"}
+                  {formik.values.type === "percentage" ? "%" : "$"}
                 </span>
                 <Input
                   id="value"
@@ -234,7 +234,7 @@ function EditDiscountDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="percentage">Percentage (%)</SelectItem>
-                  <SelectItem value="fixed">Fixed (Rp)</SelectItem>
+                  <SelectItem value="fixed">Fixed ($)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -242,7 +242,7 @@ function EditDiscountDialog({
               <Label htmlFor="value">Value *</Label>
               <div className="relative">
                 <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm">
-                  {formik.values.type === "percentage" ? "%" : "Rp"}
+                  {formik.values.type === "percentage" ? "%" : "$"}
                 </span>
                 <Input
                   id="value"
@@ -420,7 +420,7 @@ export function DiscountPage() {
                       <span className="font-semibold text-violet-600">
                         {discount.type === "percentage"
                           ? `${discount.value}%`
-                          : `Rp ${discount.value.toLocaleString("id-ID")}`}
+                          : `$${discount.value.toLocaleString("en-US")}`}
                       </span>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-xs">

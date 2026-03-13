@@ -15,7 +15,9 @@ export type EntityType =
   | "customer"
   | "supplier"
   | "expense"
-  | "user";
+  | "user"
+  | "tax"
+  | "discount";
 
 // ── Shape returned from backend service (mapped/flat) ─────────────────────────
 export interface UserLog {
@@ -40,18 +42,33 @@ export interface UserLogFilters {
   page?: number;
 }
 
+export interface PaginatedUserLogResponse {
+  message: string;
+  datas: UserLog[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export const userLogService = createApi({
   reducerPath: "userLogService",
   baseQuery,
   tagTypes: ["UserLogs"],
   endpoints: (builder) => ({
-    getUserLogs: builder.query<UserLog[], UserLogFilters | void>({
+    getUserLogs: builder.query<PaginatedUserLogResponse, UserLogFilters | void>({
       query: (filters) => ({
         url: "/user-logs",
         method: "GET",
         params: filters || {}
       }),
-      transformResponse: (response: any) => response.datas || response.data || [],
+      transformResponse: (response: any) =>
+        ({
+          message: response.message,
+          datas: response.datas || response.data || [],
+          total: response.total || 0,
+          page: response.page || 1,
+          limit: response.limit || 15
+        }) as PaginatedUserLogResponse,
       providesTags: ["UserLogs"]
     }),
     getUserLogById: builder.query<UserLog, string>({
@@ -59,7 +76,7 @@ export const userLogService = createApi({
         url: `/user-logs/${id}`,
         method: "GET"
       }),
-      transformResponse: (response: any) => response.data || response,
+      transformResponse: (res: any) => (res && res.data !== undefined ? res.data : res),
       providesTags: ["UserLogs"]
     }),
     getUserLogsByUser: builder.query<UserLog[], { userId: string; limit?: number }>({

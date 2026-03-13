@@ -1,5 +1,6 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQuery } from "./baseQuery";
+import { posSessionApi } from "./pos-session.service";
 
 export const orderService = createApi({
   reducerPath: "orderService",
@@ -7,7 +8,7 @@ export const orderService = createApi({
   tagTypes: ["Orders"],
   endpoints: (builder) => ({
     // get all orders
-    getOrders: builder.query<any, { branch_id?: string } | void>({
+    getOrders: builder.query<any, { branch_id?: string; status?: string } | void>({
       query: (params) => ({
         url: "/orders/find-all",
         method: "GET",
@@ -23,7 +24,13 @@ export const orderService = createApi({
         method: "POST",
         body
       }),
-      invalidatesTags: ["Orders"]
+      invalidatesTags: ["Orders"],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(posSessionApi.util.invalidateTags(["PosSession"]));
+        } catch {}
+      }
     }),
     // update order item quantity
     updateOrderQuantity: builder.mutation({
@@ -32,7 +39,13 @@ export const orderService = createApi({
         method: "PUT",
         body: { quantity }
       }),
-      invalidatesTags: ["Orders"]
+      invalidatesTags: ["Orders"],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(posSessionApi.util.invalidateTags(["PosSession"]));
+        } catch {}
+      }
     }),
     // update order
     updateOrder: builder.mutation({
@@ -41,7 +54,13 @@ export const orderService = createApi({
         method: "PUT",
         body
       }),
-      invalidatesTags: ["Orders"]
+      invalidatesTags: ["Orders"],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(posSessionApi.util.invalidateTags(["PosSession"]));
+        } catch {}
+      }
     }),
     // delete order item
     deleteOrderItem: builder.mutation({
@@ -49,7 +68,13 @@ export const orderService = createApi({
         url: `/orders/${orderId}/items/${orderItemId}`,
         method: "DELETE"
       }),
-      invalidatesTags: ["Orders"]
+      invalidatesTags: ["Orders"],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(posSessionApi.util.invalidateTags(["PosSession"]));
+        } catch {}
+      }
     })
   })
 });

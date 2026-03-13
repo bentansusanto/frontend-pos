@@ -4,6 +4,8 @@ import { ChevronDown, Minus, Plus, Search, Trash2, UserRoundPlus } from "lucide-
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +40,13 @@ import { getCookie } from "@/utils/cookies";
 import { toast } from "sonner";
 import { useCustomerForm } from "../Customers/hooks";
 import { usePosOrder } from "./hooks";
+import { ReceiptModal } from "./ReceiptModal";
+import { StripePayment } from "./StripePayment";
+import { OpenSessionModal } from "./OpenSessionModal";
+import { CloseSessionModal } from "./CloseSessionModal";
+import { useGetActiveSessionQuery } from "@/store/services/pos-session.service";
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY!);
 
 export const PosPage = () => {
   const router = useRouter();
@@ -57,11 +66,25 @@ export const PosPage = () => {
   const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isVerifyPaymentOpen, setIsVerifyPaymentOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "credit_card">("cash");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "credit_card" | "stripe">("cash");
   const [createdPayment, setCreatedPayment] = useState<any | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [selectedProductForVariant, setSelectedProductForVariant] = useState<any | null>(null);
+  const [isOpenSessionModalOpen, setIsOpenSessionModalOpen] = useState(false);
+  const [isCloseSessionModalOpen, setIsCloseSessionModalOpen] = useState(false);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [verifiedOrder, setVerifiedOrder] = useState<any | null>(null);
+
   const branchId = getCookie("pos_branch_id");
+  const { data: activeSessionData, isLoading: isActiveSessionLoading, refetch: refetchActiveSession } = useGetActiveSessionQuery();
+  const activeSession = activeSessionData;
+
+  useEffect(() => {
+    if (!isActiveSessionLoading && !activeSession) {
+      setIsOpenSessionModalOpen(true);
+    }
+  }, [activeSession, isActiveSessionLoading]);
+
   const { data: productsData, isLoading: isProductsLoading } = useGetProductsQuery(
     branchId ? { branch_id: branchId } : undefined
   );
@@ -79,7 +102,7 @@ export const PosPage = () => {
     isLoading: isOrdersLoading,
     isFetching: isOrdersFetching,
     refetch: refetchOrders
-  } = useGetOrdersQuery(branchId ? { branch_id: branchId } : undefined);
+  } = useGetOrdersQuery(branchId ? { branch_id: branchId, status: "pending" } : undefined);
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateOrderMutation();
   const [updateOrder, { isLoading: isUpdatingOrder }] = useUpdateOrderMutation();
   const [updateOrderQuantity, { isLoading: isUpdatingQuantity }] = useUpdateOrderQuantityMutation();
@@ -147,6 +170,17 @@ export const PosPage = () => {
   useEffect(() => {
     if (isOrdersLoading || isOrdersFetching) return;
 
+    // If we have a selected order but it's no longer in the pending list (e.g. paid), clear it
+    if (selectedOrderId) {
+      const isStillPending = sortedOrders.some((order: any) => order.id === selectedOrderId);
+      if (!isStillPending) {
+        setSelectedOrderId(null);
+      }
+    }
+    
+    // DISABLED: Auto-selecting the first pending order on load/refresh
+    // This prevents "ghost" orders from appearing without user action
+    /*
     if (!sortedOrders.length) {
       if (selectedOrderId) {
         setSelectedOrderId(null);
@@ -157,6 +191,7 @@ export const PosPage = () => {
     if (!selectedOrderId || !hasSelected) {
       setSelectedOrderId(sortedOrders[0].id);
     }
+    */
   }, [sortedOrders]);
   const currentOrder = useMemo(() => {
     if (!selectedOrderId) return null;
@@ -180,6 +215,12 @@ export const PosPage = () => {
 
   const { formik, isLoading } = usePosOrder({ initialItems: [] });
 
+  const handleNewOrder = () => {
+    setSelectedOrderId(null);
+    formik.resetForm();
+    toast.success("Ready for new order");
+  };
+
   const selectedCustomer = useMemo(() => {
     if (!formik.values.customer_id) return null;
     return customers.find((customer: any) => customer.id === formik.values.customer_id);
@@ -199,6 +240,13 @@ export const PosPage = () => {
   const handleAddToCart = async (product: any, variant: any = null) => {
     try {
       const price = variant ? Number(variant.price || 0) : Number(product.price || 0);
+
+      if (!activeSession) {
+        setIsOpenSessionModalOpen(true);
+        toast.error("Please open a POS session first");
+        return;
+      }
+
       const response = await createOrder({
         order_id: selectedOrderId || undefined,
         branch_id: branchId || undefined,
@@ -214,7 +262,7 @@ export const PosPage = () => {
       }).unwrap();
       // The backend response structure for create order might be returning { order, items } directly in data
       // instead of { data: { id: ... } }. Let's check both possibilities or refetch to be safe.
-      const orderId = response?.id || response?.order?.id;
+      const orderId = response?.data?.id || response?.data?.order?.id || response?.id;
 
       if (orderId && orderId !== selectedOrderId) {
         setSelectedOrderId(orderId);
@@ -262,7 +310,6 @@ export const PosPage = () => {
       return;
     }
     if (orderItems.length === 0) {
-      toast.error("No items in current order");
       return;
     }
     if (!formik.values.customer_id) {
@@ -300,21 +347,23 @@ export const PosPage = () => {
     }
   };
 
-  const handleCreatePayment = async () => {
+  const handleCreatePayment = async (selectedMethod?: typeof paymentMethod) => {
     if (!currentOrder?.id) {
       toast.error("No active order found");
       return;
     }
+    const methodToUse = selectedMethod || paymentMethod;
+    setIsPaymentModalOpen(false);
     try {
       const response = await createPayment({
         orderId: currentOrder.id,
-        method: paymentMethod
+        method: methodToUse
       }).unwrap();
       setCreatedPayment(response?.data || response || null);
-      setIsPaymentModalOpen(false);
       setIsVerifyPaymentOpen(true);
       toast.success("Payment created");
     } catch (error: any) {
+      setIsPaymentModalOpen(true);
       toast.error(error?.data?.message || "Failed to create payment");
     }
   };
@@ -326,7 +375,9 @@ export const PosPage = () => {
     }
     try {
       await verifyPayment(createdPayment.id).unwrap();
+      setVerifiedOrder(currentOrder);
       setIsVerifyPaymentOpen(false);
+      setIsReceiptOpen(true);
       setCreatedPayment(null);
       refetchOrders();
       toast.success("Payment verified");
@@ -346,9 +397,20 @@ export const PosPage = () => {
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base">Current Order</CardTitle>
-            <Button variant="ghost" size="icon" type="button">
-              <ChevronDown className="size-4" />
-            </Button>
+            <div className="flex gap-1">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="h-8 text-[10px]" 
+                type="button"
+                onClick={handleNewOrder}
+              >
+                New Order
+              </Button>
+              <Button variant="ghost" size="icon" type="button">
+                <ChevronDown className="size-4" />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="flex-1 space-y-5">
@@ -493,9 +555,22 @@ export const PosPage = () => {
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
             <div className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-4">
               <h1 className="text-foreground text-xl font-semibold">New Order</h1>
-              <p className="text-muted-foreground text-sm">
-                Find products, add to cart, and process payment.
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-muted-foreground text-sm">
+                  Find products, add to cart, and process payment.
+                </p>
+                {activeSession && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      type="button"
+                      className="h-6 text-[10px] text-red-600 hover:text-red-700 hover:bg-red-50 ml-2"
+                      onClick={() => setIsCloseSessionModalOpen(true)}
+                    >
+                      Close Session
+                    </Button>
+                )}
+              </div>
             </div>
             <div className="grid gap-3">
               <div className="relative">
@@ -613,25 +688,30 @@ export const PosPage = () => {
           </DialogHeader>
           <div className="grid gap-2">
             {selectedProductForVariant &&
-              variantsByProductId.get(selectedProductForVariant.id)?.map((variant: any) => (
-                <Button
-                  key={variant.id}
-                  variant="outline"
-                  className="flex h-auto items-center justify-between p-4"
-                  disabled={Number(variant.stock || 0) === 0}
-                  onClick={() => handleAddToCart(selectedProductForVariant, variant)}>
-                  <div className="flex flex-col items-start gap-1">
-                    <span className="font-semibold">{variant.name_variant}</span>
-                    <span className="text-muted-foreground text-xs">SKU: {variant.sku || "-"}</span>
-                    {Number(variant.stock || 0) === 0 && (
-                      <span className="text-xs font-bold text-red-500">Out of Stock</span>
-                    )}
-                  </div>
-                  <span className="text-primary font-bold">
-                    ${Number(variant.price || 0).toFixed(2)}
-                  </span>
-                </Button>
-              ))}
+              variantsByProductId.get(selectedProductForVariant.id)?.map((variant: any) => {
+                const variantStock = Number(variant.stock || 0);
+                return (
+                  <Button
+                    key={variant.id}
+                    variant="outline"
+                    className="flex h-auto items-center justify-between p-4"
+                    disabled={variantStock === 0}
+                    type="button"
+                    onClick={() => handleAddToCart(selectedProductForVariant, variant)}>
+                    <div className="flex flex-col items-start gap-1">
+                      <span className="font-semibold">{variant.name_variant}</span>
+                      <span className="text-muted-foreground text-xs">SKU: {variant.sku || "-"}</span>
+                      <p
+                        className={`text-[10px] font-bold ${variantStock > 5 ? "text-green-600" : variantStock > 0 ? "text-yellow-600" : "text-red-600"}`}>
+                        {variantStock > 0 ? `${variantStock} in stock` : "Dead of Stock"}
+                      </p>
+                    </div>
+                    <span className="text-primary font-bold">
+                      ${Number(variant.price || 0).toFixed(2)}
+                    </span>
+                  </Button>
+                );
+              })}
           </div>
         </DialogContent>
       </Dialog>
@@ -809,48 +889,89 @@ export const PosPage = () => {
         </DialogContent>
       </Dialog>
 
+      <OpenSessionModal
+        isOpen={isOpenSessionModalOpen}
+        onOpenChange={setIsOpenSessionModalOpen}
+        branchId={branchId || ""}
+        onSuccess={() => {
+          refetchActiveSession();
+          refetchOrders();
+        }}
+      />
+
+      {activeSession && (
+        <CloseSessionModal
+          isOpen={isCloseSessionModalOpen}
+          onOpenChange={setIsCloseSessionModalOpen}
+          sessionId={activeSession.id}
+          onSuccess={() => {
+            refetchActiveSession();
+            // Reset local state if needed
+            setSelectedOrderId(null);
+          }}
+        />
+      )}
+
       <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Select Payment Method</DialogTitle>
             <DialogDescription>Choose how the customer pays this order.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid gap-2">
-              <Button
-                variant={paymentMethod === "cash" ? "default" : "outline"}
-                type="button"
-                onClick={() => setPaymentMethod("cash")}>
-                Cash
-              </Button>
-              <Button
-                variant={paymentMethod === "credit_card" ? "default" : "outline"}
-                type="button"
-                onClick={() => setPaymentMethod("credit_card")}>
-                Credit Card
-              </Button>
-            </div>
-            <div className="text-muted-foreground text-sm">
-              Total: ${Number(totalAmount || 0).toFixed(2)}
-            </div>
+          <div className="grid gap-2 overflow-y-auto max-h-[60vh] p-1">
             <Button
-              className="w-full"
+              variant={paymentMethod === "cash" ? "default" : "outline"}
+              className="h-16 text-lg justify-start px-6 gap-4"
               type="button"
-              disabled={isCreatingPayment}
-              onClick={handleCreatePayment}>
-              Create Payment
+              onClick={() => {
+                setPaymentMethod("cash");
+                handleCreatePayment("cash");
+              }}>
+              <div className="bg-primary/10 p-2 rounded-full overflow-hidden flex items-center justify-center">
+                <Image src="/images/dollar.png" alt="Cash" width={24} height={24} className="size-6 object-contain" />
+              </div>
+              Cash
             </Button>
+            <Button
+              variant={paymentMethod === "credit_card" ? "default" : "outline"}
+              className="h-16 text-lg justify-start px-6 gap-4"
+              type="button"
+              onClick={() => {
+                setPaymentMethod("credit_card");
+                handleCreatePayment("credit_card");
+              }}>
+              <div className="bg-primary/10 p-2 rounded-full overflow-hidden flex items-center justify-center">
+                <Image src="/images/payment.png" alt="Manual Card/EDC" width={24} height={24} className="size-6 object-contain" />
+              </div>
+              Manual Card/EDC
+            </Button>
+            <Button
+              variant={paymentMethod === "stripe" ? "default" : "outline"}
+              className="h-16 text-lg justify-start px-6 gap-4"
+              type="button"
+              onClick={() => {
+                setPaymentMethod("stripe");
+                handleCreatePayment("stripe");
+              }}>
+              <div className="bg-primary/10 p-2 rounded-full overflow-hidden flex items-center justify-center">
+                <Image src="/images/logo-stripe.svg" alt="Stripe" width={24} height={24} className="size-6 object-contain" />
+              </div>
+              Stripe
+            </Button>
+          </div>
+          <div className="text-right font-bold text-lg pt-2 border-t mt-2">
+            Total: ${Number(totalAmount || 0).toFixed(2)}
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={isVerifyPaymentOpen} onOpenChange={setIsVerifyPaymentOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden flex flex-col max-h-[90vh]">
+          <DialogHeader className="p-6 pb-2 border-b">
             <DialogTitle>Verify Payment</DialogTitle>
             <DialogDescription>Confirm payment and complete the order.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 text-sm">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 text-sm">
             <div className="grid gap-1">
               <span className="text-muted-foreground">Payment ID</span>
               <span className="font-semibold">{createdPayment?.id || "-"}</span>
@@ -867,16 +988,50 @@ export const PosPage = () => {
                 ${Number(createdPayment?.amount || totalAmount || 0).toFixed(2)}
               </span>
             </div>
-            <Button
-              className="w-full"
-              type="button"
-              disabled={isVerifyingPayment}
-              onClick={handleVerifyPayment}>
-              Verify Payment
-            </Button>
+
+            {createdPayment?.client_secret && (
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret: createdPayment.client_secret,
+                  appearance: { theme: "stripe" }
+                }}>
+                <StripePayment
+                  clientSecret={createdPayment.client_secret}
+                  onSuccess={(paymentIntentId) => {
+                    handleVerifyPayment();
+                  }}
+                  onCancel={() => {
+                    setIsVerifyPaymentOpen(false);
+                  }}
+                />
+              </Elements>
+            )}
+
+            {!createdPayment?.client_secret && (
+              <Button
+                className="w-full"
+                type="button"
+                disabled={isVerifyingPayment}
+                onClick={handleVerifyPayment}>
+                Verify Payment
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
+      <ReceiptModal
+        isOpen={isReceiptOpen}
+        onClose={() => {
+          setIsReceiptOpen(false);
+          setVerifiedOrder(null);
+          setSelectedOrderId(null); // Reset for next order
+        }}
+        order={verifiedOrder}
+        onPrint={() => {
+          window.print();
+        }}
+      />
     </form>
   );
 };

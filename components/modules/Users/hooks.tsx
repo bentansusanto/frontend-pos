@@ -19,7 +19,10 @@ export const useAddUser = ({ onSuccess }: UseAddUserProps) => {
       name: "",
       email: "",
       password: "",
+      username: "",
+      pin: "",
       role_id: "",
+      role_code: "",
       branch_id: ""
     },
     validate: (values) => {
@@ -35,13 +38,34 @@ export const useAddUser = ({ onSuccess }: UseAddUserProps) => {
     },
     onSubmit: async (values, { setSubmitting, resetForm }) => {
       try {
-        await createUser(values).unwrap();
+        // Jangan kirim role_code ke API
+        const { role_code, ...payload } = values;
+
+        // Jika cashier: kirim pin, hapus username & password
+        // Jika non-cashier: kirim username + password, hapus pin
+        if (role_code === "cashier") {
+          delete payload.username;
+          delete payload.password;
+        } else {
+          delete payload.pin;
+        }
+
+        await createUser(payload).unwrap();
         toast.success("User created successfully");
         resetForm();
         onSuccess();
       } catch (error: any) {
         console.error("Failed to create user:", error);
-        toast.error(error?.data?.message || "Failed to create user");
+        const msgs = error?.data?.Error;
+        let errorMessage = "Failed to create user";
+        if (Array.isArray(msgs)) {
+          errorMessage = msgs.map((e: any) => e.body).join(", ");
+        } else if (msgs?.body) {
+          errorMessage = msgs.body;
+        } else if (error?.data?.message) {
+          errorMessage = error.data.message;
+        }
+        toast.error(errorMessage);
       } finally {
         setSubmitting(false);
       }
@@ -53,6 +77,7 @@ export const useAddUser = ({ onSuccess }: UseAddUserProps) => {
     isLoading
   };
 };
+
 
 interface UseProfileFormProps {
   userId: string;

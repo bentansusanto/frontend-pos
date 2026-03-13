@@ -48,7 +48,7 @@ export const baseAuth = createApi({
         method: "POST",
         body: data
       }),
-      transformResponse: (response: any) => response.data || response
+      transformResponse: (res: any) => (res && res.data !== undefined ? res.data : res)
     }),
 
     // logout
@@ -56,7 +56,8 @@ export const baseAuth = createApi({
       query: () => ({
         url: "/auth/logout",
         method: "POST"
-      })
+      }),
+      invalidatesTags: ["Users"]
     }),
 
     // get profile
@@ -65,7 +66,7 @@ export const baseAuth = createApi({
         url: "/users/me",
         method: "GET"
       }),
-      transformResponse: (response: any) => response.data || response,
+      transformResponse: (res: any) => (res && res.data !== undefined ? res.data : res),
       providesTags: ["Users"]
     }),
     // refreh token
