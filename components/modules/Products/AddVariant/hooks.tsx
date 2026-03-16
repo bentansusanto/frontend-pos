@@ -31,8 +31,7 @@ export const useAddVariant = ({ productId, onSuccess }: UseAddVariantProps) => {
     initialValues: {
       name_variant: "",
       price: 0,
-      weight: undefined,
-      color: "",
+      cost_price: 0,
       thumbnail: "",
       thumbnailFile: undefined
     },
@@ -49,13 +48,8 @@ export const useAddVariant = ({ productId, onSuccess }: UseAddVariantProps) => {
         formData.append("productId", productId);
         formData.append("name_variant", values.name_variant);
         formData.append("price", String(values.price));
-        
-        if (values.weight) {
-          formData.append("weight", String(values.weight));
-        }
-        
-        if (values.color) {
-          formData.append("color", values.color);
+        if (values.cost_price !== undefined) {
+          formData.append("cost_price", String(values.cost_price));
         }
 
         if (values.thumbnailFile) {

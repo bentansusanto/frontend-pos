@@ -76,7 +76,7 @@ export default function StockOverviewPage() {
       const matchesType = typeFilter === "all" || movement.referenceType === typeFilter;
 
       return matchesSearch && matchesType;
-    });
+    }).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [movementsData, searchTerm, typeFilter]);
 
   // Pagination logic

@@ -118,51 +118,30 @@ export const UpdateVariantDialog = ({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="weight">Weight (Optional)</Label>
-              <Input
-                id="weight"
-                name="weight"
-                type="number"
-                placeholder="0"
-                value={formik.values.weight ?? ""}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  formik.setFieldValue("weight", isNaN(val) ? undefined : val);
-                }}
-                onBlur={formik.handleBlur}
-                className={
-                  formik.touched.weight && formik.errors.weight
-                    ? "border-red-500 focus-visible:ring-red-500"
-                    : ""
-                }
-              />
-              {formik.touched.weight && formik.errors.weight && (
-                <p className="text-xs text-red-500">{formik.errors.weight as string}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="color">Color (Optional)</Label>
-              <Input
-                id="color"
-                name="color"
-                placeholder="e.g. #FF0000 or Red"
-                value={formik.values.color}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                className={
-                  formik.touched.color && formik.errors.color
-                    ? "border-red-500 focus-visible:ring-red-500"
-                    : ""
-                }
-              />
-              {formik.touched.color && formik.errors.color && (
-                <p className="text-xs text-red-500">{formik.errors.color as string}</p>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="cost_price">Cost Price (Optional)</Label>
+            <Input
+              id="cost_price"
+              name="cost_price"
+              type="number"
+              placeholder=""
+              value={isNaN(formik.values.cost_price as number) ? "" : formik.values.cost_price}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                formik.setFieldValue("cost_price", isNaN(val) ? 0 : val);
+              }}
+              onBlur={formik.handleBlur}
+              className={
+                formik.touched.cost_price && formik.errors.cost_price
+                  ? "border-red-500 focus-visible:ring-red-500"
+                  : ""
+              }
+            />
+            {formik.touched.cost_price && formik.errors.cost_price && (
+              <p className="text-xs text-red-500">{formik.errors.cost_price as string}</p>
+            )}
           </div>
+
 
           <div className="space-y-2">
             <Label>Thumbnail (Optional)</Label>

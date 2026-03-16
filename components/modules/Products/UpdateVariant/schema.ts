@@ -3,8 +3,7 @@ import { z } from "zod";
 export const updateVariantSchema = z.object({
   name_variant: z.string().min(1, { message: "Name variant is required" }),
   price: z.number({ invalid_type_error: "Price must be a number" }).min(0, { message: "Price cannot be negative" }),
-  weight: z.number({ invalid_type_error: "Weight must be a number" }).optional(),
-  color: z.string().optional(),
+  cost_price: z.number({ invalid_type_error: "Cost Price must be a number" }).min(0, { message: "Cost Price cannot be negative" }).optional(),
   thumbnail: z.string().optional(),
   thumbnailFile: z.any().optional()
 });

@@ -36,8 +36,7 @@ export const useUpdateVariant = ({
     initialValues: {
       name_variant: initialData?.name_variant || "",
       price: initialData?.price ? parseFloat(initialData.price) : 0,
-      weight: initialData?.weight ? parseFloat(initialData.weight) : undefined,
-      color: initialData?.color || "",
+      cost_price: initialData?.cost_price ? parseFloat(initialData.cost_price) : 0,
       thumbnail: initialData?.thumbnail || "",
       thumbnailFile: undefined
     },
@@ -56,12 +55,8 @@ export const useUpdateVariant = ({
         formData.append("name_variant", values.name_variant);
         formData.append("price", String(isNaN(values.price) ? 0 : values.price));
 
-        if (values.weight !== undefined) {
-          formData.append("weight", String(isNaN(values.weight!) ? 0 : values.weight));
-        }
-
-        if (values.color) {
-          formData.append("color", values.color);
+        if (values.cost_price !== undefined) {
+          formData.append("cost_price", String(isNaN(values.cost_price) ? 0 : values.cost_price));
         }
 
         if (values.thumbnailFile) {

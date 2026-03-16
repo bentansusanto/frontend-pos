@@ -350,15 +350,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 asChild>
                 <Link href="/dashboard">
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                     <IconInnerShadowTop className="size-4" />
                   </div>
-                  <span className="flex flex-col leading-tight">
-                    <span className="text-base font-semibold">{data.brand.name}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {selectedBranch?.name || data.brand.description}
-                    </span>
-                  </span>
+                  <div className="flex flex-col gap-0.5 leading-none">
+                    <span className="font-semibold">{data.brand.name}</span>
+                    <span className="text-xs text-sidebar-foreground/60">{selectedBranch?.name || "Enterprise"}</span>
+                  </div>
                 </Link>
               </SidebarMenuButton>
             )}

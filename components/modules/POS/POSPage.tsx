@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Minus, Plus, Search, Trash2, UserRoundPlus } from "lucide-react";
+import { ChevronDown, CreditCard, Minus, Package, Plus, Search, Trash2, UserRoundPlus } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -70,6 +70,9 @@ export const PosPage = () => {
   const [createdPayment, setCreatedPayment] = useState<any | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [selectedProductForVariant, setSelectedProductForVariant] = useState<any | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<any | null>(null);
+  const [variantModalQty, setVariantModalQty] = useState(1);
+  const [variantModalUnit, setVariantModalUnit] = useState<"satuan" | "lusin" | "box">("satuan");
   const [isOpenSessionModalOpen, setIsOpenSessionModalOpen] = useState(false);
   const [isCloseSessionModalOpen, setIsCloseSessionModalOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
@@ -237,7 +240,7 @@ export const PosPage = () => {
     }
   });
 
-  const handleAddToCart = async (product: any, variant: any = null) => {
+  const handleAddToCart = async (product: any, variant: any = null, nextQuantity: number = 1) => {
     try {
       const price = variant ? Number(variant.price || 0) : Number(product.price || 0);
 
@@ -255,13 +258,12 @@ export const PosPage = () => {
           {
             productId: product.id,
             variantId: variant?.id,
-            quantity: "1",
+            quantity: String(nextQuantity),
             price
           }
         ]
       }).unwrap();
-      // The backend response structure for create order might be returning { order, items } directly in data
-      // instead of { data: { id: ... } }. Let's check both possibilities or refetch to be safe.
+      
       const orderId = response?.data?.id || response?.data?.order?.id || response?.id;
 
       if (orderId && orderId !== selectedOrderId) {
@@ -270,6 +272,9 @@ export const PosPage = () => {
       refetchOrders();
       if (variant) {
         setSelectedProductForVariant(null);
+        setSelectedVariant(null);
+        setVariantModalQty(1);
+        setVariantModalUnit("satuan");
       }
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to add product to order");
@@ -392,205 +397,44 @@ export const PosPage = () => {
         event.preventDefault();
         handleProcessPayment();
       }}
-      className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
-      <Card className="flex h-full flex-col lg:sticky lg:top-6 lg:h-[calc(100svh-6rem)]">
-        <CardHeader className="pb-4">
+      className="flex h-[calc(100svh-4rem)] flex-col lg:flex-row overflow-hidden -m-6 rounded-none">
+      {/* Left Area: Products */}
+      <div className="flex flex-1 flex-col overflow-hidden border-r border-border bg-muted/5">
+        <div className="flex flex-col gap-4 border-b border-border bg-background p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Current Order</CardTitle>
-            <div className="flex gap-1">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-8 text-[10px]" 
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">New Order</h1>
+              <p className="text-muted-foreground text-xs">Branch: {profileData?.branch?.name || "Main"}</p>
+            </div>
+            {activeSession && (
+              <Button
+                variant="outline"
+                size="sm"
                 type="button"
-                onClick={handleNewOrder}
-              >
-                New Order
+                className="h-8 text-xs text-destructive hover:bg-destructive/5"
+                onClick={() => setIsCloseSessionModalOpen(true)}>
+                Close Session
               </Button>
-              <Button variant="ghost" size="icon" type="button">
-                <ChevronDown className="size-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="flex-1 space-y-5">
-          <div className="flex items-center justify-between rounded-xl border border-dashed px-4 py-3">
-            <div className="flex items-center gap-3">
-              <span className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-full">
-                <UserRoundPlus className="size-4" />
-              </span>
-              <div>
-                <p className="text-sm font-semibold">
-                  {selectedCustomer?.name || "Assign Customer"}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {selectedCustomer ? "Customer selected" : "Earn loyalty points"}
-                </p>
-              </div>
-            </div>
-            <Button
-              size="icon"
-              variant="outline"
-              type="button"
-              onClick={() => setIsCustomerModalOpen(true)}>
-              <Plus className="size-4" />
-            </Button>
-          </div>
-
-          <div className="space-y-4">
-            {isOrdersLoading ? (
-              <div className="text-muted-foreground text-sm">Loading orders...</div>
-            ) : orderItems.length === 0 ? (
-              <div className="text-muted-foreground text-sm">No items in current order.</div>
-            ) : (
-              orderItems.map((item: any) => {
-                const variant = item.variant_id ? variantsById.get(item.variant_id) : null;
-                const product = item.product_id
-                  ? productsById.get(item.product_id)
-                  : variant?.product;
-                const itemName = variant?.name_variant || product?.name_product || "Item";
-                const itemImage =
-                  item.image ||
-                  variant?.thumbnail ||
-                  product?.thumbnail ||
-                  (Array.isArray(product?.images) ? product.images[0] : null) ||
-                  "/placeholder-image.jpg";
-                return (
-                  <div key={item.id} className="flex items-start gap-3">
-                    <div className="size-12 overflow-hidden rounded-lg border">
-                      <Image
-                        src={itemImage}
-                        alt={itemName}
-                        width={80}
-                        height={80}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold">{itemName}</p>
-                        <p className="text-sm font-semibold">
-                          ${Number(item.price || 0).toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="mt-2 flex items-center gap-2">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-7 w-7"
-                          type="button"
-                          disabled={isUpdatingQuantity || item.qty <= 1}
-                          onClick={() => handleUpdateQuantity(item.id, Number(item.qty || 0) - 1)}>
-                          <Minus className="size-3" />
-                        </Button>
-                        <span className="text-sm font-semibold">{item.qty}</span>
-                        <Button
-                          size="icon"
-                          className="h-7 w-7"
-                          type="button"
-                          disabled={isUpdatingQuantity}
-                          onClick={() => handleUpdateQuantity(item.id, Number(item.qty || 0) + 1)}>
-                          <Plus className="size-3" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="destructive"
-                          className="ml-auto h-7 w-7"
-                          type="button"
-                          disabled={isDeletingItem}
-                          onClick={() => handleDeleteOrderItem(item.id)}>
-                          <Trash2 className="size-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
             )}
           </div>
-
-          <Separator />
-
-          <div className="space-y-2 text-sm">
-            <div className="text-muted-foreground flex items-center justify-between">
-              <span>Subtotal</span>
-              <span>${Number(subtotal || 0).toFixed(2)}</span>
-            </div>
-            <div className="text-muted-foreground flex items-center justify-between">
-              <span>{taxName}</span>
-              <span>${Number(taxAmount || 0).toFixed(2)}</span>
-            </div>
-            {discountAmount > 0 && (
-              <div className="flex items-center justify-between font-medium text-red-500">
-                <span>{discountName}</span>
-                <span>-${Number(discountAmount || 0).toFixed(2)}</span>
-              </div>
-            )}
-            <div className="flex items-center justify-between text-base font-semibold">
-              <span>Total</span>
-              <span className="text-primary">${Number(totalAmount || 0).toFixed(2)}</span>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-3 pb-6">
-          <Button
-            variant="outline"
-            className="w-full border-dashed"
-            type="button"
-            onClick={() => setIsDiscountModalOpen(true)}
-            disabled={isLoading || isUpdatingOrder || !currentOrder?.id || orderItems.length === 0}>
-            {discountAmount > 0 ? "Change / Remove Discount" : "Apply Discount"}
-          </Button>
-          <Button
-            className="w-full"
-            type="submit"
-            disabled={isLoading || isUpdatingOrder || !currentOrder?.id}>
-            Process Payment
-          </Button>
-        </CardFooter>
-      </Card>
-
-      <div className="grid gap-6">
-        <div className="bg-background sticky top-0 z-10 space-y-4 px-3 pt-6 pb-3">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-            <div className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-4">
-              <h1 className="text-foreground text-xl font-semibold">New Order</h1>
-              <div className="flex items-center gap-2">
-                <p className="text-muted-foreground text-sm">
-                  Find products, add to cart, and process payment.
-                </p>
-                {activeSession && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      type="button"
-                      className="h-6 text-[10px] text-red-600 hover:text-red-700 hover:bg-red-50 ml-2"
-                      onClick={() => setIsCloseSessionModalOpen(true)}
-                    >
-                      Close Session
-                    </Button>
-                )}
-              </div>
-            </div>
-            <div className="grid gap-3">
-              <div className="relative">
-                <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                <Input
-                  placeholder="Search products, category, or scan barcode..."
-                  className="pl-9"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                />
-              </div>
-            </div>
+          
+          <div className="relative">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <Input
+              placeholder="Search products or scan barcode..."
+              className="pl-9 h-11 bg-muted/30 border-none ring-0 focus-visible:ring-1"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
           </div>
 
-          <div className="scrollbar-none flex gap-2 overflow-x-auto pb-2">
+          <div className="scrollbar-none flex gap-2 overflow-x-auto pb-1">
             {categories.map((category: any) => (
               <Button
                 key={category.id}
+                size="sm"
                 variant={selectedCategory === category.id ? "default" : "outline"}
-                className={`shrink-0 ${selectedCategory === category.id ? "shadow-sm" : ""}`}
+                className={`shrink-0 rounded-full h-8 px-4 ${selectedCategory === category.id ? "shadow-md" : ""}`}
                 type="button"
                 onClick={() => setSelectedCategory(category.id)}>
                 {category.name}
@@ -599,120 +443,387 @@ export const PosPage = () => {
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {products.map((product: any) => {
-            const variants = variantsByProductId.get(product.id) || [];
-            const imageSource =
-              product.thumbnail ||
-              (Array.isArray(product.images) ? product.images[0] : null) ||
-              "/placeholder-image.jpg";
-            const hasVariants = variants.length > 0;
+        <div className="flex-1 overflow-auto p-4 lg:p-6 pb-20 lg:pb-6">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            {products.map((product: any) => {
+              const variants = variantsByProductId.get(product.id) || [];
+              const imageSource =
+                product.thumbnail ||
+                (Array.isArray(product.images) ? product.images[0] : null) ||
+                "/placeholder-image.jpg";
+              const hasVariants = variants.length > 0;
 
-            // ── Stock: use sum of variant stocks when variants exist ──────────────
-            const stock = hasVariants
-              ? variants.reduce((sum: number, v: any) => sum + (Number(v.stock) || 0), 0)
-              : typeof product.product_stock === "number"
-                ? product.product_stock
-                : 0;
+              const stock = hasVariants
+                ? variants.reduce((sum: number, v: any) => sum + (Number(v.stock) || 0), 0)
+                : typeof product.product_stock === "number"
+                  ? product.product_stock
+                  : 0;
 
-            // ── Price: show min variant price or product price ────────────────────
-            const displayPrice = hasVariants
-              ? Math.min(...variants.map((v: any) => Number(v.price) || 0))
-              : Number(product.price || 0);
-            const priceLabel = hasVariants
-              ? `from $${displayPrice.toFixed(2)}`
-              : `$${displayPrice.toFixed(2)}`;
+              const displayPrice = hasVariants
+                ? Math.min(...variants.map((v: any) => Number(v.price) || 0))
+                : Number(product.price || 0);
+              
+              const maxPrice = hasVariants
+                ? Math.max(...variants.map((v: any) => Number(v.price) || 0))
+                : displayPrice;
 
-            return (
-              <div
-                key={product.id}
-                className="group hover:border-primary/50 relative flex cursor-pointer flex-col items-center rounded-md border-2 bg-white pb-4 shadow-sm transition-all hover:border-2 hover:shadow-md dark:bg-slate-900"
-                onClick={() => {
-                  if (hasVariants) {
-                    setSelectedProductForVariant(product);
-                  } else {
-                    handleAddToCart(product);
-                  }
-                }}>
-                <div className="relative mb-3 aspect-square h-40 w-full overflow-hidden rounded-md shadow-md">
-                  <Image
-                    src={imageSource}
-                    alt={product.name_product}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-110"
-                  />
-                  {stock === 0 && !hasVariants && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs font-bold text-white">
-                      Out of Stock
-                    </div>
-                  )}
-                </div>
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => {
+                    if (hasVariants) {
+                      setSelectedProductForVariant(product);
+                    } else {
+                      handleAddToCart(product);
+                    }
+                  }}
+                  className="group flex flex-col items-start rounded-2xl border border-border bg-card p-3 text-left transition-all hover:border-primary/50 hover:shadow-md h-full">
+                  <div className="relative mb-3 aspect-square w-full overflow-hidden rounded-xl bg-muted">
+                    <Image
+                      src={imageSource}
+                      alt={product.name_product}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-110"
+                    />
+                    {stock === 0 && !hasVariants && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs font-bold text-white backdrop-blur-[1px]">
+                        Out of Stock
+                      </div>
+                    )}
+                    {stock > 0 && stock <= 5 && (
+                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-amber-500 text-[10px] font-bold text-white rounded-full shadow-sm">
+                        Low Stock
+                      </div>
+                    )}
+                  </div>
 
-                <div className="w-full px-3 py-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-card-foreground line-clamp-1 text-sm font-semibold">
+                  <div className="flex flex-col flex-1 w-full gap-1">
+                    <h3 className="text-sm font-semibold text-foreground leading-tight line-clamp-2 min-h-[2.5rem]">
                       {product.name_product}
                     </h3>
-                    <p className="text-primary mt-1 text-sm font-bold">{priceLabel}</p>
+                    <div className="flex items-center justify-between mt-auto">
+                      <p className="text-xs text-muted-foreground">
+                        {hasVariants ? `${variants.length} options` : `${stock} pcs`}
+                      </p>
+                      <p className="text-sm font-bold text-primary">
+                        {hasVariants && displayPrice !== maxPrice
+                          ? `$${displayPrice.toFixed(2)}+`
+                          : `$${displayPrice.toFixed(2)}`}
+                      </p>
+                    </div>
                   </div>
-                  {!hasVariants && (
-                    <p
-                      className={`mt-1 text-xs font-medium ${stock > 5 ? "text-green-600" : stock > 0 ? "text-yellow-600" : "text-red-600"}`}>
-                      {stock > 0 ? `${stock} in stock` : "Out of Stock"}
-                    </p>
-                  )}
-                  {hasVariants && (
-                    <p className="text-muted-foreground mt-1 text-[10px]">
-                      {variants.length} Variants
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
           {!isProductsLoading && products.length === 0 ? (
-            <div className="text-muted-foreground text-sm">No products available.</div>
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+              <Search className="size-10 mb-2 opacity-20" />
+              <p className="text-sm">No products found</p>
+            </div>
           ) : null}
+        </div>
+      </div>
+
+      {/* Right Area: Cart & Summary */}
+      <div className="flex w-full flex-col lg:w-[380px] xl:w-[420px] bg-background">
+        <div className="flex items-center justify-between border-b border-border px-4 py-4 min-h-[4.5rem]">
+          <div>
+            <h2 className="text-base font-bold text-foreground">Active Order</h2>
+            {selectedCustomer && (
+              <p className="text-[10px] text-primary font-medium">{selectedCustomer.name}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="icon" variant="outline" className="size-8 rounded-full" type="button" onClick={handleNewOrder}>
+              <Plus className="size-4" />
+            </Button>
+            <span className="bg-primary/10 text-primary px-2 py-1 rounded-md text-xs font-bold">
+              {orderItems.reduce((s: number, i: any) => s + Number(i.qty || 0), 0)} items
+            </span>
+          </div>
+        </div>
+
+        {/* Customer & Info Banner */}
+        <div className="p-4 bg-muted/30 border-b border-border">
+          <button 
+            type="button"
+            onClick={() => setIsCustomerModalOpen(true)}
+            className="flex w-full items-center gap-3 p-3 bg-card rounded-xl border border-border shadow-sm hover:border-primary/50 transition-colors">
+            <div className="bg-primary/10 text-primary flex size-9 items-center justify-center rounded-lg shrink-0">
+              <UserRoundPlus className="size-4" />
+            </div>
+            <div className="flex-1 text-left min-w-0">
+              <p className="text-sm font-semibold truncate">
+                {selectedCustomer?.name || "Select Customer"}
+              </p>
+              <p className="text-[10px] text-muted-foreground truncate">
+                {selectedCustomer ? `${selectedCustomer.email || "No email"}` : "Earn loyalty points & track orders"}
+              </p>
+            </div>
+            <ChevronDown className="size-4 text-muted-foreground" />
+          </button>
+        </div>
+
+        {/* Cart Items */}
+        <div className="flex-1 overflow-auto px-4 py-2">
+          {isOrdersLoading ? (
+            <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
+              <div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <p className="text-xs">Loading items...</p>
+            </div>
+          ) : orderItems.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center text-muted-foreground space-y-2 opacity-50">
+              <Package className="size-12" />
+              <div className="text-center">
+                <p className="text-sm font-medium">Cart is empty</p>
+                <p className="text-[10px]">Tap products to add them here</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 py-2">
+              {orderItems.map((item: any) => {
+                const variant = item.variant_id ? variantsById.get(item.variant_id) : null;
+                const product = item.product_id
+                  ? productsById.get(item.product_id)
+                  : variant?.product;
+                const itemName = variant?.name_variant || product?.name_product || "Item";
+                
+                return (
+                  <div key={item.id} className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-3 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-foreground truncate">{itemName}</p>
+                        <p className="text-xs text-muted-foreground">${Number(item.price || 0).toFixed(2)} / unit</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-6 text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+                        type="button"
+                        disabled={isDeletingItem}
+                        onClick={() => handleDeleteOrderItem(item.id)}>
+                        <Trash2 className="size-3" />
+                      </Button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between mt-1">
+                      <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-6 rounded-md hover:bg-background"
+                          type="button"
+                          disabled={isUpdatingQuantity || item.qty <= 1}
+                          onClick={() => handleUpdateQuantity(item.id, Number(item.qty || 0) - 1)}>
+                          <Minus className="size-3" />
+                        </Button>
+                        <span className="w-8 text-center text-xs font-bold">{item.qty}</span>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="size-6 rounded-md hover:bg-background"
+                          type="button"
+                          disabled={isUpdatingQuantity}
+                          onClick={() => handleUpdateQuantity(item.id, Number(item.qty || 0) + 1)}>
+                          <Plus className="size-3" />
+                        </Button>
+                      </div>
+                      <p className="text-sm font-bold text-primary">
+                        ${Number(item.subtotal || 0).toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Purchase Footer */}
+        <div className="border-t border-border p-4 bg-background shadow-[0_-4px_10px_rgba(0,0,0,0.03)]">
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Subtotal</span>
+              <span>${Number(subtotal || 0).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{taxName}</span>
+              <span>${Number(taxAmount || 0).toFixed(2)}</span>
+            </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-xs font-medium text-destructive">
+                <span>{discountName}</span>
+                <span>-${Number(discountAmount || 0).toFixed(2)}</span>
+              </div>
+            )}
+            <Separator className="my-2" />
+            <div className="flex justify-between items-center">
+              <span className="text-base font-bold">Total Amount</span>
+              <span className="text-xl font-black text-primary animate-in fade-in zoom-in duration-300">
+                ${Number(totalAmount || 0).toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="outline"
+              className="w-full h-10 border-dashed rounded-xl text-xs"
+              type="button"
+              onClick={() => setIsDiscountModalOpen(true)}
+              disabled={isLoading || isUpdatingOrder || !currentOrder?.id || orderItems.length === 0}>
+              {discountAmount > 0 ? "Change Discount" : "Add Discount / Promo"}
+            </Button>
+            <Button
+              className="w-full h-14 text-base font-bold rounded-2xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              type="submit"
+              disabled={isLoading || isUpdatingOrder || !currentOrder?.id || orderItems.length === 0}>
+              <CreditCard className="mr-2 size-5" />
+              Charge ${Number(totalAmount || 0).toFixed(2)}
+            </Button>
+          </div>
         </div>
       </div>
 
       <Dialog
         open={!!selectedProductForVariant}
-        onOpenChange={(open) => !open && setSelectedProductForVariant(null)}>
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedProductForVariant(null);
+            setSelectedVariant(null);
+            setVariantModalQty(1);
+            setVariantModalUnit("satuan");
+          }
+        }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Select Variant</DialogTitle>
+            <DialogTitle>
+              {selectedVariant ? `Configure ${selectedVariant.name_variant}` : "Select Variant"}
+            </DialogTitle>
             <DialogDescription>
-              Choose a variant for {selectedProductForVariant?.name_product}
+              {selectedVariant 
+                ? `Set quantity and unit for ${selectedVariant.name_variant}`
+                : `Choose a variant for ${selectedProductForVariant?.name_product}`
+              }
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-2">
-            {selectedProductForVariant &&
-              variantsByProductId.get(selectedProductForVariant.id)?.map((variant: any) => {
-                const variantStock = Number(variant.stock || 0);
-                return (
+
+          {!selectedVariant ? (
+            <div className="grid gap-2">
+              {selectedProductForVariant &&
+                variantsByProductId.get(selectedProductForVariant.id)?.map((variant: any) => {
+                  const variantStock = Number(variant.stock || 0);
+                  return (
+                    <Button
+                      key={variant.id}
+                      variant="outline"
+                      className="flex h-auto items-center justify-between p-4 hover:border-primary/50 transition-colors"
+                      disabled={variantStock === 0}
+                      type="button"
+                      onClick={() => setSelectedVariant(variant)}>
+                      <div className="flex flex-col items-start gap-1">
+                        <span className="font-semibold">{variant.name_variant}</span>
+                        <span className="text-muted-foreground text-xs">SKU: {variant.sku || "-"}</span>
+                        <p
+                          className={`text-[10px] font-bold ${variantStock > 5 ? "text-green-600" : variantStock > 0 ? "text-yellow-600" : "text-red-600"}`}>
+                          {variantStock > 0 ? `${variantStock} in stock` : "Out of Stock"}
+                        </p>
+                      </div>
+                      <span className="text-primary font-bold">
+                        ${Number(variant.price || 0).toFixed(2)}
+                      </span>
+                    </Button>
+                  );
+                })}
+            </div>
+          ) : (
+            <div className="space-y-6 py-4">
+              <div className="space-y-3">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Select Unit</Label>
+                <div className="grid grid-cols-3 gap-2">
                   <Button
-                    key={variant.id}
-                    variant="outline"
-                    className="flex h-auto items-center justify-between p-4"
-                    disabled={variantStock === 0}
                     type="button"
-                    onClick={() => handleAddToCart(selectedProductForVariant, variant)}>
-                    <div className="flex flex-col items-start gap-1">
-                      <span className="font-semibold">{variant.name_variant}</span>
-                      <span className="text-muted-foreground text-xs">SKU: {variant.sku || "-"}</span>
-                      <p
-                        className={`text-[10px] font-bold ${variantStock > 5 ? "text-green-600" : variantStock > 0 ? "text-yellow-600" : "text-red-600"}`}>
-                        {variantStock > 0 ? `${variantStock} in stock` : "Dead of Stock"}
-                      </p>
-                    </div>
-                    <span className="text-primary font-bold">
-                      ${Number(variant.price || 0).toFixed(2)}
-                    </span>
+                    variant={variantModalUnit === "satuan" ? "default" : "outline"}
+                    className="flex flex-col h-16 gap-1"
+                    onClick={() => setVariantModalUnit("satuan")}>
+                    <span className="text-sm font-bold">Satuan</span>
+                    <span className="text-[10px] opacity-70">x1</span>
                   </Button>
-                );
-              })}
-          </div>
+                  <Button
+                    type="button"
+                    variant={variantModalUnit === "lusin" ? "default" : "outline"}
+                    className="flex flex-col h-16 gap-1"
+                    onClick={() => setVariantModalUnit("lusin")}>
+                    <span className="text-sm font-bold">Lusin</span>
+                    <span className="text-[10px] opacity-70">x12</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={variantModalUnit === "box" ? "default" : "outline"}
+                    className="flex flex-col h-16 gap-1"
+                    onClick={() => setVariantModalUnit("box")}>
+                    <span className="text-sm font-bold">Box</span>
+                    <span className="text-[10px] opacity-70">x24</span>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Quantity</Label>
+                <div className="flex items-center justify-center gap-4 bg-muted/30 p-4 rounded-2xl">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-10 rounded-full"
+                    onClick={() => setVariantModalQty(Math.max(1, variantModalQty - 1))}>
+                    <Minus className="size-4" />
+                  </Button>
+                  <div className="text-center min-w-16">
+                    <span className="text-2xl font-black">{variantModalQty}</span>
+                    <p className="text-[10px] text-muted-foreground uppercase font-medium">{variantModalUnit}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="size-10 rounded-full"
+                    onClick={() => setVariantModalQty(variantModalQty + 1)}>
+                    <Plus className="size-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <div className="flex justify-between items-center px-1 mb-2">
+                  <span className="text-sm text-muted-foreground">Total Quantity:</span>
+                  <span className="text-sm font-bold">
+                    {variantModalQty * (variantModalUnit === "satuan" ? 1 : variantModalUnit === "lusin" ? 12 : 24)} pcs
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1" 
+                    type="button"
+                    onClick={() => setSelectedVariant(null)}>
+                    Back
+                  </Button>
+                  <Button 
+                    className="flex-[2] font-bold" 
+                    type="button"
+                    onClick={() => {
+                      const multiplier = variantModalUnit === "satuan" ? 1 : variantModalUnit === "lusin" ? 12 : 24;
+                      handleAddToCart(selectedProductForVariant, selectedVariant, variantModalQty * multiplier);
+                    }}>
+                    Confirm Add
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

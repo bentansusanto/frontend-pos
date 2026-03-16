@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye } from "lucide-react";
+import { Banknote, CreditCard, Eye, Receipt, Wallet } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
@@ -102,23 +102,29 @@ export default function SalesReportPage() {
   }, [yearlyData]);
 
   const salesRows = useMemo(() => {
-    return (salesData || []).map((sale: any) => ({
-      paymentId: sale.paymentId,
-      orderId: sale.orderId,
-      amount: sale.amount,
-      paymentMethod: sale.paymentMethod,
-      status: sale.status,
-      paidAt: sale.paidAt,
-      branchName: sale.branch?.name || "-",
-      cashierName: sale.cashier?.name || "-",
-      customerName: sale.customer?.name || "-",
-      itemsCount: sale.items?.length || 0,
-      items: sale.items || [],
-      subtotal: sale.subtotal || 0,
-      taxAmount: sale.taxAmount || 0,
-      discountAmount: sale.discountAmount || 0
-    }));
+    return (salesData || [])
+      .map((sale: any) => ({
+        paymentId: sale.paymentId,
+        orderId: sale.orderId,
+        amount: sale.amount,
+        paymentMethod: sale.paymentMethod,
+        status: sale.status,
+        paidAt: sale.paidAt,
+        branchName: sale.branch?.name || "-",
+        cashierName: sale.cashier?.name || "-",
+        customerName: sale.customer?.name || "-",
+        itemsCount: sale.items?.length || 0,
+        items: sale.items || [],
+        subtotal: sale.subtotal || 0,
+        taxAmount: sale.taxAmount || 0,
+        discountAmount: sale.discountAmount || 0
+      }))
+      .sort((a: any, b: any) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
   }, [salesData]);
+
+  const totalReportSales = useMemo(() => {
+    return salesRows.reduce((sum: number, row: any) => sum + Number(row.amount || 0), 0);
+  }, [salesRows]);
 
   const paymentMethodSummary = summaryData?.paymentMethodSummary || {};
   const [currentPage, setCurrentPage] = useState(1);
@@ -288,68 +294,83 @@ export default function SalesReportPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Sales Transactions</CardTitle>
-          <CardDescription>Daftar pembayaran sukses terbaru</CardDescription>
+      <Card className="overflow-hidden border-none shadow-xl bg-background/50 backdrop-blur-xl">
+        <CardHeader className="border-b bg-muted/20 pb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl font-black">Sales Transactions</CardTitle>
+              <CardDescription>Comprehensive log of completed business transactions</CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {isSalesLoading ? (
             <div className="text-muted-foreground text-sm">Loading sales data...</div>
           ) : (
             <div className="overflow-auto rounded-lg border">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Payment ID</TableHead>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Method</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Branch</TableHead>
-                    <TableHead>Cashier</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead className="text-right">Items</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                <TableHeader className="bg-muted/30">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Payment ID</TableHead>
+                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Order ID</TableHead>
+                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Date</TableHead>
+                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Amount</TableHead>
+                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Method</TableHead>
+                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</TableHead>
+                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Branch</TableHead>
+                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Staff</TableHead>
+                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Customer</TableHead>
+                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Items</TableHead>
+                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Details</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedRows.length ? (
                     paginatedRows.map((row: any) => (
-                      <TableRow key={row.paymentId}>
-                        <TableCell className="font-medium">{row.paymentId}</TableCell>
-                        <TableCell className="text-muted-foreground">{row.orderId}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {row.paidAt ? new Date(row.paidAt).toLocaleDateString("id-ID") : "-"}
+                      <TableRow key={row.paymentId} className="group transition-colors hover:bg-muted/30">
+                        <TableCell className="py-4 font-mono text-xs font-semibold text-primary">
+                          {row.paymentId}
                         </TableCell>
-                        <TableCell className="font-semibold">
-                          {formatCurrency(row.amount)}
+                        <TableCell className="py-4 font-mono text-xs text-muted-foreground">
+                          {row.orderId}
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="text-xs">
+                        <TableCell className="py-4 text-xs font-medium whitespace-nowrap">
+                          {row.paidAt ? new Date(row.paidAt).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}
+                        </TableCell>
+                        <TableCell className="py-4 text-right">
+                          <span className="text-sm font-black text-foreground">
+                            {formatCurrency(row.amount)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-4">
+                          <Badge variant="outline" className="flex w-fit items-center gap-1.5 px-2 py-1 text-[10px] font-bold uppercase transition-all group-hover:bg-background">
+                            {row.paymentMethod === "cash" && <Banknote className="size-3 text-emerald-500" />}
+                            {row.paymentMethod === "credit_card" && <CreditCard className="size-3 text-blue-500" />}
+                            {row.paymentMethod === "stripe" && <Wallet className="size-3 text-indigo-500" />}
                             {row.paymentMethod}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-4">
                           <Badge
-                            className={`text-xs capitalize ${
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-tighter ${
                               row.status === "success"
-                                ? "bg-green-600 hover:bg-green-700"
+                                ? "bg-emerald-500/10 text-emerald-600 border-none shadow-none"
                                 : row.status === "pending"
-                                  ? "bg-yellow-600 hover:bg-yellow-700"
-                                  : row.status === "failed"
-                                    ? "bg-red-600 hover:bg-red-700"
-                                    : ""
+                                  ? "bg-amber-500/10 text-amber-600 border-none shadow-none"
+                                  : "bg-rose-500/10 text-rose-600 border-none shadow-none"
                             }`}>
                             {row.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{row.branchName}</TableCell>
-                        <TableCell>{row.cashierName}</TableCell>
-                        <TableCell>{row.customerName}</TableCell>
-                        <TableCell className="text-right">{row.itemsCount}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="py-4 text-xs font-medium text-muted-foreground">{row.branchName}</TableCell>
+                        <TableCell className="py-4 text-xs font-medium">{row.cashierName}</TableCell>
+                        <TableCell className="py-4 text-xs text-muted-foreground">{row.customerName}</TableCell>
+                        <TableCell className="py-4 text-right">
+                          <span className="inline-flex size-6 items-center justify-center rounded-full bg-muted text-[10px] font-black">
+                            {row.itemsCount}
+                          </span>
+                        </TableCell>
+                        <TableCell className="py-4 text-right">
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button variant="ghost" size="icon">
@@ -452,10 +473,30 @@ export default function SalesReportPage() {
               </Table>
             </div>
           )}
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-muted-foreground text-sm">
-              Showing {showingFrom} to {showingTo} of {totalEntries} entries
+          
+          <div className="p-6 pt-0">
+            <div className="mt-6 flex flex-col gap-4 rounded-2xl bg-muted/30 p-4 ring-1 ring-border/50">
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center gap-3">
+                  <div className="inline-flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Receipt className="size-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Summary</span>
+                    <span className="text-sm font-bold text-foreground">Consolidated Transactions</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-primary">Total Revenue</span>
+                  <span className="text-2xl font-black tracking-tight text-primary">{formatCurrency(totalReportSales)}</span>
+                </div>
+              </div>
             </div>
+
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
+                Showing <span className="text-foreground">{showingFrom}-{showingTo}</span> of <span className="text-foreground">{totalEntries}</span> records
+              </div>
             <Pagination className="mx-0 w-auto justify-end">
               <PaginationContent>
                 <PaginationItem>
@@ -520,6 +561,7 @@ export default function SalesReportPage() {
               </PaginationContent>
             </Pagination>
           </div>
+        </div>
         </CardContent>
       </Card>
     </div>

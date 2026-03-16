@@ -7,10 +7,19 @@ export const addProductSchema = z.object({
     price: z.string().optional(),
     description: z.string().min(1, { message: "Description is required" }),
     thumbnail: z.string().min(1, { message: "Thumbnail is required" }),
-    images: z.string().min(1, { message: "image is required" }),
+    images: z.string().optional(),
     thumbnailFile: z.any().optional(),
-    imageFiles: z.any().optional()
-  })
+    imageFiles: z.any().optional(),
+    id: z.string().optional()
+  }),
+  variants: z.array(z.object({
+    name_variant: z.string().min(1, { message: "Variant name is required" }),
+    sku: z.string().optional(),
+    price: z.number().min(0),
+    cost_price: z.number().min(0).optional(),
+    stock: z.number().min(0).default(0),
+    batch_code: z.string().optional()
+  })).min(1, { message: "At least one variant is required" })
 });
 
 export type AddProductSchema = z.infer<typeof addProductSchema>;

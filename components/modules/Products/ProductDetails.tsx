@@ -215,6 +215,7 @@ export const ProductDetails = () => {
                         <TableHead>Variant</TableHead>
                         <TableHead>SKU</TableHead>
                         <TableHead>Price</TableHead>
+                        <TableHead>Cost Price</TableHead>
                         <TableHead>Stock</TableHead>
                         <TableHead>Action</TableHead>
                       </TableRow>
@@ -240,6 +241,9 @@ export const ProductDetails = () => {
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
                             ${Number(variant.price).toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            ${Number(variant.cost_price || 0).toLocaleString()}
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
                             {variant.stock || 0}

@@ -93,16 +93,16 @@ export default function PosLogPage() {
       };
     });
 
-    if (!searchTerm) return enriched;
-
     const lowerSearch = searchTerm.toLowerCase();
-    return enriched.filter(
+    const result = searchTerm ? enriched.filter(
       (session: any) =>
         session._userName.toLowerCase().includes(lowerSearch) ||
         session._branchName.toLowerCase().includes(lowerSearch) ||
         session.id.toLowerCase().includes(lowerSearch) ||
         session.notes?.toLowerCase().includes(lowerSearch)
-    );
+    ) : enriched;
+
+    return result.sort((a: any, b: any) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
   }, [posSessions, searchTerm, usersMap, branchesMap]);
 
   const copyToClipboard = (text: string) => {

@@ -2,34 +2,18 @@
 
 import {
   AlertTriangle,
-  ArrowUpDown,
+  ArrowUpRight,
   CheckCircle2,
-  Eye,
   Filter,
-  Loader2,
-  PencilLine,
+  Package,
   Plus,
   Search,
-  Trash2,
   XCircle
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Pagination,
@@ -47,14 +31,6 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@/components/ui/table";
 import { useGetProfileQuery } from "@/store/services/auth.service";
 import { useGetBranchesQuery } from "@/store/services/branch.service";
 import { useGetAllCategoriesQuery } from "@/store/services/category.service";
@@ -62,6 +38,7 @@ import { useDeleteProductMutation, useGetProductsQuery } from "@/store/services/
 import { getCookie } from "@/utils/cookies";
 import React, { useEffect, useMemo, useState } from "react";
 import AddStockDialog from "./AddStock/AddStockDialog";
+import { InventoryTable } from "./InventoryTable";
 
 export const ProductPage = () => {
   const { data: profileData } = useGetProfileQuery();
@@ -157,17 +134,27 @@ export const ProductPage = () => {
     }
   };
 
+  const selectedBranchName = useMemo(() => {
+    if (selectedBranchId === "all") return "All Branches";
+    return availableBranches.find((b: any) => b.id === selectedBranchId)?.name || "Branch";
+  }, [selectedBranchId, availableBranches]);
+
   const stockStats = useMemo(() => {
     const counts = products.reduce(
       (acc: { inStock: number; low: number; out: number }, product: any) => {
-        const stock = typeof product.stock === "number" ? product.stock : 0;
-        if (stock === 0) {
-          acc.out += 1;
-        } else if (stock < 10) {
-          acc.low += 1;
-        } else {
-          acc.inStock += 1;
-        }
+        const variants = product.variants || [];
+        if (variants.length === 0) return acc;
+
+        variants.forEach((v: any) => {
+          const stock = typeof v.stock === "number" ? v.stock : 0;
+          if (stock <= 0) {
+            acc.out += 1;
+          } else if (stock < 10) {
+            acc.low += 1;
+          } else {
+            acc.inStock += 1;
+          }
+        });
         return acc;
       },
       { inStock: 0, low: 0, out: 0 }
@@ -177,26 +164,26 @@ export const ProductPage = () => {
       {
         title: "In Stock",
         value: counts.inStock.toLocaleString(),
-        helper: "Items",
+        helper: `In ${selectedBranchName}`,
         tone: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
         icon: CheckCircle2
       },
       {
         title: "Low Inventory",
         value: counts.low.toLocaleString(),
-        helper: "Items",
+        helper: "Requires Attention",
         tone: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
         icon: AlertTriangle
       },
       {
         title: "Out of Stock",
         value: counts.out.toLocaleString(),
-        helper: "Items",
+        helper: "Immediate Action",
         tone: "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
         icon: XCircle
       }
     ];
-  }, [products]);
+  }, [products, selectedBranchName]);
 
   const filteredProducts = products
     .filter((product: any) => {
@@ -278,28 +265,96 @@ export const ProductPage = () => {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {stockStats.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div
-              key={item.title}
-              className="bg-background flex items-center gap-4 rounded-xl border px-4 py-3 shadow-sm">
-              <div className={`flex size-11 items-center justify-center rounded-xl ${item.tone}`}>
-                <Icon className="size-5" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500">{item.title}</p>
-                <div className="flex items-end gap-2">
-                  <p className="text-xl font-semibold text-slate-900 dark:text-slate-300">
-                    {item.value}
-                  </p>
-                  <span className="text-xs text-slate-400">{item.helper}</span>
-                </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Total Products Card */}
+        <Card className="rounded-xl border bg-white shadow-sm ring-1 ring-slate-200/50">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between space-y-0 pb-2">
+              <p className="text-sm font-medium text-slate-500">Total Products</p>
+              <div className="rounded-xl bg-slate-100 p-3 text-slate-600">
+                <Package className="size-6" />
               </div>
             </div>
-          );
-        })}
+            <div className="flex flex-col gap-0.5 mt-1">
+              <p className="text-2xl font-bold tracking-tight text-slate-900">
+                {products.length.toLocaleString()}
+              </p>
+              <p className="text-xs text-slate-500">
+                {products.reduce((acc: number, p: any) => acc + (p.variants?.length || 0), 0)}{" "}
+                variants in {selectedBranchName}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* In Stock Card */}
+        <Card className="rounded-xl border bg-white shadow-sm ring-1 ring-slate-200/50">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between space-y-0 pb-2">
+              <p className="text-sm font-medium text-slate-500">In Stock</p>
+              <div className="rounded-xl bg-emerald-50 p-3 text-emerald-600">
+                <CheckCircle2 className="size-6" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-0.5 mt-1">
+              <p className="text-2xl font-bold tracking-tight text-emerald-600">
+                {products.reduce(
+                  (acc: number, p: any) =>
+                    acc + (p.variants?.filter((v: any) => v.stock >= 10).length || 0),
+                  0
+                )}{" "}
+                variants
+              </p>
+              <p className="text-xs text-slate-500">Ready for Sale in {selectedBranchName}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Low Stock Card */}
+        <Card className="rounded-xl border bg-white shadow-sm ring-1 ring-slate-200/50">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between space-y-0 pb-2">
+              <p className="text-sm font-medium text-slate-500">Low Stock</p>
+              <div className="rounded-xl bg-amber-50 p-3 text-amber-600">
+                <AlertTriangle className="size-6" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-0.5 mt-1">
+              <p className="text-2xl font-bold tracking-tight text-amber-600">
+                {products.reduce(
+                  (acc: number, p: any) =>
+                    acc + (p.variants?.filter((v: any) => v.stock > 0 && v.stock < 10).length || 0),
+                  0
+                )}{" "}
+                variants
+              </p>
+              <p className="text-xs text-slate-500">Requires attention in {selectedBranchId === "all" ? "Inventory" : selectedBranchName}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Out of Stock Card */}
+        <Card className="rounded-xl border bg-white shadow-sm ring-1 ring-slate-200/50">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between space-y-0 pb-2">
+              <p className="text-sm font-medium text-slate-500">Out of Stock</p>
+              <div className="rounded-xl bg-rose-50 p-3 text-rose-600">
+                <XCircle className="size-6" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-0.5 mt-1">
+              <p className="text-2xl font-bold tracking-tight text-rose-600">
+                {products.reduce(
+                  (acc: number, p: any) =>
+                    acc + (p.variants?.filter((v: any) => v.stock <= 0).length || 0),
+                  0
+                )}{" "}
+                variants
+              </p>
+              <p className="text-xs text-slate-500">Immediate action needed</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="space-y-4 rounded-xl border bg-white p-4 shadow-sm dark:bg-slate-950">
@@ -351,125 +406,13 @@ export const ProductPage = () => {
           </Button>
         </div>
 
-        <div className="overflow-hidden rounded-xl border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead
-                  className="cursor-pointer hover:bg-slate-50"
-                  onClick={() => handleSort("name_product")}>
-                  <div className="flex items-center gap-2">
-                    Product
-                    {sortConfig.key === "name_product" && (
-                      <ArrowUpDown className="h-4 w-4 text-slate-500" />
-                    )}
-                  </div>
-                </TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="pr-6 text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
-                      <span className="text-muted-foreground">Loading products...</span>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : products.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-muted-foreground h-24 text-center">
-                    No products found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                paginatedProducts.map((product: any) => {
-                  return (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="relative size-10 overflow-hidden rounded-lg border">
-                            <Image
-                              src={product.thumbnail || "/placeholder-image.jpg"}
-                              alt={product.name_product}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                          <div>
-                            <p className="text-foreground font-semibold">{product.name_product}</p>
-                            <p className="text-muted-foreground text-xs">
-                              Updated {new Date(product.updatedAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{product.sku}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {product.category_name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStockStatus(product.stock || 0).className}>
-                          {getStockStatus(product.stock || 0).label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="pr-6">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button size="icon" variant="ghost" asChild>
-                            <Link href={`/dashboard/inventory/products/${product.id}`}>
-                              <Eye className="size-4" />
-                            </Link>
-                          </Button>
-                          {userRole !== "cashier" && (
-                            <>
-                              <Button size="icon" variant="ghost" asChild>
-                                <Link href={`/dashboard/inventory/products/${product.id}/edit`}>
-                                  <PencilLine className="size-4" />
-                                </Link>
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button size="icon" variant="ghost" disabled={isDeleting}>
-                                    <Trash2 className="size-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Product?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to delete{" "}
-                                      <span className="text-foreground font-semibold">
-                                        "{product.name_product}"
-                                      </span>
-                                      ? This action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      className="bg-red-600 hover:bg-red-700"
-                                      onClick={() => handleDelete(product.id)}>
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        <InventoryTable
+          products={paginatedProducts}
+          isLoading={isLoading}
+          onDelete={handleDelete}
+          userRole={userRole}
+          isDeleting={isDeleting}
+        />
 
         <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
           <p className="text-muted-foreground text-sm">

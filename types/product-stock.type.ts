@@ -14,6 +14,7 @@ export interface ProductStockResponse {
 }
 
 export interface CreateProductStockRequest {
+  productId: string;
   branchId: string;
   variantId: string;
   stock: number;
