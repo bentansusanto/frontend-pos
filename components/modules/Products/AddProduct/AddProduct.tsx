@@ -142,7 +142,6 @@ export const AddProduct = () => {
   const steps = [
     { title: "Identity", icon: ClipboardList, color: "text-blue-500", bg: "bg-blue-500/10" },
     { title: "Variants", icon: Layers, color: "text-indigo-500", bg: "bg-indigo-500/10" },
-    { title: "Stock", icon: Box, color: "text-emerald-500", bg: "bg-emerald-500/10" }
   ];
 
   const handleNext = async () => {
@@ -182,7 +181,16 @@ export const AddProduct = () => {
   const handleBack = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
   return (
-    <form className="space-y-6" onSubmit={formik.handleSubmit} encType="multipart/form-data">
+    <form 
+      className="space-y-6" 
+      onSubmit={(e) => { e.preventDefault(); }} 
+      encType="multipart/form-data"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+        }
+      }}
+    >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">
           <h1 className="text-2xl font-black text-slate-900 dark:text-white">Create Inventory</h1>
@@ -297,7 +305,7 @@ export const AddProduct = () => {
                       <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Select Category</Label>
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold uppercase tracking-widest hover:text-primary">
+                          <Button type="button" variant="ghost" size="sm" className="h-7 text-[10px] font-bold uppercase tracking-widest hover:text-primary">
                             <Plus className="mr-1 size-3" /> New Category
                           </Button>
                         </DialogTrigger>
@@ -318,6 +326,7 @@ export const AddProduct = () => {
                               <Button variant="outline">Cancel</Button>
                             </DialogClose>
                             <Button
+                              type="button"
                               onClick={handleCategoryCreate}
                               disabled={isCreatingCategory || !categoryName.trim()}>
                               Create Category
@@ -433,7 +442,7 @@ export const AddProduct = () => {
                 </div>
                 <Button
                   type="button"
-                  onClick={() => formik.setFieldValue("variants", [...formik.values.variants, { name_variant: "", sku: "", barcode: "", price: 0, cost_price: 0, stock: 0, batch_code: "" }])}
+                  onClick={() => formik.setFieldValue("variants", [...formik.values.variants, { name_variant: "", sku: "", barcode: "", price: 0, cost_price: 0 }])}
                   className="rounded-xl font-black uppercase tracking-widest text-[10px]">
                   <Plus className="mr-2 size-4" /> Add Variant
                 </Button>
@@ -513,79 +522,6 @@ export const AddProduct = () => {
           </div>
         )}
 
-        {/* Step 3: Stock & Batches */}
-        {currentStep === 3 && (
-          <div className="space-y-6">
-            <Card className="border-none shadow-xl bg-background/50 backdrop-blur-xl overflow-hidden">
-              <CardHeader className="bg-muted/20 border-b py-6 px-8">
-                <CardTitle className="text-lg font-black tracking-tight text-primary">Initial Stocking</CardTitle>
-                <CardDescription className="text-xs">Establish your opening balances for each variant</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="divide-y">
-                  {formik.values.variants.map((variant: any, index: number) => (
-                    <div key={index} className="p-8 group hover:bg-muted/10 transition-colors bg-background/20">
-                      <div className="flex items-center gap-4 mb-6">
-                         <div className="flex flex-col">
-                            <h4 className="font-bold text-foreground">{variant.name_variant || `Variant ${index + 1}`}</h4>
-                            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">{variant.sku || "AUTO SKU"}</p>
-                         </div>
-                      </div>
-
-                      <div className="grid gap-6 md:grid-cols-1">
-                        <div className="space-y-3 rounded-2xl bg-muted/30 p-4 ring-1 ring-border/50">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-primary">Initial Quantity</Label>
-                          <div className="flex items-center gap-4">
-                            <Input
-                              type="number"
-                              name={`variants[${index}].stock`}
-                              placeholder="0"
-                              value={variant.stock}
-                              onChange={formik.handleChange}
-                              className="bg-background border-none text-xl font-black h-12 text-center"
-                            />
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-black uppercase text-muted-foreground">In Stock</span>
-                              <span className="text-xs font-bold">Current Branch</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Batch Information hidden as per user request */}
-                        {/* 
-                        <div className="space-y-3 rounded-2xl bg-muted/30 p-4 ring-1 ring-border/50">
-                          <Label className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Batch Information</Label>
-                          <Input
-                            name={`variants[${index}].batch_code`}
-                            placeholder="e.g. BTC-2024-001"
-                            value={variant.batch_code}
-                            onChange={formik.handleChange}
-                            className="bg-background border-none font-mono text-center h-12"
-                          />
-                          <p className="text-[10px] text-muted-foreground text-center">Optional tracking code for this stock entry</p>
-                        </div>
-                        */}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="rounded-2xl bg-amber-500/10 p-6 flex items-start gap-4 ring-1 ring-amber-500/20">
-               <div className="size-10 rounded-xl bg-amber-500 flex items-center justify-center text-white shrink-0">
-                  <ClipboardList className="size-6" />
-               </div>
-               <div>
-                  <h4 className="text-sm font-black uppercase tracking-tight text-amber-700">Stock Initialization Note</h4>
-                  <p className="text-xs text-amber-800/80 leading-relaxed mt-1 italic">
-                    By submitting this form, you will create a new product, define all its variants, and perform an 
-                    initial stock update for each variant in your current branch. Please ensure all values are correct.
-                  </p>
-               </div>
-            </div>
-          </div>
-        )}
 
         {/* Footer Actions */}
         <div className="flex items-center justify-between border-t bg-muted/5 p-6 backdrop-blur-md sticky bottom-0">
@@ -610,7 +546,7 @@ export const AddProduct = () => {
                   Next Step
                 </Button>
               ) : (
-                <Button type="submit" disabled={isSubmitting} className="rounded-xl bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] px-8 py-6 shadow-xl shadow-primary/30">
+                <Button type="button" onClick={() => formik.submitForm()} disabled={isSubmitting} className="rounded-xl bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[10px] px-8 py-6 shadow-xl shadow-primary/30">
                   {isSubmitting ? "Finalizing Creation..." : "Create Inventory"}
                 </Button>
               )}

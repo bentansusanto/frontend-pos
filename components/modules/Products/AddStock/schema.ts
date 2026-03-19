@@ -5,7 +5,7 @@ export const addStockSchema = z.object({
   productId: z.string().min(1, { message: "Product is required" }),
   variantId: z.string().optional(),
   stock: z.coerce.number({ invalid_type_error: "stock must be a number" }),
-  minStock: z.coerce.number({ invalid_type_error: "minStock must be a number" })
+  minStock: z.coerce.number().optional().default(0)
 });
 
 export type AddStockValues = z.infer<typeof addStockSchema>;

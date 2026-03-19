@@ -12,7 +12,6 @@ import {
   useCreateProductMutation,
   useCreateVariantProductMutation
 } from "@/store/services/product.service";
-import { useCreateProductStockMutation } from "@/store/services/product-stock.service";
 
 import { getCookie } from "@/utils/cookies";
 import { addProductSchema, AddProductSchema } from "./schema";
@@ -49,7 +48,6 @@ export const HooksAddProduct = () => {
   const [createProduct, { isLoading: isCreatingProduct }] = useCreateProductMutation();
   const [createVariantProduct, { isLoading: isCreatingVariant }] =
     useCreateVariantProductMutation();
-  const [createProductStock, { isLoading: isCreatingStock }] = useCreateProductStockMutation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -74,8 +72,6 @@ export const HooksAddProduct = () => {
           sku: "",
           price: 0,
           cost_price: 0,
-          stock: 0,
-          batch_code: "",
           barcode: ""
         }
       ]
@@ -128,32 +124,25 @@ export const HooksAddProduct = () => {
         }
 
         for (const [index, variant] of values.variants.entries()) {
-          const variantResponse = await createVariantProduct({
-            productId: String(productId),
-            name_variant: variant.name_variant,
-            price: variant.price,
-            cost_price: variant.cost_price,
-            barcode: variant.barcode
-          }).unwrap();
-
-          const variantId = (variantResponse as any)?.data?.id || (variantResponse as any)?.id;
-
-          if (variantId && branchId && variant.stock >= 0) {
-            await createProductStock({
-              productId: String(productId),
-              variantId: String(variantId),
-              branchId: String(branchId),
-              stock: variant.stock,
-              minStock: 0
-            }).unwrap();
+          const variantFormData = new FormData();
+          variantFormData.append("productId", String(productId));
+          variantFormData.append("name_variant", variant.name_variant);
+          variantFormData.append("price", String(variant.price));
+          if (variant.cost_price !== undefined) {
+             variantFormData.append("cost_price", String(variant.cost_price));
           }
+          if (variant.barcode) {
+             variantFormData.append("barcode", variant.barcode);
+          }
+          
+          await createVariantProduct(variantFormData).unwrap();
           
           if (values.variants.length > 1) {
              toast.info(`Configured variant ${index + 1} of ${values.variants.length}...`);
           }
         }
 
-        toast.success("Product, variants, and stock created successfully");
+        toast.success("Product and variants created successfully");
         setCurrentStep(1);
         resetForm();
       } catch (error: any) {
@@ -194,7 +183,7 @@ export const HooksAddProduct = () => {
     formik,
     categories,
     isCategoriesLoading,
-    isSubmitting: isSubmitting || isCreatingProduct || isCreatingVariant || isCreatingStock,
+    isSubmitting: isSubmitting || isCreatingProduct || isCreatingVariant,
     isCreatingCategory,
     handleCreateCategory,
     currentStep,

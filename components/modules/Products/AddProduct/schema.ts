@@ -18,8 +18,6 @@ export const addProductSchema = z.object({
     barcode: z.string().optional(),
     price: z.number().min(0),
     cost_price: z.number().min(0).optional(),
-    stock: z.number().min(0).default(0),
-    batch_code: z.string().optional()
   })).min(1, { message: "At least one variant is required" })
 });
 
