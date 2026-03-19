@@ -2,7 +2,7 @@
 
 import { useFormik } from "formik";
 import { toast } from "sonner";
-import { z } from "zod";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,19 +16,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { 
-  useCloseSessionMutation, 
-  useGetSessionSummaryQuery 
+import { Badge } from "@/components/ui/badge";
+import {
+  useCloseSessionMutation,
+  useGetSessionSummaryQuery
 } from "@/store/services/pos-session.service";
-import { Loader2 } from "lucide-react";
+import { Loader2, ClipboardList, Info } from "lucide-react";
 
-const closeSessionSchema = z.object({
-  closingBalance: z.coerce.number().min(0, "Closing balance must be at least 0"),
-  notes: z.string().optional()
-});
-
-type CloseSessionValues = z.infer<typeof closeSessionSchema>;
+interface PaymentDeclaration {
+  method: string;
+  declaredAmount: number | null;
+}
 
 interface CloseSessionModalProps {
   isOpen: boolean;
@@ -36,6 +34,12 @@ interface CloseSessionModalProps {
   sessionId: string;
   onSuccess?: () => void;
 }
+
+const METHOD_LABELS: Record<string, string> = {
+  cash: "💵 Cash",
+  credit_card: "💳 Credit / Debit Card",
+  stripe: "🏦 Stripe",
+};
 
 export const CloseSessionModal = ({
   isOpen,
@@ -47,96 +51,153 @@ export const CloseSessionModal = ({
     skip: !isOpen || !sessionId,
     refetchOnMountOrArgChange: true
   });
-  
+
   const [closeSession, { isLoading: isClosing }] = useCloseSessionMutation();
 
-  const formik = useFormik<CloseSessionValues>({
-    initialValues: {
-      closingBalance: summary?.expected_cash || 0,
-      notes: ""
-    },
-    enableReinitialize: true,
-    onSubmit: async (values) => {
-      try {
-        await closeSession({
-          id: sessionId,
-          ...values
-        }).unwrap();
-        toast.success("POS Session closed successfully");
-        onSuccess?.();
-        onOpenChange(false);
-      } catch (error: any) {
-        toast.error(error?.data?.message || "Failed to close POS session");
-      }
+  // Initialize one input per payment method used in this session
+  const [declarations, setDeclarations] = useState<PaymentDeclaration[]>([]);
+  const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    if (summary?.paymentBreakdown && summary.paymentBreakdown.length > 0) {
+      setDeclarations(
+        summary.paymentBreakdown.map((p: { method: string }) => ({
+          method: p.method,
+          declaredAmount: 0,
+        }))
+      );
+    } else if (!isLoadingSummary) {
+      // Fallback: at least one cash entry
+      setDeclarations([{ method: "cash", declaredAmount: 0 }]);
     }
-  });
+  }, [summary, isLoadingSummary]);
+
+  const totalDeclared = declarations.reduce(
+    (sum, d) => sum + Number(d.declaredAmount || 0),
+    0
+  );
+
+  const handleDeclaredChange = (method: string, value: string) => {
+    setDeclarations((prev) =>
+      prev.map((d) =>
+        d.method === method ? { ...d, declaredAmount: value === "null" ? null : parseFloat(value) || 0 } : d
+      )
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Require all fields to be non-zero
+    const hasEmpty = declarations.some((d) => d.declaredAmount === null || d.declaredAmount < 0);
+    if (hasEmpty) {
+      toast.error("Please enter a valid amount for each payment method.");
+      return;
+    }
+    try {
+      await closeSession({
+        id: sessionId,
+        paymentDeclarations: declarations.map(d => ({ method: d.method, declaredAmount: d.declaredAmount || 0 })),
+        notes,
+      }).unwrap();
+      toast.success("POS Session closed successfully");
+      onSuccess?.();
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to close POS session");
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[440px]">
         <DialogHeader>
-          <DialogTitle>Close POS Session</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <ClipboardList className="size-5 text-primary" />
+            Close POS Session
+          </DialogTitle>
           <DialogDescription>
-            Review session summary and enter final balance to close your shift.
+            Enter the actual amount collected for each payment method today. The system will automatically add your opening balance to calculate the final total.
           </DialogDescription>
         </DialogHeader>
-        
+
         {isLoadingSummary ? (
           <div className="flex justify-center py-8">
             <Loader2 className="animate-spin text-primary" />
           </div>
         ) : (
-          <form onSubmit={formik.handleSubmit} className="space-y-4 py-2">
-            <div className="bg-muted/50 p-4 rounded-lg space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Opening Balance</span>
-                <span className="font-medium">${Number(summary?.openingBalance || 0).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Sales</span>
-                <span className="font-medium text-green-600">+${Number(summary?.totalSales || 0).toFixed(2)}</span>
-              </div>
-              <Separator className="my-1" />
-              <div className="flex justify-between text-base font-bold">
-                <span>Expected Balance</span>
-                <span>${Number(summary?.expected_cash || 0).toFixed(2)}</span>
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Based on {summary?.transactionsCount || 0} completed transactions.
-              </p>
+          <form onSubmit={handleSubmit} className="space-y-5 py-2">
+            {/* Transactions Count — only neutral info */}
+            <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+              <Info className="size-4 shrink-0" />
+              <span>
+                You processed{" "}
+                <span className="font-semibold text-foreground">
+                  {summary?.transactionsCount ?? 0} completed transaction(s)
+                </span>{" "}
+                this shift.
+              </span>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="closingBalance">Actual Closing Balance</Label>
-              <Input
-                id="closingBalance"
-                name="closingBalance"
-                type="number"
-                placeholder="0.00"
-                value={formik.values.closingBalance}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-              />
-              {formik.touched.closingBalance && formik.errors.closingBalance && (
-                <p className="text-xs text-red-500">{formik.errors.closingBalance}</p>
-              )}
+            {/* Per-method entries */}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold">
+                Actual Amount Collected
+              </Label>
+              {declarations.map((decl) => (
+                <div key={decl.method} className="grid gap-1.5">
+                  <Label
+                    htmlFor={`decl-${decl.method}`}
+                    className="flex items-center gap-2 text-sm font-medium"
+                  >
+                    {METHOD_LABELS[decl.method] ?? decl.method}
+                    <Badge variant="outline" className="text-xs font-normal capitalize">
+                      {decl.method}
+                    </Badge>
+                  </Label>
+                  <Input
+                    id={`decl-${decl.method}`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={decl.declaredAmount === null ? "" : decl.declaredAmount}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      handleDeclaredChange(decl.method, val === "" ? "null" : val);
+                    }}
+                    required
+                  />
+                </div>
+              ))}
             </div>
-            
+
+
             <div className="grid gap-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Label htmlFor="close-notes">Notes (Optional)</Label>
               <Textarea
-                id="notes"
-                name="notes"
-                placeholder="E.g. Cash matches expected amount"
-                value={formik.values.notes}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
+                id="close-notes"
+                placeholder="E.g. Cash count matches, card machine verified"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
               />
             </div>
-            
-            <DialogFooter className="pt-4">
-              <Button type="submit" disabled={isClosing} variant="destructive" className="w-full">
-                {isClosing ? "Closing..." : "Close Session & End Shift"}
+
+            <DialogFooter className="pt-2">
+              <Button
+                type="submit"
+                disabled={isClosing}
+                variant="destructive"
+                className="w-full"
+              >
+                {isClosing ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    Closing...
+                  </>
+                ) : (
+                  "Close Session & End Shift"
+                )}
               </Button>
             </DialogFooter>
           </form>

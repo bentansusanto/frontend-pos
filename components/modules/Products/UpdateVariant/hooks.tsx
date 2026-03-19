@@ -38,6 +38,7 @@ export const useUpdateVariant = ({
       price: initialData?.price ? parseFloat(initialData.price) : 0,
       cost_price: initialData?.cost_price ? parseFloat(initialData.cost_price) : 0,
       thumbnail: initialData?.thumbnail || "",
+      barcode: initialData?.barcode || "",
       thumbnailFile: undefined
     },
     enableReinitialize: true,
@@ -57,6 +58,9 @@ export const useUpdateVariant = ({
 
         if (values.cost_price !== undefined) {
           formData.append("cost_price", String(isNaN(values.cost_price) ? 0 : values.cost_price));
+        }
+        if (values.barcode) {
+          formData.append("barcode", values.barcode);
         }
 
         if (values.thumbnailFile) {

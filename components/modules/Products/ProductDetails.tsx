@@ -42,10 +42,11 @@ import { Edit, Loader2, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AddVariantDialog } from "./AddVariant/AddVariantDialog";
 import { UpdateVariantDialog } from "./UpdateVariant/UpdateVariantDialog";
 import { useGetProfileQuery } from "@/store/services/auth.service";
+import { useSocket } from "@/components/providers/socket-provider";
 
 export const ProductDetails = () => {
   const [isAddVariantOpen, setIsAddVariantOpen] = useState(false);
@@ -58,6 +59,7 @@ export const ProductDetails = () => {
   const branchId = cookieValue ? cookieValue : undefined;
   const { data: profileData } = useGetProfileQuery();
   const userRole = profileData?.role;
+  const { socket } = useSocket();
 
   const {
     data: productData,
@@ -69,6 +71,22 @@ export const ProductDetails = () => {
       skip: !productId
     }
   );
+
+  // Listen for real-time stock updates from WebSocket
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleStockUpdate = (data: any) => {
+      console.log("ProductDetails: received stock_updated event", data);
+      refetch();
+    };
+
+    socket.on("stock_updated", handleStockUpdate);
+
+    return () => {
+      socket.off("stock_updated", handleStockUpdate);
+    };
+  }, [socket, refetch]);
   const [deleteVariantProduct] = useDeleteVariantProductMutation();
 
   const product = productData;

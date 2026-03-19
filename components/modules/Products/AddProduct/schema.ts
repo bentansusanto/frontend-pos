@@ -15,6 +15,7 @@ export const addProductSchema = z.object({
   variants: z.array(z.object({
     name_variant: z.string().min(1, { message: "Variant name is required" }),
     sku: z.string().optional(),
+    barcode: z.string().optional(),
     price: z.number().min(0),
     cost_price: z.number().min(0).optional(),
     stock: z.number().min(0).default(0),

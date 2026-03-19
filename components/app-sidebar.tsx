@@ -95,7 +95,8 @@ const data = {
           defaultOpen: true,
           items: [
             { title: "Products", url: "/dashboard/inventory/products" },
-            { title: "Stock Overview", url: "/dashboard/inventory/stock-overview" }
+            { title: "Stock Overview", url: "/dashboard/inventory/stock-overview" },
+            { title: "Stock Take", url: "/dashboard/inventory/stock-take" }
           ],
           roles: ["owner", "admin"]
         },

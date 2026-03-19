@@ -43,16 +43,26 @@ import {
   ArrowUpRight,
   Eye,
   Filter,
+  Info,
   Package,
   RefreshCcw,
   Search
 } from "lucide-react";
+import { BranchName } from "@/components/modules/Inventory/Shared/BranchName";
 import React, { useMemo, useState } from "react";
 
-const MOVEMENT_TYPES = {
+const MOVEMENT_TYPES: Record<string, { label: string; color: string; icon: any }> = {
   sale: { label: "Sale", color: "destructive", icon: ArrowDownRight },
   purchase: { label: "Purchase", color: "default", icon: ArrowUpRight },
-  adjust: { label: "Adjustment", color: "secondary", icon: ArrowRightLeft }
+  adjust: { label: "Adjustment", color: "secondary", icon: ArrowRightLeft },
+  stock_take: { label: "Stock Take", color: "outline", icon: ArrowRightLeft },
+  damaged: { label: "Damaged", color: "destructive", icon: ArrowDownRight },
+  expired: { label: "Expired", color: "destructive", icon: ArrowDownRight },
+  theft: { label: "Lost/Stolen", color: "destructive", icon: ArrowDownRight },
+  admin_error: { label: "Admin Error", color: "secondary", icon: ArrowRightLeft },
+  other: { label: "Other", color: "outline", icon: Info },
+  opening_stock: { label: "Opening Stock", color: "default", icon: ArrowUpRight },
+  return_sale: { label: "Return Sale", color: "secondary", icon: ArrowUpRight },
 };
 
 export default function StockOverviewPage() {
@@ -68,9 +78,9 @@ export default function StockOverviewPage() {
     if (!movementsData) return [];
 
     return movementsData.filter((movement: any) => {
-      const productName = movement.product?.name_product || "";
-      const variantName = movement.productVariant?.name_variant || "";
-      const searchString = `${productName} ${variantName} ${movement.referenceId}`.toLowerCase();
+      const productName = movement.productName || "Unknown Product";
+      const variantName = movement.variantName || "";
+      const searchString = `${productName} ${variantName} ${movement.referenceId} ${movement.sku || ''}`.toLowerCase();
 
       const matchesSearch = searchString.includes(searchTerm.toLowerCase());
       const matchesType = typeFilter === "all" || movement.referenceType === typeFilter;
@@ -204,6 +214,11 @@ export default function StockOverviewPage() {
                   <SelectItem value="sale">Sale</SelectItem>
                   <SelectItem value="purchase">Purchase</SelectItem>
                   <SelectItem value="adjust">Adjustment</SelectItem>
+                  <SelectItem value="stock_take">Stock Take</SelectItem>
+                  <SelectItem value="damage">Damage</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                  <SelectItem value="opening_stock">Opening Stock</SelectItem>
+                  <SelectItem value="return_sale">Return Sale</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -216,7 +231,7 @@ export default function StockOverviewPage() {
                     <TableHead>Date</TableHead>
                     <TableHead>Product</TableHead>
                     <TableHead>Variant</TableHead>
-                    <TableHead>Type</TableHead>
+                    <TableHead>Type / Reason</TableHead>
                     <TableHead className="text-right">Qty</TableHead>
                     <TableHead>Branch</TableHead>
                     <TableHead className="text-right">Reference</TableHead>
@@ -254,38 +269,53 @@ export default function StockOverviewPage() {
                               minute: "2-digit"
                             })}
                           </TableCell>
-                          <TableCell>{movement.product?.name_product || "-"}</TableCell>
-                          <TableCell>
-                            {movement.productVariant?.name_variant ? (
+                          <TableCell>{movement.productName || movement.productVariant?.product?.name_product || "-"}</TableCell>
+                           <TableCell>
+                            {movement.variantName ? (
                               <Badge variant="outline">
-                                {movement.productVariant.name_variant}
+                                {movement.variantName}
                               </Badge>
                             ) : (
                               "-"
                             )}
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant={typeConfig.color as any}
-                              className="flex w-fit items-center gap-1">
-                              <TypeIcon className="h-3 w-3" />
-                              {typeConfig.label}
-                            </Badge>
+                            <div className="flex flex-col gap-1">
+                              {(() => {
+                                const displayType = (movement.referenceType === "stock_take" || movement.referenceType === "adjust") && movement.reason 
+                                  ? movement.reason.toLowerCase() 
+                                  : movement.referenceType;
+                                
+                                const config = MOVEMENT_TYPES[displayType as keyof typeof MOVEMENT_TYPES] || typeConfig;
+                                const Icon = config.icon;
+
+                                return (
+                                  <Badge
+                                    variant={config.color as any}
+                                    className="flex w-fit items-center gap-1">
+                                    <Icon className="h-3 w-3" />
+                                    {config.label}
+                                  </Badge>
+                                );
+                              })()}
+                              {movement.reason && movement.referenceType !== "stock_take" && (
+                                <span className="text-[10px] text-muted-foreground italic">
+                                  {movement.reason}
+                                </span>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell
                             className={`text-right font-bold ${
-                              movement.referenceType === "sale" ||
-                              (movement.referenceType === "adjust" && movement.qty < 0)
+                              movement.qty < 0 || movement.referenceType === "sale"
                                 ? "text-destructive"
                                 : "text-green-600"
                             }`}>
-                            {movement.referenceType === "sale"
-                              ? `-${movement.qty}`
-                              : movement.qty > 0
-                                ? `+${movement.qty}`
-                                : movement.qty}
+                            {movement.qty < 0 || movement.referenceType === "sale"
+                              ? (movement.qty > 0 ? `-${movement.qty}` : movement.qty)
+                              : `+${movement.qty}`}
                           </TableCell>
-                          <TableCell>{movement.branch?.name || "-"}</TableCell>
+                          <TableCell><BranchName id={movement.branchId} /></TableCell>
                           <TableCell className="text-muted-foreground text-right font-mono text-xs">
                             {movement.referenceId}
                           </TableCell>
@@ -317,46 +347,53 @@ export default function StockOverviewPage() {
                                     </div>
                                     <div>
                                       <p className="text-muted-foreground">Movement Type</p>
-                                      <Badge variant={typeConfig.color as any} className="mt-1">
-                                        <TypeIcon className="mr-1 h-3 w-3" />
-                                        {typeConfig.label}
-                                      </Badge>
+                                      {(() => {
+                                        const displayType = (movement.referenceType === "stock_take" || movement.referenceType === "adjust") && movement.reason 
+                                          ? movement.reason.toLowerCase() 
+                                          : movement.referenceType;
+                                        
+                                        const config = MOVEMENT_TYPES[displayType as keyof typeof MOVEMENT_TYPES] || typeConfig;
+                                        const Icon = config.icon;
+
+                                        return (
+                                          <Badge variant={config.color as any} className="mt-1">
+                                            <Icon className="mr-1 h-3 w-3" />
+                                            {config.label}
+                                          </Badge>
+                                        );
+                                      })()}
                                     </div>
                                     <div>
                                       <p className="text-muted-foreground">Quantity</p>
                                       <p
                                         className={`font-semibold ${
-                                          movement.referenceType === "sale" ||
-                                          (movement.referenceType === "adjust" && movement.qty < 0)
+                                          movement.qty < 0 || movement.referenceType === "sale"
                                             ? "text-destructive"
                                             : "text-green-600"
                                         }`}>
-                                        {movement.referenceType === "sale"
-                                          ? `-${movement.qty}`
-                                          : movement.qty > 0
-                                            ? `+${movement.qty}`
-                                            : movement.qty}
+                                        {movement.qty < 0 || movement.referenceType === "sale"
+                                          ? (movement.qty > 0 ? `-${movement.qty}` : movement.qty)
+                                          : `+${movement.qty}`}
                                       </p>
                                     </div>
                                     <div className="col-span-2">
                                       <p className="text-muted-foreground">Product</p>
                                       <p className="font-semibold whitespace-normal">
-                                        {movement.product?.name_product || "-"}
+                                        {movement.productName || movement.productVariant?.product?.name_product || "-"}
                                       </p>
                                     </div>
-                                    <div className="col-span-2">
+                                     <div className="col-span-2">
                                       <p className="text-muted-foreground">Variant Info</p>
                                       <p className="font-semibold whitespace-normal">
-                                        {movement.productVariant?.name_variant || "-"}
-                                        {movement.productVariant?.sku &&
-                                          ` (SKU: ${movement.productVariant.sku})`}
+                                        {movement.variantName || "-"}
+                                        {movement.sku && ` (SKU: ${movement.sku})`}
                                       </p>
                                     </div>
                                     <div className="col-span-2">
                                       <p className="text-muted-foreground">Branch</p>
-                                      <p className="font-semibold">
-                                        {movement.branch?.name || "-"}
-                                      </p>
+                                      <div className="font-semibold">
+                                        <BranchName id={movement.branchId} />
+                                      </div>
                                     </div>
                                   </div>
                                 </div>

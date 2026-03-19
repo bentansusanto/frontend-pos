@@ -33,6 +33,7 @@ export const useAddVariant = ({ productId, onSuccess }: UseAddVariantProps) => {
       price: 0,
       cost_price: 0,
       thumbnail: "",
+      barcode: "",
       thumbnailFile: undefined
     },
     validate: (values) => {
@@ -50,6 +51,9 @@ export const useAddVariant = ({ productId, onSuccess }: UseAddVariantProps) => {
         formData.append("price", String(values.price));
         if (values.cost_price !== undefined) {
           formData.append("cost_price", String(values.cost_price));
+        }
+        if (values.barcode) {
+          formData.append("barcode", values.barcode);
         }
 
         if (values.thumbnailFile) {

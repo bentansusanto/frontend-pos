@@ -94,6 +94,18 @@ export const AddVariantDialog = ({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="barcode">Barcode (Optional)</Label>
+            <Input
+              id="barcode"
+              name="barcode"
+              placeholder="Scan or enter barcode"
+              value={formik.values.barcode}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="price">Price</Label>
             <Input
               id="price"

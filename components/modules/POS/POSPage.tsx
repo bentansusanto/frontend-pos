@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, CreditCard, Minus, Package, Plus, Search, Trash2, UserRoundPlus } from "lucide-react";
+import { ChevronDown, CreditCard, Mail, Minus, Package, Phone, Plus, Search, Trash2, User, UserRoundPlus } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -36,6 +36,8 @@ import {
 } from "@/store/services/payment.service";
 import { useGetProductsQuery, useGetVariantProductsQuery } from "@/store/services/product.service";
 import { useGetActiveTaxesQuery } from "@/store/services/tax.service";
+import { useCheckBranchFrozenQuery } from "@/store/services/stock-take.service";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getCookie } from "@/utils/cookies";
 import { toast } from "sonner";
 import { useCustomerForm } from "../Customers/hooks";
@@ -45,6 +47,7 @@ import { StripePayment } from "./StripePayment";
 import { OpenSessionModal } from "./OpenSessionModal";
 import { CloseSessionModal } from "./CloseSessionModal";
 import { useGetActiveSessionQuery } from "@/store/services/pos-session.service";
+import { Lock, AlertTriangle } from "lucide-react";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY!);
 
@@ -61,6 +64,7 @@ export const PosPage = () => {
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
   const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
@@ -78,15 +82,27 @@ export const PosPage = () => {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [verifiedOrder, setVerifiedOrder] = useState<any | null>(null);
 
-  const branchId = getCookie("pos_branch_id");
+  const branchId = profileData?.branches?.[0]?.id || getCookie("pos_branch_id");
   const { data: activeSessionData, isLoading: isActiveSessionLoading, refetch: refetchActiveSession } = useGetActiveSessionQuery();
+  const { data: frozenData, isLoading: isCheckingFrozen } = useCheckBranchFrozenQuery(branchId || "", {
+    skip: !branchId,
+    pollingInterval: 10000, // Re-check every 10 seconds
+  });
+
   const activeSession = activeSessionData;
+  const isFrozen = frozenData?.isFrozen;
 
   useEffect(() => {
-    if (!isActiveSessionLoading && !activeSession) {
-      setIsOpenSessionModalOpen(true);
+    if (!isCheckingFrozen) {
+      if (isFrozen) {
+        // Frozen: ensure Open Session modal is hidden
+        setIsOpenSessionModalOpen(false);
+      } else if (!isActiveSessionLoading && !activeSession) {
+        // Not frozen and no active session: show Open Session modal
+        setIsOpenSessionModalOpen(true);
+      }
     }
-  }, [activeSession, isActiveSessionLoading]);
+  }, [activeSession, isActiveSessionLoading, isFrozen, isCheckingFrozen]);
 
   const { data: productsData, isLoading: isProductsLoading } = useGetProductsQuery(
     branchId ? { branch_id: branchId } : undefined
@@ -150,14 +166,27 @@ export const PosPage = () => {
     return data.filter((product: any) => {
       const matchesCategory =
         selectedCategory === "all" || product.category_id === selectedCategory;
-      const matchesSearch =
-        !searchQuery ||
-        product.name_product?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const query = searchQuery ? searchQuery.toLowerCase() : "";
+      
+      // Check product level fields
+      const matchesProductSearch =
+        !query ||
+        product.name_product?.toLowerCase().includes(query) ||
+        product.sku?.toLowerCase().includes(query) ||
+        product.category_name?.toLowerCase().includes(query);
+
+      // Check variant level fields (specifically barcode)
+      const variants = variantsByProductId.get(product.id) || [];
+      const matchesVariantSearch = 
+        !query || 
+        variants.some((v: any) => v.barcode?.toLowerCase().includes(query));
+
+      const matchesSearch = matchesProductSearch || matchesVariantSearch;
+
       return matchesCategory && matchesSearch;
     });
-  }, [productsData, searchQuery, selectedCategory]);
+  }, [productsData, variantsByProductId, searchQuery, selectedCategory]);
 
   const orders = useMemo(() => ordersData || [], [ordersData]);
   const pendingOrders = useMemo(() => {
@@ -250,6 +279,11 @@ export const PosPage = () => {
         return;
       }
 
+      if (isFrozen) {
+        toast.error("Inventory is currently frozen for audit. POS operations are suspended.");
+        return;
+      }
+
       const response = await createOrder({
         order_id: selectedOrderId || undefined,
         branch_id: branchId || undefined,
@@ -315,6 +349,10 @@ export const PosPage = () => {
       return;
     }
     if (orderItems.length === 0) {
+      return;
+    }
+    if (isFrozen) {
+      toast.error("Inventory is currently frozen for audit. POS operations are suspended.");
       return;
     }
     if (!formik.values.customer_id) {
@@ -397,14 +435,14 @@ export const PosPage = () => {
         event.preventDefault();
         handleProcessPayment();
       }}
-      className="flex h-[calc(100svh-4rem)] flex-col lg:flex-row overflow-hidden -m-6 rounded-none">
+      className="relative flex h-[calc(100svh-4rem)] flex-col lg:flex-row overflow-hidden -m-6 rounded-none">
       {/* Left Area: Products */}
       <div className="flex flex-1 flex-col overflow-hidden border-r border-border bg-muted/5">
         <div className="flex flex-col gap-4 border-b border-border bg-background p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold tracking-tight">New Order</h1>
-              <p className="text-muted-foreground text-xs">Branch: {profileData?.branch?.name || "Main"}</p>
+              <p className="text-muted-foreground text-xs">Branch: {profileData?.branches?.[0]?.name || "Main"}</p>
             </div>
             {activeSession && (
               <Button
@@ -680,12 +718,61 @@ export const PosPage = () => {
               className="w-full h-14 text-base font-bold rounded-2xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
               type="submit"
               disabled={isLoading || isUpdatingOrder || !currentOrder?.id || orderItems.length === 0}>
-              <CreditCard className="mr-2 size-5" />
-              Charge ${Number(totalAmount || 0).toFixed(2)}
+                    Charge ${Number(totalAmount || 0).toFixed(2)}
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Blocking Modal for Frozen Stock Take */}
+      <Dialog open={!!isFrozen} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md [&>button]:hidden">
+          <DialogHeader className="text-center pb-2">
+            <div className="mx-auto mb-4 bg-blue-100 text-blue-600 p-4 rounded-full w-fit">
+              <Lock className="size-10" />
+            </div>
+            <DialogTitle className="text-2xl font-black text-blue-900 text-center">POS Operations Suspended</DialogTitle>
+             <DialogDescription className="text-center hidden">Access to POS is blocked</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+              <AlertTriangle className="size-4" />
+              <AlertTitle className="font-bold">Inventory Frozen (Stock Take In Progress)</AlertTitle>
+              <AlertDescription className="text-sm">
+                This branch is currently undergoing a physical inventory audit. 
+                All sales operations are disabled to ensure 100% data accuracy.
+              </AlertDescription>
+            </Alert>
+            
+            <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Audit Session</span>
+                <span className="font-mono font-bold">#{frozenData?.session?.id}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Started By</span>
+                <span className="font-bold">{frozenData?.session?.user?.name || "Inventory Team"}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Date Started</span>
+                <span className="font-bold">{frozenData?.session?.createdAt ? new Date(frozenData.session.createdAt).toLocaleString() : "-"}</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 mt-4">
+            <p className="text-[10px] text-center text-muted-foreground uppercase tracking-widest font-bold">
+              Please wait until the audit is COMPLETED or REJECTED by a manager.
+            </p>
+            <Button 
+              type="button"
+              variant="outline" 
+              className="w-full"
+              onClick={() => router.push("/dashboard")}>
+              Return to Dashboard
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={!!selectedProductForVariant}
@@ -828,41 +915,122 @@ export const PosPage = () => {
       </Dialog>
 
       <Dialog open={isCustomerModalOpen} onOpenChange={setIsCustomerModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Select Customer</DialogTitle>
-            <DialogDescription>Choose a customer for this order.</DialogDescription>
+        <DialogContent className="sm:max-w-md flex flex-col h-[85vh] sm:h-[600px] p-0 overflow-hidden">
+          <DialogHeader className="p-6 pb-2">
+            <DialogTitle className="text-xl font-bold">Select Customer</DialogTitle>
+            <DialogDescription>
+              Search and choose a customer for this transaction.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
+
+          <div className="px-6 pb-4 pt-1 space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search name, phone, or email..."
+                value={customerSearchQuery}
+                onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                className="pl-10 h-11 bg-muted/30 border-none focus-visible:ring-1"
+              />
+            </div>
+
             <Button
               variant="outline"
-              className="w-full border-dashed"
+              className="w-full h-12 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 hover:border-primary/50 text-primary font-bold transition-all rounded-xl gap-2"
               type="button"
               onClick={() => {
                 setIsCustomerModalOpen(false);
                 setIsCreateCustomerOpen(true);
               }}>
+              <UserRoundPlus className="size-4" />
               Create New Customer
             </Button>
+          </div>
+
+          <Separator />
+
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 scrollbar-none">
             {isCustomersLoading ? (
-              <div className="text-muted-foreground text-sm">Loading customers...</div>
-            ) : customers.length === 0 ? (
-              <div className="text-muted-foreground text-sm">No customers available.</div>
+              <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground">
+                <div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <p className="text-xs">Finding customers...</p>
+              </div>
+            ) : customers.filter((c: any) => 
+                c.name?.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+                c.phone?.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+                c.email?.toLowerCase().includes(customerSearchQuery.toLowerCase())
+              ).length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-center opacity-50">
+                <Search className="size-10 mb-2" />
+                <p className="text-sm font-medium">No customers found</p>
+                <p className="text-xs">Try a different search term</p>
+              </div>
             ) : (
-              customers.map((customer: any) => (
-                <Button
-                  key={customer.id}
-                  variant="outline"
-                  className="w-full justify-start"
-                  type="button"
-                  onClick={() => {
-                    formik.setFieldValue("customer_id", customer.id);
-                    setIsCustomerModalOpen(false);
-                  }}>
-                  {customer.name}
-                </Button>
-              ))
+              customers
+                .filter((c: any) => 
+                  c.name?.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+                  c.phone?.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
+                  c.email?.toLowerCase().includes(customerSearchQuery.toLowerCase())
+                )
+                .map((customer: any) => {
+                  const isSelected = formik.values.customer_id === customer.id;
+                  return (
+                    <button
+                      key={customer.id}
+                      type="button"
+                      onClick={() => {
+                        formik.setFieldValue("customer_id", customer.id);
+                        setIsCustomerModalOpen(false);
+                        setCustomerSearchQuery("");
+                      }}
+                      className={`w-full group text-left p-4 rounded-2xl border transition-all duration-200 ${
+                        isSelected 
+                          ? "bg-primary/5 border-primary shadow-sm" 
+                          : "bg-card border-border hover:border-primary/40 hover:shadow-md"
+                      }`}>
+                      <div className="flex items-center gap-4">
+                        <div className={`size-10 rounded-xl flex items-center justify-center transition-colors ${
+                          isSelected ? "bg-primary text-white" : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                        }`}>
+                          <User className="size-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className={`font-bold truncate ${isSelected ? "text-primary" : "text-foreground"}`}>
+                              {customer.name}
+                            </p>
+                            {isSelected && (
+                              <div className="px-2 py-0.5 bg-primary text-[10px] font-black text-white rounded-full uppercase">
+                                Selected
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+                            {customer.phone && (
+                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                <Phone className="size-3" />
+                                {customer.phone}
+                              </div>
+                            )}
+                            {customer.email && (
+                              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                                <Mail className="size-3" />
+                                {customer.email}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
             )}
+          </div>
+
+          <div className="p-4 border-t bg-muted/10">
+             <p className="text-[10px] text-center text-muted-foreground font-medium uppercase tracking-wider">
+               Showing {customers.length} total customers
+             </p>
           </div>
         </DialogContent>
       </Dialog>

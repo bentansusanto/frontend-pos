@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, MoreHorizontal, PencilLine, Trash2, Eye } from "lucide-react";
+import { ChevronRight, MoreHorizontal, PencilLine, Trash2, Eye, Printer, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { BarcodeLabel } from "@/components/modules/Inventory/Barcode/BarcodeLabel";
 
 interface InventoryTableProps {
   products: any[];
@@ -216,8 +225,13 @@ export function InventoryTable({
                               {variant.name_variant}
                             </span>
                             <span className="font-mono text-[10px] text-muted-foreground uppercase">
-                              {variant.sku}
+                              SKU: {variant.sku}
                             </span>
+                            {variant.barcode && (
+                              <span className="font-mono text-[10px] text-primary/70 uppercase">
+                                BAR: {variant.barcode}
+                              </span>
+                            )}
                           </div>
                          </div>
                       </TableCell>
@@ -272,7 +286,46 @@ export function InventoryTable({
                             : "OK"}
                         </Badge>
                       </TableCell>
-                      <TableCell></TableCell>
+                      <TableCell>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-muted-foreground hover:text-primary"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Printer className="size-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-md bg-white border-none shadow-2xl">
+                            <DialogHeader>
+                              <DialogTitle className="text-lg font-black uppercase tracking-tight">Print SKU Label</DialogTitle>
+                            </DialogHeader>
+                            <div className="flex flex-col items-center justify-center py-10 space-y-6 printable-label">
+                               <BarcodeLabel 
+                                 productName={product.name_product}
+                                 variantName={variant.name_variant}
+                                 sku={variant.sku}
+                                 price={variant.price}
+                               />
+                               <div className="text-center space-y-2 print:hidden">
+                                  <p className="text-xs text-muted-foreground font-medium">Ready to print?</p>
+                                  <Button 
+                                    onClick={() => window.print()}
+                                    className="rounded-xl font-black uppercase tracking-widest text-[10px] px-8"
+                                  >
+                                    <Printer className="mr-2 size-4" /> Start Print
+                                  </Button>
+                               </div>
+                            </div>
+                            <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground print:hidden">
+                              <X className="h-4 w-4" />
+                              <span className="sr-only">Close</span>
+                            </DialogClose>
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
                     </TableRow>
                   ))}
               </React.Fragment>

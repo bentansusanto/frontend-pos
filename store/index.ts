@@ -23,6 +23,7 @@ import { purchasingApi } from "./services/purchasing.service";
 import { posSessionApi } from "./services/pos-session.service";
 import { accountingApi } from "./services/accounting.service";
 import { expenseApi } from "./services/expense.service";
+import { stockTakeApi } from "./services/stock-take.service";
 
 export const store = configureStore({
   reducer: {
@@ -47,7 +48,8 @@ export const store = configureStore({
     [purchasingApi.reducerPath]: purchasingApi.reducer,
     [posSessionApi.reducerPath]: posSessionApi.reducer,
     [accountingApi.reducerPath]: accountingApi.reducer,
-    [expenseApi.reducerPath]: expenseApi.reducer
+    [expenseApi.reducerPath]: expenseApi.reducer,
+    [stockTakeApi.reducerPath]: stockTakeApi.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -72,7 +74,8 @@ export const store = configureStore({
       purchasingApi.middleware,
       posSessionApi.middleware,
       accountingApi.middleware,
-      expenseApi.middleware
+      expenseApi.middleware,
+      stockTakeApi.middleware
     )
 });
 
@@ -101,7 +104,8 @@ export const allApis = [
   purchasingApi,
   posSessionApi,
   accountingApi,
-  expenseApi
+  expenseApi,
+  stockTakeApi
 ];
 
 export const resetAllApiStates = (dispatch: AppDispatch) => {

@@ -328,23 +328,29 @@ export const AddProduct = () => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                      {categories.map((category: any) => (
-                        <div
-                          key={category.id}
-                          onClick={() => formik.setFieldValue("product.category_id", category.id)}
-                          className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-all ${
-                            formik.values.product.category_id === category.id
-                              ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                              : "border-border/50 bg-background/50 hover:bg-muted/50"
-                          }`}>
-                          <Checkbox
-                            checked={formik.values.product.category_id === category.id}
-                            onCheckedChange={() => formik.setFieldValue("product.category_id", category.id)}
-                            className="rounded-md"
-                          />
-                          <span className="text-xs font-bold">{category.name}</span>
-                        </div>
-                      ))}
+                      {categories.map((category: any) => {
+                        const isSelected = String(formik.values.product.category_id) === String(category.id);
+                        return (
+                          <button
+                            key={category.id}
+                            type="button"
+                            onClick={() => formik.setFieldValue("product.category_id", String(category.id))}
+                            className={`flex items-center gap-3 rounded-xl border p-3 w-full text-left transition-all ${
+                              isSelected
+                                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                                : "border-border/50 bg-background/50 hover:bg-muted/50"
+                            }`}>
+                            <div className={`size-4 shrink-0 rounded-full border flex items-center justify-center transition-all ${
+                               isSelected ? "bg-primary border-primary" : "border-slate-300 bg-white"
+                            }`}>
+                               {isSelected && <div className="size-1.5 rounded-full bg-white animate-in zoom-in-50" />}
+                            </div>
+                            <span className={`text-xs font-bold transition-colors ${isSelected ? "text-primary" : "text-slate-600"}`}>
+                              {category.name}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </CardContent>
@@ -427,7 +433,7 @@ export const AddProduct = () => {
                 </div>
                 <Button
                   type="button"
-                  onClick={() => formik.setFieldValue("variants", [...formik.values.variants, { name_variant: "", sku: "", price: 0, cost_price: 0, stock: 0, batch_code: "" }])}
+                  onClick={() => formik.setFieldValue("variants", [...formik.values.variants, { name_variant: "", sku: "", barcode: "", price: 0, cost_price: 0, stock: 0, batch_code: "" }])}
                   className="rounded-xl font-black uppercase tracking-widest text-[10px]">
                   <Plus className="mr-2 size-4" /> Add Variant
                 </Button>
@@ -475,6 +481,16 @@ export const AddProduct = () => {
                             value={variant.price}
                             onChange={formik.handleChange}
                             className="bg-background/50 font-bold"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Barcode (Optional)</Label>
+                          <Input
+                            name={`variants[${index}].barcode`}
+                            placeholder="Scan or enter barcode"
+                            value={variant.barcode}
+                            onChange={formik.handleChange}
+                            className="bg-background/50"
                           />
                         </div>
                         <div className="space-y-2">

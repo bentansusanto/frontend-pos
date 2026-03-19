@@ -75,7 +75,8 @@ export const HooksAddProduct = () => {
           price: 0,
           cost_price: 0,
           stock: 0,
-          batch_code: ""
+          batch_code: "",
+          barcode: ""
         }
       ]
     },
@@ -131,7 +132,8 @@ export const HooksAddProduct = () => {
             productId: String(productId),
             name_variant: variant.name_variant,
             price: variant.price,
-            cost_price: variant.cost_price
+            cost_price: variant.cost_price,
+            barcode: variant.barcode
           }).unwrap();
 
           const variantId = (variantResponse as any)?.data?.id || (variantResponse as any)?.id;

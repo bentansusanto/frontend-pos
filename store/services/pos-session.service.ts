@@ -24,7 +24,7 @@ export const posSessionApi = createApi({
       }),
       invalidatesTags: ["PosSession"],
     }),
-    closeSession: builder.mutation<any, { id: string; closingBalance: number; notes?: string }>({
+    closeSession: builder.mutation<any, { id: string; paymentDeclarations?: { method: string; declaredAmount: number }[]; notes?: string }>({
       query: ({ id, ...body }) => ({
         url: `/pos-sessions/close/${id}`,
         method: "POST",

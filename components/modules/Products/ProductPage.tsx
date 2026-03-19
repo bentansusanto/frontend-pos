@@ -39,6 +39,7 @@ import { getCookie } from "@/utils/cookies";
 import React, { useEffect, useMemo, useState } from "react";
 import AddStockDialog from "./AddStock/AddStockDialog";
 import { InventoryTable } from "./InventoryTable";
+import { useSocket } from "@/components/providers/socket-provider";
 
 export const ProductPage = () => {
   const { data: profileData } = useGetProfileQuery();
@@ -87,6 +88,22 @@ export const ProductPage = () => {
   const [deleteProduct, { isLoading: isDeleting }] = useDeleteProductMutation();
   const products = productsData || [];
   const categories = categoriesData || [];
+  const { socket } = useSocket();
+
+  // Listen for real-time stock updates from WebSocket
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleStockUpdate = () => {
+      refetch();
+    };
+
+    socket.on("stock_updated", handleStockUpdate);
+
+    return () => {
+      socket.off("stock_updated", handleStockUpdate);
+    };
+  }, [socket, refetch]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -268,7 +285,7 @@ export const ProductPage = () => {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Total Products Card */}
         <Card className="rounded-xl border bg-white shadow-sm ring-1 ring-slate-200/50">
-          <CardContent className="p-5">
+          <CardContent>
             <div className="flex items-center justify-between space-y-0 pb-2">
               <p className="text-sm font-medium text-slate-500">Total Products</p>
               <div className="rounded-xl bg-slate-100 p-3 text-slate-600">
@@ -289,7 +306,7 @@ export const ProductPage = () => {
 
         {/* In Stock Card */}
         <Card className="rounded-xl border bg-white shadow-sm ring-1 ring-slate-200/50">
-          <CardContent className="p-5">
+          <CardContent>
             <div className="flex items-center justify-between space-y-0 pb-2">
               <p className="text-sm font-medium text-slate-500">In Stock</p>
               <div className="rounded-xl bg-emerald-50 p-3 text-emerald-600">
@@ -312,7 +329,7 @@ export const ProductPage = () => {
 
         {/* Low Stock Card */}
         <Card className="rounded-xl border bg-white shadow-sm ring-1 ring-slate-200/50">
-          <CardContent className="p-5">
+          <CardContent>
             <div className="flex items-center justify-between space-y-0 pb-2">
               <p className="text-sm font-medium text-slate-500">Low Stock</p>
               <div className="rounded-xl bg-amber-50 p-3 text-amber-600">
@@ -335,7 +352,7 @@ export const ProductPage = () => {
 
         {/* Out of Stock Card */}
         <Card className="rounded-xl border bg-white shadow-sm ring-1 ring-slate-200/50">
-          <CardContent className="p-5">
+          <CardContent>
             <div className="flex items-center justify-between space-y-0 pb-2">
               <p className="text-sm font-medium text-slate-500">Out of Stock</p>
               <div className="rounded-xl bg-rose-50 p-3 text-rose-600">
