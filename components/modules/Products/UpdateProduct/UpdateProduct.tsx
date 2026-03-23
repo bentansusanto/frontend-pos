@@ -234,23 +234,6 @@ export const UpdateProduct = () => {
                   onBlur={formik.handleBlur}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="discount-percentage">Discount Percentage (%)</Label>
-                <Input id="discount-percentage" placeholder="25%" />
-              </div>
-              <div className="space-y-2">
-                <Label>Discount Type</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a discount type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="seasonal">Seasonal</SelectItem>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="flash">Flash Sale</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="space-y-3 lg:col-span-3">
                 <div className="space-y-3 rounded-xl border">
                   <Command>

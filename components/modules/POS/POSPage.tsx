@@ -66,7 +66,7 @@ export const PosPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [isDiscountModalOpen, setIsDiscountModalOpen] = useState(false);
+  const [isPromotionModalOpen, setIsPromotionModalOpen] = useState(false);
   const [isCreateCustomerOpen, setIsCreateCustomerOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isVerifyPaymentOpen, setIsVerifyPaymentOpen] = useState(false);
@@ -247,7 +247,7 @@ export const PosPage = () => {
   const taxName = activeTax ? `${activeTax.name} (${taxRatePercent}%)` : `Service Tax (5%)`;
   const taxAmount = subtotal * taxRate;
   const discountAmount = currentOrder?.discount_amount ?? 0;
-  const discountName = currentOrder?.promotion?.name || currentOrder?.discount?.name || "Promotion";
+  const discountName = currentOrder?.promotion?.name || "Promotion";
   const totalAmount = currentOrder?.total_amount ?? subtotal + taxAmount - discountAmount;
 
   const { formik, isLoading } = usePosOrder({ initialItems: [] });
@@ -376,7 +376,7 @@ export const PosPage = () => {
     }
   };
 
-  const handleApplyDiscount = async (promotionId: string) => {
+  const handleApplyPromotion = async (promotionId: string) => {
     if (!currentOrder?.id) return;
     try {
       await updateOrder({
@@ -384,7 +384,7 @@ export const PosPage = () => {
         body: { promotion_id: promotionId }
       }).unwrap();
       refetchOrders();
-      setIsDiscountModalOpen(false);
+      setIsPromotionModalOpen(false);
       if (promotionId === "remove") {
         toast.success("Promotion removed");
       } else {
@@ -697,7 +697,7 @@ export const PosPage = () => {
             </div>
             {discountAmount > 0 && (
               <div className="flex justify-between text-xs font-medium text-destructive">
-                <span>{currentOrder?.promotion?.name || currentOrder?.discount?.name || "Promotion"}</span>
+                <span>{currentOrder?.promotion?.name || "Promotion"}</span>
                 <span>-${Number(discountAmount || 0).toFixed(2)}</span>
               </div>
             )}
@@ -715,7 +715,7 @@ export const PosPage = () => {
               variant="outline"
               className="w-full h-10 border-dashed rounded-xl text-xs"
               type="button"
-              onClick={() => setIsDiscountModalOpen(true)}
+              onClick={() => setIsPromotionModalOpen(true)}
               disabled={isLoading || isUpdatingOrder || !currentOrder?.id || orderItems.length === 0}>
               {discountAmount > 0 || currentOrder?.promotion_id ? "Change Promotion" : "Add Promotion"}
             </Button>
@@ -1040,52 +1040,35 @@ export const PosPage = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isDiscountModalOpen} onOpenChange={setIsDiscountModalOpen}>
+      <Dialog open={isPromotionModalOpen} onOpenChange={setIsPromotionModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Select Promotion</DialogTitle>
-            <DialogDescription>Apply a promotion to the current order.</DialogDescription>
+            <DialogDescription>
+              Choose a promotion to apply to this order.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            {(discountAmount > 0 || currentOrder?.promotion_id) && (
+          <div className="space-y-4 py-4">
+            <div className="grid gap-2">
               <Button
-                variant="destructive"
-                className="w-full"
-                type="button"
-                onClick={() => handleApplyDiscount("remove")}>
-                Remove Current Promotion
+                variant="outline"
+                className="justify-start h-12"
+                onClick={() => handleApplyPromotion("remove")}>
+                None / Remove Promotion
               </Button>
-            )}
-            {isLoadingPromotions ? (
-              <div className="text-muted-foreground py-4 text-center text-sm">
-                Loading promotions...
-              </div>
-            ) : activePromotions?.length === 0 ? (
-              <div className="text-muted-foreground py-4 text-center text-sm">
-                No active promotions available.
-              </div>
-            ) : (
-              activePromotions?.map((promotion: any) => (
+              {activePromotions.map((promotion: any) => (
                 <Button
                   key={promotion.id}
                   variant="outline"
-                  className="h-auto w-full items-center justify-between p-4"
-                  type="button"
-                  onClick={() => handleApplyDiscount(promotion.id)}>
-                  <div className="flex flex-col items-start gap-1">
-                    <span className="font-semibold">{promotion.name}</span>
-                    <span className="text-muted-foreground text-xs">{promotion.description}</span>
+                  className="justify-start h-auto text-left py-3 px-4"
+                  onClick={() => handleApplyPromotion(promotion.id)}>
+                  <div className="flex flex-col items-start min-w-0">
+                    <span className="font-bold text-sm truncate w-full">{promotion.name}</span>
+                    <span className="text-[10px] text-muted-foreground line-clamp-1">{promotion.description}</span>
                   </div>
-                  <span className="text-primary font-bold">
-                    {promotion.rules?.[0]?.actionType === "PERCENT_DISCOUNT"
-                      ? `${promotion.rules[0].actionValue.percentage}%`
-                      : promotion.rules?.[0]?.actionType === "FIXED_DISCOUNT"
-                      ? `$${Number(promotion.rules[0].actionValue.amount).toFixed(2)}`
-                      : "Active"}
-                  </span>
                 </Button>
-              ))
-            )}
+              ))}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
