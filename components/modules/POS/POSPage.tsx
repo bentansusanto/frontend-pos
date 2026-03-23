@@ -22,7 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { useGetProfileQuery } from "@/store/services/auth.service";
 import { useGetAllCategoriesQuery } from "@/store/services/category.service";
 import { useGetAllCustomersQuery } from "@/store/services/customer.service";
-import { useGetActiveDiscountsQuery } from "@/store/services/discount.service";
+import { useGetPromotionsQuery } from "@/store/services/promotion.service";
 import {
   useCreateOrderMutation,
   useDeleteOrderItemMutation,
@@ -129,7 +129,13 @@ export const PosPage = () => {
   const [createPayment, { isLoading: isCreatingPayment }] = useCreatePaymentMutation();
   const [verifyPayment, { isLoading: isVerifyingPayment }] = useVerifyPaymentMutation();
   const { data: activeTaxesData } = useGetActiveTaxesQuery();
-  const { data: activeDiscounts } = useGetActiveDiscountsQuery();
+  const { data: promotionsData, isLoading: isLoadingPromotions } = useGetPromotionsQuery();
+  
+  // Filter only non-INACTIVE promotions (let backend status column drive this, not date)
+  const activePromotions = (Array.isArray(promotionsData) 
+    ? promotionsData 
+    : (promotionsData?.datas || promotionsData?.data || []))
+    .filter((p: any) => p.status !== "INACTIVE");
 
   const variantsByProductId = useMemo(() => {
     const grouped = new Map<string, any[]>();
@@ -166,9 +172,9 @@ export const PosPage = () => {
     return data.filter((product: any) => {
       const matchesCategory =
         selectedCategory === "all" || product.category_id === selectedCategory;
-      
+
       const query = searchQuery ? searchQuery.toLowerCase() : "";
-      
+
       // Check product level fields
       const matchesProductSearch =
         !query ||
@@ -178,8 +184,8 @@ export const PosPage = () => {
 
       // Check variant level fields (specifically barcode)
       const variants = variantsByProductId.get(product.id) || [];
-      const matchesVariantSearch = 
-        !query || 
+      const matchesVariantSearch =
+        !query ||
         variants.some((v: any) => v.barcode?.toLowerCase().includes(query));
 
       const matchesSearch = matchesProductSearch || matchesVariantSearch;
@@ -209,7 +215,7 @@ export const PosPage = () => {
         setSelectedOrderId(null);
       }
     }
-    
+
     // DISABLED: Auto-selecting the first pending order on load/refresh
     // This prevents "ghost" orders from appearing without user action
     /*
@@ -239,10 +245,9 @@ export const PosPage = () => {
   const taxRatePercent = activeTax ? Number(activeTax.rate) : 5;
   const taxRate = taxRatePercent / 100;
   const taxName = activeTax ? `${activeTax.name} (${taxRatePercent}%)` : `Service Tax (5%)`;
-
-  const taxAmount = currentOrder?.tax_amount ?? subtotal * taxRate;
+  const taxAmount = subtotal * taxRate;
   const discountAmount = currentOrder?.discount_amount ?? 0;
-  const discountName = currentOrder?.discount?.name ?? "Discount";
+  const discountName = currentOrder?.promotion?.name || currentOrder?.discount?.name || "Promotion";
   const totalAmount = currentOrder?.total_amount ?? subtotal + taxAmount - discountAmount;
 
   const { formik, isLoading } = usePosOrder({ initialItems: [] });
@@ -297,7 +302,7 @@ export const PosPage = () => {
           }
         ]
       }).unwrap();
-      
+
       const orderId = response?.data?.id || response?.data?.order?.id || response?.id;
 
       if (orderId && orderId !== selectedOrderId) {
@@ -371,22 +376,22 @@ export const PosPage = () => {
     }
   };
 
-  const handleApplyDiscount = async (discountId: string) => {
+  const handleApplyDiscount = async (promotionId: string) => {
     if (!currentOrder?.id) return;
     try {
       await updateOrder({
         id: currentOrder.id,
-        body: { discount_id: discountId }
+        body: { promotion_id: promotionId }
       }).unwrap();
       refetchOrders();
       setIsDiscountModalOpen(false);
-      if (discountId === "remove") {
-        toast.success("Discount removed");
+      if (promotionId === "remove") {
+        toast.success("Promotion removed");
       } else {
-        toast.success("Discount applied successfully");
+        toast.success("Promotion applied successfully");
       }
     } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to apply discount");
+      toast.error(error?.data?.message || "Failed to apply promotion");
     }
   };
 
@@ -455,7 +460,7 @@ export const PosPage = () => {
               </Button>
             )}
           </div>
-          
+
           <div className="relative">
             <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
             <Input
@@ -500,7 +505,7 @@ export const PosPage = () => {
               const displayPrice = hasVariants
                 ? Math.min(...variants.map((v: any) => Number(v.price) || 0))
                 : Number(product.price || 0);
-              
+
               const maxPrice = hasVariants
                 ? Math.max(...variants.map((v: any) => Number(v.price) || 0))
                 : displayPrice;
@@ -585,7 +590,7 @@ export const PosPage = () => {
 
         {/* Customer & Info Banner */}
         <div className="p-4 bg-muted/30 border-b border-border">
-          <button 
+          <button
             type="button"
             onClick={() => setIsCustomerModalOpen(true)}
             className="flex w-full items-center gap-3 p-3 bg-card rounded-xl border border-border shadow-sm hover:border-primary/50 transition-colors">
@@ -627,7 +632,7 @@ export const PosPage = () => {
                   ? productsById.get(item.product_id)
                   : variant?.product;
                 const itemName = variant?.name_variant || product?.name_product || "Item";
-                
+
                 return (
                   <div key={item.id} className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-3 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between gap-3">
@@ -645,7 +650,7 @@ export const PosPage = () => {
                         <Trash2 className="size-3" />
                       </Button>
                     </div>
-                    
+
                     <div className="flex items-center justify-between mt-1">
                       <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
                         <Button
@@ -692,7 +697,7 @@ export const PosPage = () => {
             </div>
             {discountAmount > 0 && (
               <div className="flex justify-between text-xs font-medium text-destructive">
-                <span>{discountName}</span>
+                <span>{currentOrder?.promotion?.name || currentOrder?.discount?.name || "Promotion"}</span>
                 <span>-${Number(discountAmount || 0).toFixed(2)}</span>
               </div>
             )}
@@ -712,7 +717,7 @@ export const PosPage = () => {
               type="button"
               onClick={() => setIsDiscountModalOpen(true)}
               disabled={isLoading || isUpdatingOrder || !currentOrder?.id || orderItems.length === 0}>
-              {discountAmount > 0 ? "Change Discount" : "Add Discount / Promo"}
+              {discountAmount > 0 || currentOrder?.promotion_id ? "Change Promotion" : "Add Promotion"}
             </Button>
             <Button
               className="w-full h-14 text-base font-bold rounded-2xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -739,11 +744,11 @@ export const PosPage = () => {
               <AlertTriangle className="size-4" />
               <AlertTitle className="font-bold">Inventory Frozen (Stock Take In Progress)</AlertTitle>
               <AlertDescription className="text-sm">
-                This branch is currently undergoing a physical inventory audit. 
+                This branch is currently undergoing a physical inventory audit.
                 All sales operations are disabled to ensure 100% data accuracy.
               </AlertDescription>
             </Alert>
-            
+
             <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Audit Session</span>
@@ -763,9 +768,9 @@ export const PosPage = () => {
             <p className="text-[10px] text-center text-muted-foreground uppercase tracking-widest font-bold">
               Please wait until the audit is COMPLETED or REJECTED by a manager.
             </p>
-            <Button 
+            <Button
               type="button"
-              variant="outline" 
+              variant="outline"
               className="w-full"
               onClick={() => router.push("/dashboard")}>
               Return to Dashboard
@@ -790,7 +795,7 @@ export const PosPage = () => {
               {selectedVariant ? `Configure ${selectedVariant.name_variant}` : "Select Variant"}
             </DialogTitle>
             <DialogDescription>
-              {selectedVariant 
+              {selectedVariant
                 ? `Set quantity and unit for ${selectedVariant.name_variant}`
                 : `Choose a variant for ${selectedProductForVariant?.name_product}`
               }
@@ -891,15 +896,15 @@ export const PosPage = () => {
                   </span>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    className="flex-1" 
+                  <Button
+                    variant="outline"
+                    className="flex-1"
                     type="button"
                     onClick={() => setSelectedVariant(null)}>
                     Back
                   </Button>
-                  <Button 
-                    className="flex-[2] font-bold" 
+                  <Button
+                    className="flex-[2] font-bold"
                     type="button"
                     onClick={() => {
                       const multiplier = variantModalUnit === "satuan" ? 1 : variantModalUnit === "lusin" ? 12 : 24;
@@ -955,7 +960,7 @@ export const PosPage = () => {
                 <div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 <p className="text-xs">Finding customers...</p>
               </div>
-            ) : customers.filter((c: any) => 
+            ) : customers.filter((c: any) =>
                 c.name?.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
                 c.phone?.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
                 c.email?.toLowerCase().includes(customerSearchQuery.toLowerCase())
@@ -967,7 +972,7 @@ export const PosPage = () => {
               </div>
             ) : (
               customers
-                .filter((c: any) => 
+                .filter((c: any) =>
                   c.name?.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
                   c.phone?.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
                   c.email?.toLowerCase().includes(customerSearchQuery.toLowerCase())
@@ -984,8 +989,8 @@ export const PosPage = () => {
                         setCustomerSearchQuery("");
                       }}
                       className={`w-full group text-left p-4 rounded-2xl border transition-all duration-200 ${
-                        isSelected 
-                          ? "bg-primary/5 border-primary shadow-sm" 
+                        isSelected
+                          ? "bg-primary/5 border-primary shadow-sm"
                           : "bg-card border-border hover:border-primary/40 hover:shadow-md"
                       }`}>
                       <div className="flex items-center gap-4">
@@ -1038,39 +1043,45 @@ export const PosPage = () => {
       <Dialog open={isDiscountModalOpen} onOpenChange={setIsDiscountModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Select Discount</DialogTitle>
-            <DialogDescription>Apply a discount to the current order.</DialogDescription>
+            <DialogTitle>Select Promotion</DialogTitle>
+            <DialogDescription>Apply a promotion to the current order.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            {discountAmount > 0 && (
+            {(discountAmount > 0 || currentOrder?.promotion_id) && (
               <Button
                 variant="destructive"
                 className="w-full"
                 type="button"
                 onClick={() => handleApplyDiscount("remove")}>
-                Remove Current Discount
+                Remove Current Promotion
               </Button>
             )}
-            {activeDiscounts?.length === 0 ? (
+            {isLoadingPromotions ? (
               <div className="text-muted-foreground py-4 text-center text-sm">
-                No active discounts available.
+                Loading promotions...
+              </div>
+            ) : activePromotions?.length === 0 ? (
+              <div className="text-muted-foreground py-4 text-center text-sm">
+                No active promotions available.
               </div>
             ) : (
-              activeDiscounts?.map((discount: any) => (
+              activePromotions?.map((promotion: any) => (
                 <Button
-                  key={discount.id}
+                  key={promotion.id}
                   variant="outline"
                   className="h-auto w-full items-center justify-between p-4"
                   type="button"
-                  onClick={() => handleApplyDiscount(discount.id)}>
+                  onClick={() => handleApplyDiscount(promotion.id)}>
                   <div className="flex flex-col items-start gap-1">
-                    <span className="font-semibold">{discount.name}</span>
-                    <span className="text-muted-foreground text-xs">{discount.description}</span>
+                    <span className="font-semibold">{promotion.name}</span>
+                    <span className="text-muted-foreground text-xs">{promotion.description}</span>
                   </div>
                   <span className="text-primary font-bold">
-                    {discount.type === "percentage"
-                      ? `${discount.value}%`
-                      : `$${Number(discount.value).toFixed(2)}`}
+                    {promotion.rules?.[0]?.actionType === "PERCENT_DISCOUNT"
+                      ? `${promotion.rules[0].actionValue.percentage}%`
+                      : promotion.rules?.[0]?.actionType === "FIXED_DISCOUNT"
+                      ? `$${Number(promotion.rules[0].actionValue.amount).toFixed(2)}`
+                      : "Active"}
                   </span>
                 </Button>
               ))

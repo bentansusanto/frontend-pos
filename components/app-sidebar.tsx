@@ -95,6 +95,7 @@ const data = {
           defaultOpen: true,
           items: [
             { title: "Products", url: "/dashboard/inventory/products" },
+            { title: "Product Batches", url: "/dashboard/inventory/product-batches" },
             { title: "Stock Overview", url: "/dashboard/inventory/stock-overview" },
             { title: "Stock Take", url: "/dashboard/inventory/stock-take" }
           ],
@@ -110,14 +111,14 @@ const data = {
       ]
     },
     {
-      label: "Finance & Catalog",
+      label: "Marketing & Catalog",
       items: [
         {
-          title: "Finance",
+          title: "Marketing and Tax",
           icon: Tag,
           defaultOpen: false,
           items: [
-            { title: "Discounts", url: "/dashboard/finance/discounts" },
+            { title: "Promotions", url: "/dashboard/finance/promotions" },
             { title: "Taxes", url: "/dashboard/finance/taxes" }
           ],
           roles: ["owner", "admin"]

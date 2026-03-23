@@ -61,8 +61,8 @@ export const ReceiptModal = ({ isOpen, onClose, order, onPrint }: ReceiptModalPr
               <span>${Number(order.tax_amount || 0).toFixed(2)}</span>
             </div>
             {Number(order.discount_amount || 0) > 0 && (
-              <div className="flex justify-between text-green-600">
-                <span>Discount</span>
+              <div className="flex justify-between items-center text-primary mt-1">
+                <span>{order.promotion?.name || order.discount?.name || "Promotion"}</span>
                 <span>-${Number(order.discount_amount).toFixed(2)}</span>
               </div>
             )}

@@ -16,7 +16,6 @@ import { stockMovementsService } from "./services/stock-movements.service";
 import { aiInsightService } from "./services/ai-insight.service";
 import { roleService } from "./services/role.service";
 import { taxService } from "./services/tax.service";
-import { discountService } from "./services/discount.service";
 import { supplierService } from "./services/supplier.service";
 import { userLogService } from "./services/user-log.service";
 import { purchasingApi } from "./services/purchasing.service";
@@ -24,6 +23,8 @@ import { posSessionApi } from "./services/pos-session.service";
 import { accountingApi } from "./services/accounting.service";
 import { expenseApi } from "./services/expense.service";
 import { stockTakeApi } from "./services/stock-take.service";
+import { productBatchService } from "./services/product-batch.service";
+import { promotionService } from "./services/promotion.service";
 
 export const store = configureStore({
   reducer: {
@@ -42,14 +43,15 @@ export const store = configureStore({
     [aiInsightService.reducerPath]: aiInsightService.reducer,
     [roleService.reducerPath]: roleService.reducer,
     [taxService.reducerPath]: taxService.reducer,
-    [discountService.reducerPath]: discountService.reducer,
     [supplierService.reducerPath]: supplierService.reducer,
     [userLogService.reducerPath]: userLogService.reducer,
     [purchasingApi.reducerPath]: purchasingApi.reducer,
     [posSessionApi.reducerPath]: posSessionApi.reducer,
     [accountingApi.reducerPath]: accountingApi.reducer,
     [expenseApi.reducerPath]: expenseApi.reducer,
-    [stockTakeApi.reducerPath]: stockTakeApi.reducer
+    [stockTakeApi.reducerPath]: stockTakeApi.reducer,
+    [productBatchService.reducerPath]: productBatchService.reducer,
+    [promotionService.reducerPath]: promotionService.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -68,14 +70,15 @@ export const store = configureStore({
       aiInsightService.middleware,
       roleService.middleware,
       taxService.middleware,
-      discountService.middleware,
       supplierService.middleware,
       userLogService.middleware,
       purchasingApi.middleware,
       posSessionApi.middleware,
       accountingApi.middleware,
       expenseApi.middleware,
-      stockTakeApi.middleware
+      stockTakeApi.middleware,
+      productBatchService.middleware,
+      promotionService.middleware
     )
 });
 
@@ -98,14 +101,15 @@ export const allApis = [
   aiInsightService,
   roleService,
   taxService,
-  discountService,
   supplierService,
   userLogService,
   purchasingApi,
   posSessionApi,
   accountingApi,
   expenseApi,
-  stockTakeApi
+  stockTakeApi,
+  productBatchService,
+  promotionService
 ];
 
 export const resetAllApiStates = (dispatch: AppDispatch) => {
