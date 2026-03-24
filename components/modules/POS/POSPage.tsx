@@ -255,7 +255,6 @@ export const PosPage = () => {
   const handleNewOrder = () => {
     setSelectedOrderId(null);
     formik.resetForm();
-    toast.success("Ready for new order");
   };
 
   const selectedCustomer = useMemo(() => {
@@ -342,7 +341,6 @@ export const PosPage = () => {
         orderItemId
       }).unwrap();
       refetchOrders();
-      toast.success("Item removed from order");
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to remove item");
     }
@@ -385,11 +383,6 @@ export const PosPage = () => {
       }).unwrap();
       refetchOrders();
       setIsPromotionModalOpen(false);
-      if (promotionId === "remove") {
-        toast.success("Promotion removed");
-      } else {
-        toast.success("Promotion applied successfully");
-      }
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to apply promotion");
     }
@@ -409,7 +402,6 @@ export const PosPage = () => {
       }).unwrap();
       setCreatedPayment(response?.data || response || null);
       setIsVerifyPaymentOpen(true);
-      toast.success("Payment created");
     } catch (error: any) {
       setIsPaymentModalOpen(true);
       toast.error(error?.data?.message || "Failed to create payment");
@@ -428,7 +420,6 @@ export const PosPage = () => {
       setIsReceiptOpen(true);
       setCreatedPayment(null);
       refetchOrders();
-      toast.success("Payment verified");
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to verify payment");
     }
@@ -695,10 +686,10 @@ export const PosPage = () => {
               <span>{taxName}</span>
               <span>${Number(taxAmount || 0).toFixed(2)}</span>
             </div>
-            {discountAmount > 0 && (
+            {(discountAmount > 0 || currentOrder?.promotion_id) && (
               <div className="flex justify-between text-xs font-medium text-destructive">
                 <span>{currentOrder?.promotion?.name || "Promotion"}</span>
-                <span>-${Number(discountAmount || 0).toFixed(2)}</span>
+                <span>-{Number(discountAmount || 0).toFixed(2)}</span>
               </div>
             )}
             <Separator className="my-2" />
