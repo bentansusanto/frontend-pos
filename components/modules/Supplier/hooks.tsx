@@ -34,7 +34,6 @@ export function useSupplierList() {
   );
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Delete supplier "${name}"? This cannot be undone.`)) return;
     try {
       await deleteSupplier(id).unwrap();
       toast.success(`"${name}" deleted successfully`);

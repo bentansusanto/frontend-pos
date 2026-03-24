@@ -33,8 +33,110 @@ import {
   useGetPurchasesQuery
 } from "@/store/services/purchasing.service";
 import { format } from "date-fns";
-import { ArrowRight, FileDown, PackageCheck, Plus, Search, Truck } from "lucide-react";
+import { ArrowRight, FileDown, PackageCheck, Plus, Search, Truck, Eye, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { useMemo, useState } from "react";
+
+function ViewReceivingDialog({ open, onOpenChange, receiving }: { open: boolean, onOpenChange: (open: boolean) => void, receiving: any }) {
+  if (!receiving) return null;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[700px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Eye className="text-primary h-5 w-5" />
+            Receiving Details
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4 text-sm">
+          <div className="grid grid-cols-2 gap-2 border-b pb-4">
+            <div>
+              <p className="text-muted-foreground">Receiving ID</p>
+              <p className="font-medium">RCV-{receiving.id.substring(0, 6).toUpperCase()}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Original PO</p>
+              <Badge variant="outline">PO-{receiving.purchase?.id?.substring(0,6).toUpperCase()}</Badge>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Supplier</p>
+              <p className="font-medium">{receiving.supplier?.name}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Branch</p>
+              <p className="font-medium">{receiving.branch?.name}</p>
+            </div>
+            <div className="col-span-2 mt-2">
+              <p className="text-muted-foreground">Note</p>
+              <p className="font-medium">{receiving.note || "—"}</p>
+            </div>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-2">Received Variants</h4>
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow>
+                    <TableHead>Product / Variant</TableHead>
+                    <TableHead className="text-right">Received Qty</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {receiving.items?.map((item: any) => (
+                     <TableRow key={item.id}>
+                      <TableCell className="font-medium">
+                        <div>
+                          {item.productVariant?.product?.name_product || 
+                           (item.productVariant as any)?.product?.name || 
+                           "Product Name Not Found"}
+                        </div>
+                        <div className="text-muted-foreground text-[10px] font-normal">
+                          {item.productVariant?.name_variant}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">{item.qty}</TableCell>
+                    </TableRow>
+                  ))}
+                  {(!receiving.items || receiving.items.length === 0) && (
+                    <TableRow><TableCell colSpan={2} className="text-center py-4">No items recorded.</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ReceivingActionMenu({ receiving }: { receiving: any }) {
+  const [viewOpen, setViewOpen] = useState(false);
+
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setViewOpen(true)}>
+            <Eye className="mr-2 h-4 w-4" /> View Details
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ViewReceivingDialog open={viewOpen} onOpenChange={setViewOpen} receiving={receiving} />
+    </div>
+  );
+}
 
 export default function PurchaseReceivingPage() {
   const { data: receivings, isLoading } = useGetPurchaseReceivingsQuery();
@@ -47,7 +149,7 @@ export default function PurchaseReceivingPage() {
     const [createReceiving, { isLoading }] = useCreatePurchaseReceivingMutation();
 
     const pendingPOs = useMemo(
-      () => purchases?.filter((p) => p.status === "PENDING") || [],
+      () => purchases?.filter((p) => p.status === "PENDING" || p.status === "PARTIAL") || [],
       [purchases]
     );
 
@@ -85,16 +187,16 @@ export default function PurchaseReceivingPage() {
 
       try {
         await createReceiving({
-          purchase: { id: selectedPO } as any, // RTK/Backend relations expect Object map
-          supplier: { id: po?.supplier_id } as any,
-          branch: { id: po?.branch?.id } as any,
+          purchase_id: selectedPO,
+          supplier_id: po?.supplier_id || "",
+          branch_id: po?.branch?.id || "",
           note: `Received against PO-${selectedPO.substring(0, 6).toUpperCase()}`,
           items: items.map((i) => ({
-            productVariant: { id: i.product_variant_id } as any,
+            product_variant_id: i.product_variant_id,
             qty: i.receive_qty,
             cost: 0
-          })) as any
-        }).unwrap();
+          }))
+        } as any).unwrap();
 
         setOpen(false);
         setSelectedPO("");
@@ -126,7 +228,7 @@ export default function PurchaseReceivingPage() {
                   {pendingPOs.map((po: any) => (
                     <SelectItem key={po.id} value={po.id}>
                       PO-{po.id.substring(0, 6).toUpperCase()} —{" "}
-                      {po.branch?.name_branch || "Unknown Branch"}
+                      {po.branch?.name || "Unknown Branch"}
                     </SelectItem>
                   ))}
                   {pendingPOs.length === 0 && (
@@ -161,11 +263,17 @@ export default function PurchaseReceivingPage() {
                           <SelectValue placeholder="Select variant..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {variants?.map((v: any) => (
-                            <SelectItem key={v.id} value={v.id}>
-                              {v.name_variant}
-                            </SelectItem>
-                          ))}
+                          {variants
+                            ?.filter(
+                              (v: any) =>
+                                v.productId === item.original_product_id ||
+                                v.product?.id === item.original_product_id
+                            )
+                            ?.map((v: any) => (
+                              <SelectItem key={v.id} value={v.id}>
+                                {v.name_variant}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -212,7 +320,7 @@ export default function PurchaseReceivingPage() {
     return receivings.filter((r) => {
       return (
         r.supplier?.name?.toLowerCase().includes(search.toLowerCase()) ||
-        r.branch?.name_branch?.toLowerCase().includes(search.toLowerCase()) ||
+        r.branch?.name?.toLowerCase().includes(search.toLowerCase()) ||
         r.note?.toLowerCase().includes(search.toLowerCase())
       );
     });
@@ -310,13 +418,14 @@ export default function PurchaseReceivingPage() {
               <TableHead>Supplier</TableHead>
               <TableHead>Branch</TableHead>
               <TableHead className="text-right">Total Items</TableHead>
+              <TableHead className="text-right pr-4">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 5 }).map((_, j) => (
+                  {Array.from({ length: 6 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-5 w-full" />
                     </TableCell>
@@ -325,7 +434,7 @@ export default function PurchaseReceivingPage() {
               ))
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-muted-foreground py-12 text-center">
+                <TableCell colSpan={6} className="text-muted-foreground py-12 text-center">
                   <PackageCheck className="mx-auto mb-3 h-8 w-8 opacity-30" />
                   {search ? "No shipments match your search." : "No shipments tracked yet."}
                 </TableCell>
@@ -363,9 +472,12 @@ export default function PurchaseReceivingPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-sm">{record.supplier?.name || "—"}</TableCell>
-                    <TableCell className="text-sm">{record.branch?.name_branch || "—"}</TableCell>
+                    <TableCell className="text-sm">{record.branch?.name || "—"}</TableCell>
                     <TableCell className="text-right">
                       <Badge variant="outline">{totalQty} qty</Badge>
+                    </TableCell>
+                    <TableCell className="text-right pr-4">
+                      <ReceivingActionMenu receiving={record} />
                     </TableCell>
                   </TableRow>
                 );

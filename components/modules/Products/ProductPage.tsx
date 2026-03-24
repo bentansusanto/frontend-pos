@@ -8,8 +8,11 @@ import {
   Package,
   Plus,
   Search,
+  Sparkles,
   XCircle
 } from "lucide-react";
+import { AiInsightSection } from "../AIInsights/AiInsightSection";
+import { InsightType } from "@/types/ai-insight.type";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -373,127 +376,147 @@ export const ProductPage = () => {
           </CardContent>
         </Card>
       </div>
-
-      <div className="space-y-4 rounded-xl border bg-white p-4 shadow-sm dark:bg-slate-950">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-            {(userRole === "owner" ||
-              userRole === "super_admin" ||
-              availableBranches.length > 1) && (
-              <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+      
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        <div className="lg:col-span-3 space-y-4 rounded-xl border bg-white p-4 shadow-sm dark:bg-slate-950">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              {(userRole === "owner" ||
+                userRole === "super_admin" ||
+                availableBranches.length > 1) && (
+                <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+                  <SelectTrigger className="w-full sm:w-40">
+                    <SelectValue placeholder="Select Branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(userRole === "owner" || userRole === "super_admin") && (
+                      <SelectItem value="all">All Branches</SelectItem>
+                    )}
+                    {availableBranches.map((branch: any) => (
+                      <SelectItem key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                 <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="Select Branch" />
+                  <SelectValue placeholder="All categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(userRole === "owner" || userRole === "super_admin") && (
-                    <SelectItem value="all">All Branches</SelectItem>
-                  )}
-                  {availableBranches.map((branch: any) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.name}
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map((category: any) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            )}
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="All categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map((category: any) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            </div>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedCategory("all");
+                setSortConfig({ key: "name_product", direction: "asc" });
+              }}>
+              <Filter className="size-4" />
+              Reset Filter
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            className="gap-2"
-            onClick={() => {
-              setSearchQuery("");
-              setSelectedCategory("all");
-              setSortConfig({ key: "name_product", direction: "asc" });
-            }}>
-            <Filter className="size-4" />
-            Reset Filter
-          </Button>
-        </div>
 
-        <InventoryTable
-          products={paginatedProducts}
-          isLoading={isLoading}
-          onDelete={handleDelete}
-          userRole={userRole}
-          isDeleting={isDeleting}
-        />
+          <InventoryTable
+            products={paginatedProducts}
+            isLoading={isLoading}
+            onDelete={handleDelete}
+            userRole={userRole}
+            isDeleting={isDeleting}
+          />
 
-        <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
-          <p className="text-muted-foreground text-sm">
-            Showing {indexOfFirstItem} to {indexOfLastItem} of {totalItems} entries
-          </p>
-          <Pagination className="mx-0 w-auto justify-end">
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage > 1) setCurrentPage(currentPage - 1);
-                  }}
-                  className={
-                    currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"
-                  }
-                />
-              </PaginationItem>
+          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+            <p className="text-muted-foreground text-sm">
+              Showing {indexOfFirstItem} to {indexOfLastItem} of {totalItems} entries
+            </p>
+            <Pagination className="mx-0 w-auto justify-end">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage > 1) setCurrentPage(currentPage - 1);
+                    }}
+                    className={
+                      currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
 
-              {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter((page) => {
-                  return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
-                })
-                .map((page, index, array) => {
-                  const prevPage = array[index - 1];
-                  const showEllipsis = prevPage && page - prevPage > 1;
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter((page) => {
+                    return page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
+                  })
+                  .map((page, index, array) => {
+                    const prevPage = array[index - 1];
+                    const showEllipsis = prevPage && page - prevPage > 1;
 
-                  return (
-                    <React.Fragment key={page}>
-                      {showEllipsis && (
+                    return (
+                      <React.Fragment key={page}>
+                        {showEllipsis && (
+                          <PaginationItem>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        )}
                         <PaginationItem>
-                          <PaginationEllipsis />
+                          <PaginationLink
+                            href="#"
+                            isActive={currentPage === page}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setCurrentPage(page);
+                            }}>
+                            {page}
+                          </PaginationLink>
                         </PaginationItem>
-                      )}
-                      <PaginationItem>
-                        <PaginationLink
-                          href="#"
-                          isActive={currentPage === page}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setCurrentPage(page);
-                          }}>
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    </React.Fragment>
-                  );
-                })}
+                      </React.Fragment>
+                    );
+                  })}
 
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-                  }}
-                  className={
-                    currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                    }}
+                    className={
+                      currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        </div>
+        
+        <div className="lg:col-span-1 space-y-6">
+          <Card className="p-4 border shadow-sm rounded-xl">
+            <AiInsightSection 
+              branchId={selectedBranchId} 
+              types={[InsightType.LOW_STOCK_ALERT, InsightType.STOCK_SUGGESTION, InsightType.ANOMALY_ALERT]} 
+              title="Stock Insights"
+            />
+          </Card>
+          
+          <Card className="p-4 border shadow-sm rounded-xl">
+            <AiInsightSection 
+              branchId={selectedBranchId} 
+              types={[InsightType.PROMO_SUGGESTION]} 
+              title="Promo Recommendations"
+            />
+          </Card>
         </div>
       </div>
     </div>

@@ -46,6 +46,8 @@ import {
   useGetYearlySalesReportQuery
 } from "@/store/services/sales-report.service";
 import { getCookie } from "@/utils/cookies";
+import { AiInsightSection } from "@/components/modules/AIInsights/AiInsightSection";
+import { InsightType } from "@/types/ai-insight.type";
 
 const chartConfig = {
   amount: {
@@ -56,7 +58,9 @@ const chartConfig = {
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
-  currency: "USD"
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
 });
 
 const formatCurrency = (value?: number) => currencyFormatter.format(Number(value || 0));
@@ -210,6 +214,17 @@ export default function SalesReportPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-l-4 border-l-indigo-500 shadow-sm bg-linear-to-r from-indigo-50 to-white dark:from-indigo-950/20 dark:to-transparent">
+        <CardContent className="py-4 px-6">
+          <AiInsightSection 
+            branchId={branchId || ""} 
+            types={[InsightType.SALES_TREND, InsightType.BEST_SELLER, InsightType.REPORT_SUMMARY]} 
+            title="AI Sales Analysis"
+            limit={2}
+          />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="@container/card">

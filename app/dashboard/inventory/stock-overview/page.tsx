@@ -261,7 +261,7 @@ export default function StockOverviewPage() {
                       return (
                         <TableRow key={movement.id}>
                           <TableCell className="font-medium">
-                            {new Date(movement.createdAt).toLocaleDateString("id-ID", {
+                            {new Date(movement.createdAt).toLocaleDateString("en-US", {
                               year: "numeric",
                               month: "short",
                               day: "numeric",

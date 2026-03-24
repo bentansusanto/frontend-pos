@@ -36,7 +36,9 @@ import React, { useMemo, useState } from "react";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
-  currency: "USD"
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
 });
 
 const formatCurrency = (value?: number) => currencyFormatter.format(Number(value || 0));

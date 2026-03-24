@@ -8,16 +8,16 @@ export const expenseApi = createApi({
   endpoints: (builder) => ({
     // Expenses
     getExpenses: builder.query<any, void>({
-      query: () => "/expenses",
+      query: () => "/expenses/find-all",
       providesTags: ["Expenses"],
     }),
     getExpenseById: builder.query<any, string>({
-      query: (id) => `/expenses/${id}`,
+      query: (id) => `/expenses/find-one/${id}`,
       providesTags: (result, error, id) => [{ type: "Expenses", id }],
     }),
     createExpense: builder.mutation<any, any>({
       query: (body) => ({
-        url: "/expenses",
+        url: "/expenses/create",
         method: "POST",
         body,
       }),
@@ -25,15 +25,15 @@ export const expenseApi = createApi({
     }),
     updateExpense: builder.mutation<any, { id: string; body: any }>({
       query: ({ id, body }) => ({
-        url: `/expenses/${id}`,
-        method: "PATCH",
+        url: `/expenses/update/${id}`,
+        method: "PUT",
         body,
       }),
       invalidatesTags: (result, error, { id }) => ["Expenses", { type: "Expenses", id }],
     }),
     deleteExpense: builder.mutation<any, string>({
       query: (id) => ({
-        url: `/expenses/${id}`,
+        url: `/expenses/delete/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Expenses"],
@@ -41,16 +41,16 @@ export const expenseApi = createApi({
 
     // Expense Categories
     getExpenseCategories: builder.query<any, void>({
-      query: () => "/expense-categories",
+      query: () => "/expense-categories/find-all",
       providesTags: ["ExpenseCategories"],
     }),
     getExpenseCategoryById: builder.query<any, string>({
-      query: (id) => `/expense-categories/${id}`,
+      query: (id) => `/expense-categories/find-one/${id}`,
       providesTags: (result, error, id) => [{ type: "ExpenseCategories", id }],
     }),
     createExpenseCategory: builder.mutation<any, any>({
       query: (body) => ({
-        url: "/expense-categories",
+        url: "/expense-categories/create",
         method: "POST",
         body,
       }),
@@ -58,15 +58,15 @@ export const expenseApi = createApi({
     }),
     updateExpenseCategory: builder.mutation<any, { id: string; body: any }>({
       query: ({ id, body }) => ({
-        url: `/expense-categories/${id}`,
-        method: "PATCH",
+        url: `/expense-categories/update/${id}`,
+        method: "PUT",
         body,
       }),
       invalidatesTags: (result, error, { id }) => ["ExpenseCategories", { type: "ExpenseCategories", id }],
     }),
     deleteExpenseCategory: builder.mutation<any, string>({
       query: (id) => ({
-        url: `/expense-categories/${id}`,
+        url: `/expense-categories/delete/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["ExpenseCategories"],

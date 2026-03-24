@@ -238,10 +238,10 @@ export function InventoryTable({
                       <TableCell>
                         <div className="flex flex-col gap-0.5 text-[11px]">
                           <span className="font-medium text-foreground">
-                            Sell: {Number(variant.price).toLocaleString("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 })}
+                            Sell: {Number(variant.price).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })}
                           </span>
                           <span className="text-muted-foreground">
-                            Cost: {Number(variant.cost_price || 0).toLocaleString("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 })}
+                            Cost: {Number(variant.cost_price || 0).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })}
                           </span>
                         </div>
                       </TableCell>

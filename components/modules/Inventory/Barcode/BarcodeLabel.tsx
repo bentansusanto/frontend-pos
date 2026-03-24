@@ -36,7 +36,7 @@ export const BarcodeLabel = ({ productName, variantName, sku, price }: BarcodeLa
 
       <div className="mt-2 text-center">
         <p className="text-sm font-black text-slate-900">
-          Rp {price.toLocaleString()}
+          $ {price.toLocaleString("en-US", { minimumFractionDigits: 2 })}
         </p>
       </div>
       

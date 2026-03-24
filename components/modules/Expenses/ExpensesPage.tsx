@@ -33,6 +33,7 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useGetProfileQuery } from "@/store/services/auth.service";
 import {
   useCreateExpenseMutation,
   useDeleteExpenseMutation,
@@ -55,11 +56,14 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { formatRupiah } from "@/utils/format-rupiah";
 
 
 function formatCurrency(value: number) {
-  return formatRupiah(value);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2
+  }).format(value);
 }
 
 function getCategoryLabel(categoryId: string, categories: any[]) {
@@ -154,7 +158,7 @@ function ExpenseForm({
           <Label htmlFor="amount">Amount *</Label>
           <div className="relative">
             <span className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 text-sm italic">
-              Rp
+              $
             </span>
             <Input
               id="amount"
@@ -213,7 +217,9 @@ function AddExpenseDialog({
   categories: any[];
 }) {
   const [open, setOpen] = useState(false);
+  const { data: profileData } = useGetProfileQuery();
   const [createExpense, { isLoading }] = useCreateExpenseMutation();
+  const branchId = profileData?.branches?.[0]?.id;
 
   const handleSubmit = async (values: ExpenseFormValues) => {
     try {
@@ -224,7 +230,7 @@ function AddExpenseDialog({
         amount: parseFloat(values.amount) || 0,
         payment_method: values.paidBy,
         notes: values.notes || undefined,
-        branch_id: "477ZlNm783" // Fallback or dynamic branch
+        branch_id: branchId
       }).unwrap();
       toast.success("Expense added successfully");
       setOpen(false);
@@ -379,8 +385,8 @@ export function ExpensesPage() {
   const { data: categoriesData } = useGetExpenseCategoriesQuery();
   const [deleteExpense] = useDeleteExpenseMutation();
 
-  const expenses = expensesData?.datas || [];
-  const categories = categoriesData?.datas || [];
+  const expenses = expensesData?.data || [];
+  const categories = categoriesData?.data || [];
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
