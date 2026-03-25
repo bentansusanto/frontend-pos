@@ -187,7 +187,7 @@ export default function SalesReportPage() {
           <CardHeader className="pb-2">
             <CardDescription>Payment Methods</CardDescription>
             <CardTitle className="text-xl">
-              {Object.keys(paymentMethodSummary).length || 0} metode
+              {Object.keys(paymentMethodSummary).length || 0} methods
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
@@ -198,7 +198,7 @@ export default function SalesReportPage() {
                 </Badge>
               ))
             ) : (
-              <span className="text-muted-foreground text-xs">Belum ada data</span>
+                <span className="text-muted-foreground text-xs">No data yet</span>
             )}
           </CardContent>
         </Card>
@@ -230,7 +230,7 @@ export default function SalesReportPage() {
         <Card className="@container/card">
           <CardHeader>
             <CardTitle>Weekly Sales</CardTitle>
-            <CardDescription>7 hari terakhir</CardDescription>
+            <CardDescription>Last 7 days</CardDescription>
           </CardHeader>
           <CardContent>
             {isWeeklyLoading ? (
@@ -259,7 +259,7 @@ export default function SalesReportPage() {
         <Card className="@container/card">
           <CardHeader>
             <CardTitle>Monthly Sales</CardTitle>
-            <CardDescription>30 hari terakhir</CardDescription>
+            <CardDescription>Last 30 days</CardDescription>
           </CardHeader>
           <CardContent>
             {isMonthlyLoading ? (
@@ -288,7 +288,7 @@ export default function SalesReportPage() {
         <Card className="@container/card">
           <CardHeader>
             <CardTitle>Yearly Sales</CardTitle>
-            <CardDescription>12 bulan terakhir</CardDescription>
+            <CardDescription>Last 12 months</CardDescription>
           </CardHeader>
           <CardContent>
             {isYearlyLoading ? (
@@ -350,7 +350,7 @@ export default function SalesReportPage() {
                           {row.orderId}
                         </TableCell>
                         <TableCell className="py-4 text-xs font-medium whitespace-nowrap">
-                          {row.paidAt ? new Date(row.paidAt).toLocaleDateString("id-ID", { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}
+                          {row.paidAt ? new Date(row.paidAt).toLocaleDateString("en-US", { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}
                         </TableCell>
                         <TableCell className="py-4 text-right">
                           <span className="text-sm font-black text-foreground">
@@ -398,7 +398,7 @@ export default function SalesReportPage() {
                                 <DialogDescription>
                                   Order ID: {row.orderId} •{" "}
                                   {row.paidAt
-                                    ? new Date(row.paidAt).toLocaleDateString("id-ID")
+                                    ? new Date(row.paidAt).toLocaleDateString("en-US")
                                     : "-"}
                                 </DialogDescription>
                               </DialogHeader>

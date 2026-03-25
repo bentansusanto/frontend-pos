@@ -23,11 +23,11 @@ export const RegisterPage = () => {
               Akun Owner
             </div>
 
-            <h2 className="text-foreground text-3xl font-bold tracking-tight">Buat Akun Baru</h2>
+            <h2 className="text-foreground text-3xl font-bold tracking-tight">Create New Account</h2>
             <p className="text-muted-foreground mt-2 text-sm">
-              Halaman ini khusus untuk mendaftarkan akun <strong>Owner</strong>.
+              This page is specifically for registering an <strong>Owner</strong> account.
               <br />
-              Untuk akses staff atau kasir, hubungi owner Anda.
+              For staff or cashier access, please contact your owner.
             </p>
           </div>
 
@@ -35,9 +35,9 @@ export const RegisterPage = () => {
 
           <div className="mt-8 text-center">
             <p className="text-muted-foreground text-sm">
-              Sudah punya akun?{" "}
+              Already have an account?{" "}
               <Link href="/login" className="text-primary font-medium hover:underline">
-                Masuk
+                Login
               </Link>
             </p>
           </div>

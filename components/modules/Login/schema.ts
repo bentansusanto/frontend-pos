@@ -2,17 +2,17 @@ import { z } from "zod";
 
 // Schema untuk login Staff / Owner — field 'identifier' bisa berupa email atau username
 export const loginEmailSchema = z.object({
-  identifier: z.string().min(1, { message: "Email atau username wajib diisi" }),
-  password: z.string().min(1, { message: "Password wajib diisi" })
+  identifier: z.string().min(1, { message: "Email or username is required" }),
+  password: z.string().min(1, { message: "Password is required" })
 });
 
 // Schema untuk login Kasir (PIN saja)
 export const loginPinSchema = z.object({
   pin: z
     .string()
-    .min(4, { message: "PIN minimal 4 digit" })
-    .max(8, { message: "PIN maksimal 8 digit" })
-    .regex(/^\d+$/, { message: "PIN hanya boleh angka" })
+    .min(4, { message: "PIN must be at least 4 digits" })
+    .max(8, { message: "PIN cannot exceed 8 digits" })
+    .regex(/^\d+$/, { message: "PIN must contain only numbers" })
 });
 
 export type LoginEmailSchema = z.infer<typeof loginEmailSchema>;

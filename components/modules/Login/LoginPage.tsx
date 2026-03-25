@@ -14,18 +14,18 @@ export const LoginPage = () => {
       <div className="flex w-full items-center justify-center lg:w-1/2">
         <div className="w-full max-w-md space-y-2 px-6 py-10">
           <div className="text-center mb-6">
-            <h2 className="text-foreground text-3xl font-bold tracking-tight">Selamat Datang</h2>
+            <h2 className="text-foreground text-3xl font-bold tracking-tight">Welcome Back</h2>
             <p className="text-muted-foreground mt-2 text-sm">
-              Masuk ke akun Anda untuk mengakses dashboard
+              Log in to your account to access the dashboard
             </p>
           </div>
 
           <LoginForm />
 
           <div className="mt-8 text-center text-sm text-muted-foreground">
-            Belum punya akun?{" "}
+            Don't have an account?{" "}
             <Link href="/register" className="text-primary font-medium hover:underline">
-              Daftar sebagai Owner
+              Register as Owner
             </Link>
           </div>
         </div>

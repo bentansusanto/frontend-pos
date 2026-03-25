@@ -130,21 +130,6 @@ const data = {
           roles: ["owner", "admin"]
         },
         {
-          title: "Accounting",
-          icon: BookOpen,
-          defaultOpen: false,
-          items: [
-            { title: "Journal", url: "/dashboard/finance/accounting/journal" },
-            { title: "Balance Sheet", url: "/dashboard/finance/accounting/balance-sheet" },
-            {
-              title: "Cashflow Statement",
-              url: "/dashboard/finance/accounting/cashflow-statement"
-            },
-            { title: "Income Statement", url: "/dashboard/finance/accounting/income-statement" }
-          ],
-          roles: ["owner", "admin"]
-        },
-        {
           title: "Suppliers",
           icon: Truck,
           url: "/dashboard/suppliers",

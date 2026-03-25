@@ -15,7 +15,7 @@ export const RegisterForm = () => {
       {/* Name */}
       <div>
         <Label htmlFor="name" className="mb-1.5 block text-sm font-medium">
-          Nama Lengkap
+          Full Name
         </Label>
         <Input
           id="name"
@@ -26,7 +26,7 @@ export const RegisterForm = () => {
               ? "border-red-500 focus-visible:ring-red-500"
               : ""
           }`}
-          placeholder="Nama Anda"
+          placeholder="Your Name"
           {...formik.getFieldProps("name")}
           onBlur={formik.handleBlur}
           disabled={isLoading}
@@ -51,7 +51,7 @@ export const RegisterForm = () => {
               ? "border-red-500 focus-visible:ring-red-500"
               : ""
           }`}
-          placeholder="contoh: john_owner"
+          placeholder="example: john_owner"
           {...formik.getFieldProps("username")}
           onBlur={formik.handleBlur}
           disabled={isLoading}
@@ -114,7 +114,7 @@ export const RegisterForm = () => {
             disabled={isLoading}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            <span className="sr-only">{showPassword ? "Sembunyikan password" : "Tampilkan password"}</span>
+            <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
           </button>
         </div>
         {formik.touched.password && formik.errors.password && (
@@ -128,17 +128,17 @@ export const RegisterForm = () => {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Mendaftarkan...
+              Registering...
             </>
           ) : (
-            "Daftar sebagai Owner"
+            "Register as Owner"
           )}
         </Button>
       </div>
 
       {/* Info note */}
       <p className="text-center text-xs text-muted-foreground pt-1">
-        Setelah mendaftar, cek email Anda untuk verifikasi akun.
+        After registering, check your email for account verification.
       </p>
     </form>
   );

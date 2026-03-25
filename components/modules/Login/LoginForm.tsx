@@ -83,10 +83,10 @@ const PinNumpad = ({ pin, onDigit, onDelete, onSubmit, isLoading, error }: Numpa
         {isLoading ? (
           <>
             <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-            Masuk...
+            Logging in...
           </>
         ) : (
-          "Masuk sebagai Kasir"
+          "Login as Cashier"
         )}
       </Button>
     </div>
@@ -104,7 +104,7 @@ const ModeTab = ({ active, onChange }: TabProps) => (
     {(
       [
         { key: "staff", label: "Staff / Owner" },
-        { key: "cashier", label: "Kasir" }
+        { key: "cashier", label: "Cashier" }
       ] as { key: LoginMode; label: string }[]
     ).map(({ key, label }) => (
       <button
@@ -159,7 +159,7 @@ export const LoginForm = () => {
                   ? "border-red-500 focus-visible:ring-red-500"
                   : ""
               }`}
-              placeholder="email atau username anda"
+              placeholder="your email or username"
               {...formikEmail.getFieldProps("identifier")}
               onBlur={formikEmail.handleBlur}
             />
@@ -204,7 +204,7 @@ export const LoginForm = () => {
               href="/forgot-password"
               className="text-primary hover:text-primary/80 inline-block text-sm font-medium"
             >
-              Lupa password?
+              Forgot password?
             </Link>
           </div>
 
@@ -212,10 +212,10 @@ export const LoginForm = () => {
             {isLoading ? (
               <>
                 <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
-                Masuk...
+                Logging in...
               </>
             ) : (
-              "Masuk"
+              "Login"
             )}
           </Button>
         </form>
@@ -225,7 +225,7 @@ export const LoginForm = () => {
       {loginMode === "cashier" && (
         <form onSubmit={formikPin.handleSubmit}>
           <p className="text-center text-sm text-muted-foreground mb-2">
-            Masukkan PIN kasir Anda
+            Enter your cashier PIN
           </p>
           <PinNumpad
             pin={formikPin.values.pin}

@@ -62,7 +62,7 @@ export function SalesTable({ data }: SalesTableProps) {
               <TableRow key={sale.paymentId}>
                 <TableCell className="font-medium">{sale.orderId}</TableCell>
                 <TableCell>{sale.customer?.name || "Guest"}</TableCell>
-                <TableCell>{new Date(sale.paidAt).toLocaleDateString()}</TableCell>
+                <TableCell>{new Date(sale.paidAt).toLocaleDateString("en-US")}</TableCell>
                 <TableCell>{formatCurrency(sale.totalAmount)}</TableCell>
                 <TableCell className="capitalize">{sale.paymentMethod}</TableCell>
                 <TableCell>

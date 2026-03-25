@@ -76,7 +76,7 @@ export const PosPage = () => {
   const [selectedProductForVariant, setSelectedProductForVariant] = useState<any | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<any | null>(null);
   const [variantModalQty, setVariantModalQty] = useState(1);
-  const [variantModalUnit, setVariantModalUnit] = useState<"satuan" | "lusin" | "box">("satuan");
+  const [variantModalUnit, setVariantModalUnit] = useState<"unit" | "dozen" | "box">("unit");
   const [isOpenSessionModalOpen, setIsOpenSessionModalOpen] = useState(false);
   const [isCloseSessionModalOpen, setIsCloseSessionModalOpen] = useState(false);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
@@ -312,7 +312,7 @@ export const PosPage = () => {
         setSelectedProductForVariant(null);
         setSelectedVariant(null);
         setVariantModalQty(1);
-        setVariantModalUnit("satuan");
+        setVariantModalUnit("unit");
       }
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to add product to order");
@@ -777,7 +777,7 @@ export const PosPage = () => {
             setSelectedProductForVariant(null);
             setSelectedVariant(null);
             setVariantModalQty(1);
-            setVariantModalUnit("satuan");
+            setVariantModalUnit("unit");
           }
         }}>
         <DialogContent className="sm:max-w-md">
@@ -828,18 +828,18 @@ export const PosPage = () => {
                 <div className="grid grid-cols-3 gap-2">
                   <Button
                     type="button"
-                    variant={variantModalUnit === "satuan" ? "default" : "outline"}
+                    variant={variantModalUnit === "unit" ? "default" : "outline"}
                     className="flex flex-col h-16 gap-1"
-                    onClick={() => setVariantModalUnit("satuan")}>
-                    <span className="text-sm font-bold">Satuan</span>
+                    onClick={() => setVariantModalUnit("unit")}>
+                    <span className="text-sm font-bold">Unit</span>
                     <span className="text-[10px] opacity-70">x1</span>
                   </Button>
                   <Button
                     type="button"
-                    variant={variantModalUnit === "lusin" ? "default" : "outline"}
+                    variant={variantModalUnit === "dozen" ? "default" : "outline"}
                     className="flex flex-col h-16 gap-1"
-                    onClick={() => setVariantModalUnit("lusin")}>
-                    <span className="text-sm font-bold">Lusin</span>
+                    onClick={() => setVariantModalUnit("dozen")}>
+                    <span className="text-sm font-bold">Dozen</span>
                     <span className="text-[10px] opacity-70">x12</span>
                   </Button>
                   <Button
@@ -883,7 +883,7 @@ export const PosPage = () => {
                 <div className="flex justify-between items-center px-1 mb-2">
                   <span className="text-sm text-muted-foreground">Total Quantity:</span>
                   <span className="text-sm font-bold">
-                    {variantModalQty * (variantModalUnit === "satuan" ? 1 : variantModalUnit === "lusin" ? 12 : 24)} pcs
+                    {variantModalQty * (variantModalUnit === "unit" ? 1 : variantModalUnit === "dozen" ? 12 : 24)} pcs
                   </span>
                 </div>
                 <div className="flex gap-2">
@@ -898,7 +898,7 @@ export const PosPage = () => {
                     className="flex-[2] font-bold"
                     type="button"
                     onClick={() => {
-                      const multiplier = variantModalUnit === "satuan" ? 1 : variantModalUnit === "lusin" ? 12 : 24;
+                      const multiplier = variantModalUnit === "unit" ? 1 : variantModalUnit === "dozen" ? 12 : 24;
                       handleAddToCart(selectedProductForVariant, selectedVariant, variantModalQty * multiplier);
                     }}>
                     Confirm Add

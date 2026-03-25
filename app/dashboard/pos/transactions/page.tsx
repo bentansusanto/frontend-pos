@@ -132,9 +132,9 @@ export default function TransactionsPage() {
                           <TableCell className="text-muted-foreground">{row.orderId}</TableCell>
                           <TableCell className="text-muted-foreground">
                             {row.paidAt
-                              ? new Date(row.paidAt).toLocaleDateString("id-ID") +
+                              ? new Date(row.paidAt).toLocaleDateString("en-US") +
                                 " " +
-                                new Date(row.paidAt).toLocaleTimeString("id-ID")
+                                new Date(row.paidAt).toLocaleTimeString("en-US")
                               : "-"}
                           </TableCell>
                           <TableCell className="font-semibold">
@@ -175,11 +175,11 @@ export default function TransactionsPage() {
                                   <DialogTitle>Order Details</DialogTitle>
                                   <DialogDescription>
                                     Order ID: {row.orderId} •{" "}
-                                    {row.paidAt
-                                      ? new Date(row.paidAt).toLocaleDateString("id-ID") +
-                                        " " +
-                                        new Date(row.paidAt).toLocaleTimeString("id-ID")
-                                      : "-"}
+                            {row.paidAt
+                              ? new Date(row.paidAt).toLocaleDateString("en-US") +
+                                " " +
+                                new Date(row.paidAt).toLocaleTimeString("en-US")
+                              : "-"}
                                   </DialogDescription>
                                 </DialogHeader>
                                 <div className="mt-4 max-h-[60vh] overflow-y-auto">
