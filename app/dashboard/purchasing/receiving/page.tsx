@@ -326,6 +326,20 @@ export default function PurchaseReceivingPage() {
     });
   }, [receivings, search]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalItems = filtered.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const currentData = filtered.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   const stats = useMemo(() => {
     if (!receivings) return { total: 0, items: 0, distinctSuppliers: 0 };
     const suppliers = new Set(receivings.map((r) => r.supplier?.id));
@@ -440,7 +454,7 @@ export default function PurchaseReceivingPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((record) => {
+              currentData.map((record) => {
                 const totalQty = record.items?.reduce((sum, item) => sum + item.qty, 0) || 0;
 
                 return (
@@ -485,6 +499,47 @@ export default function PurchaseReceivingPage() {
             )}
           </TableBody>
         </Table>
+        
+        <div className="flex items-center justify-between px-4 py-4 border-t bg-muted/5">
+          <p className="text-sm text-muted-foreground">
+            Showing <span className="font-medium text-foreground">{totalItems > 0 ? startIndex + 1 : 0}</span> to{" "}
+            <span className="font-medium text-foreground">{endIndex}</span> of{" "}
+            <span className="font-medium text-foreground">{totalItems}</span> shipments
+          </p>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="h-8 px-3"
+            >
+              Previous
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePageChange(page)}
+                  className={`h-8 w-8 p-0 ${currentPage === page ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                >
+                  {page}
+                </Button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="h-8 px-3"
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

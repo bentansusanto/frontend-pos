@@ -36,7 +36,7 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { formatRupiah } from "@/utils/format-rupiah";
+import { formatUSD } from "@/utils/format-rupiah";
 
 export default function PosLogPage() {
   const { data: posSessions, isLoading, isFetching, refetch } = useGetPosSessionsQuery();
@@ -105,6 +105,20 @@ export default function PosLogPage() {
     return result.sort((a: any, b: any) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
   }, [posSessions, searchTerm, usersMap, branchesMap]);
 
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const itemsPerPage = 10;
+  const totalItems = filteredSessions.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const currentData = filteredSessions.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("ID coped to clipboard");
@@ -164,84 +178,125 @@ export default function PosLogPage() {
               <p className="text-muted-foreground text-sm">No POS sessions found.</p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Staff</TableHead>
-                    <TableHead>Branch</TableHead>
-                    <TableHead>Opened At</TableHead>
-                    <TableHead>Closed At</TableHead>
-                    <TableHead className="text-right">Opening Bal.</TableHead>
-                    <TableHead className="text-right">Closing Bal.</TableHead>
-                    <TableHead className="text-center w-20">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSessions.map((session: any) => {
-                    const isOpen = session.status === "OPEN";
-                    return (
-                      <TableRow key={session.id}>
-                        <TableCell>
-                          <Badge
-                            variant={isOpen ? "default" : "secondary"}
-                            className={cn(
-                              "w-20 justify-center",
-                              isOpen
-                                ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-400"
-                                : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400"
-                            )}>
-                            {session.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium text-sm">{session._userName}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm">{session._branchName}</span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-muted-foreground">
-                            {format(new Date(session.startTime), "dd MMM yy, HH:mm")}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-muted-foreground">
-                            {session.endTime
-                              ? format(new Date(session.endTime), "dd MMM yy, HH:mm")
+            <>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Staff</TableHead>
+                      <TableHead>Branch</TableHead>
+                      <TableHead>Opened At</TableHead>
+                      <TableHead>Closed At</TableHead>
+                      <TableHead className="text-right">Opening Bal.</TableHead>
+                      <TableHead className="text-right">Closing Bal.</TableHead>
+                      <TableHead className="text-center w-20">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentData.map((session: any) => {
+                      const isOpen = session.status === "OPEN";
+                      return (
+                        <TableRow key={session.id}>
+                          <TableCell>
+                            <Badge
+                              variant={isOpen ? "default" : "secondary"}
+                              className={cn(
+                                "w-20 justify-center",
+                                isOpen
+                                  ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-400"
+                                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400"
+                              )}>
+                              {session.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-sm">{session._userName}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">{session._branchName}</span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              {format(new Date(session.startTime), "dd MMM yy, HH:mm")}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              {session.endTime
+                                ? format(new Date(session.endTime), "dd MMM yy, HH:mm")
+                                : "-"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {formatUSD(session.openingBalance)}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {session.closingBalance !== null && session.closingBalance !== undefined
+                              ? formatUSD(session.closingBalance)
                               : "-"}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatRupiah(session.openingBalance)}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {session.closingBalance !== null && session.closingBalance !== undefined
-                            ? formatRupiah(session.closingBalance)
-                            : "-"}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-primary hover:text-primary/80 hover:bg-primary/10"
-                            onClick={() => {
-                              setSelectedSessionId(session.id);
-                              setIsDetailModalOpen(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-primary hover:text-primary/80 hover:bg-primary/10"
+                              onClick={() => {
+                                setSelectedSessionId(session.id);
+                                setIsDetailModalOpen(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              <div className="flex items-center justify-between px-2 py-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Showing <span className="font-medium">{totalItems > 0 ? startIndex + 1 : 0}</span> to{" "}
+                  <span className="font-medium">{endIndex}</span> of{" "}
+                  <span className="font-medium">{totalItems}</span> sessions
+                </p>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

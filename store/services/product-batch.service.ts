@@ -8,7 +8,7 @@ export const productBatchService = createApi({
   endpoints: (builder) => ({
     getProductBatches: builder.query<any, { branch_id?: string; variant_id?: string } | void>({
       query: (params) => ({
-        url: "/product-batches/find-all",
+        url: "/product-batches",
         method: "GET",
         params: params || {}
       }),
@@ -25,7 +25,7 @@ export const productBatchService = createApi({
     }),
     createProductBatch: builder.mutation<any, any>({
       query: (body) => ({
-        url: "/product-batches/create",
+        url: "/product-batches",
         method: "POST",
         body
       }),
@@ -33,7 +33,7 @@ export const productBatchService = createApi({
     }),
     updateProductBatch: builder.mutation<any, { id: string; body: any }>({
       query: ({ id, body }) => ({
-        url: `/product-batches/update/${id}`,
+        url: `/product-batches/${id}`,
         method: "PATCH",
         body
       }),
@@ -41,7 +41,7 @@ export const productBatchService = createApi({
     }),
     deleteProductBatch: builder.mutation<any, string>({
       query: (id) => ({
-        url: `/product-batches/delete/${id}`,
+        url: `/product-batches/${id}`,
         method: "DELETE"
       }),
       invalidatesTags: ["ProductBatches"]

@@ -10,6 +10,10 @@ export const baseAuth = createApi({
       if (token) {
         headers.set("authorization", `Bearer ${token}`);
       }
+      const csrfToken = getCookie("pos_csrf_token");
+      if (csrfToken) {
+        headers.set("x-csrf-token", csrfToken);
+      }
       return headers;
     },
     credentials: "include"

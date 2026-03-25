@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { formatRupiah } from "@/utils/format-rupiah";
+import { formatUSD } from "@/utils/format-rupiah";
 
 interface SessionDetailModalProps {
   isOpen: boolean;
@@ -89,7 +89,7 @@ export const SessionDetailModal = ({
                     <Wallet className="h-4 w-4" />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Opening</span>
                   </div>
-                  <p className="text-xl font-bold">{formatRupiah(summary?.openingBalance || 0)}</p>
+                  <p className="text-xl font-bold">{formatUSD(summary?.openingBalance || 0)}</p>
                 </div>
                 
                 <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 transition-all hover:shadow-md">
@@ -97,7 +97,7 @@ export const SessionDetailModal = ({
                     <DollarSign className="h-4 w-4" />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Total Sales</span>
                   </div>
-                  <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">+{formatRupiah(summary?.totalSales || 0)}</p>
+                  <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">+{formatUSD(summary?.totalSales || 0)}</p>
                 </div>
 
                 <div className="bg-primary/5 dark:bg-primary/10 p-4 rounded-2xl border border-primary/10 dark:border-primary/20 transition-all hover:shadow-md">
@@ -105,7 +105,7 @@ export const SessionDetailModal = ({
                     <Receipt className="h-4 w-4" />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Expected</span>
                   </div>
-                  <p className="text-xl font-bold text-primary">{formatRupiah(summary?.expected_cash || 0)}</p>
+                  <p className="text-xl font-bold text-primary">{formatUSD(summary?.expected_cash || 0)}</p>
                 </div>
               </div>
 
@@ -126,12 +126,12 @@ export const SessionDetailModal = ({
                     </div>
                     <div>
                       <p className="text-sm font-semibold">Cash Reconciliation</p>
-                      <p className="text-xs opacity-80">Difference: {formatRupiah(summary?.difference || 0)}</p>
+                      <p className="text-xs opacity-80">Difference: {formatUSD(summary?.difference || 0)}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-xs uppercase font-bold tracking-tighter opacity-70 mb-0.5">Closing Balance</p>
-                    <p className="text-lg font-black">{formatRupiah(summary?.closingBalance || 0)}</p>
+                    <p className="text-lg font-black">{formatUSD(summary?.closingBalance || 0)}</p>
                   </div>
                 </div>
               )}

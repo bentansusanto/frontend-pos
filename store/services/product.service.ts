@@ -9,7 +9,7 @@ export const productService = createApi({
     // get all products
     getProducts: builder.query<any, { branch_id?: string } | void>({
       query: (params) => ({
-        url: "/products/find-all",
+        url: "/products",
         method: "GET",
         params: params || {}
       }),
@@ -33,7 +33,7 @@ export const productService = createApi({
     // create product
     createProduct: builder.mutation<any, any>({
       query: (body) => ({
-        url: "/products/create",
+        url: "/products",
         method: "POST",
         body
       }),
@@ -42,7 +42,7 @@ export const productService = createApi({
     // update product
     updateProduct: builder.mutation<any, any>({
       query: ({ id, body }) => ({
-        url: `/products/update/${id}`,
+        url: `/products/${id}`,
         method: "PUT",
         body
       }),
@@ -51,7 +51,7 @@ export const productService = createApi({
     // delete product
     deleteProduct: builder.mutation<any, string>({
       query: (id) => ({
-        url: `/products/delete/${id}`,
+        url: `/products/${id}`,
         method: "DELETE"
       }),
       invalidatesTags: ["Products"]
@@ -62,7 +62,7 @@ export const productService = createApi({
     // create variant product
     createVariantProduct: builder.mutation<any, any>({
       query: (body) => ({
-        url: "/variants/create",
+        url: "/variants",
         method: "POST",
         body
       }),
@@ -71,8 +71,8 @@ export const productService = createApi({
     // update variant product
     updateVariantProduct: builder.mutation<any, any>({
       query: ({ id, body }) => ({
-        url: `/variants/update/${id}`,
-        method: "POST",
+        url: `/variants/${id}`,
+        method: "PUT",
         body
       }),
       invalidatesTags: ["Products"]
@@ -80,15 +80,15 @@ export const productService = createApi({
     // delete variant product
     deleteVariantProduct: builder.mutation<any, any>({
       query: ({ id }) => ({
-        url: `/variants/delete/${id}`,
-        method: "POST"
+        url: `/variants/${id}`,
+        method: "DELETE"
       }),
       invalidatesTags: ["Products"]
     }),
     // get variant product by id
     getVariantProductById: builder.query<any, string>({
       query: (id) => ({
-        url: `/variants/get/${id}`,
+        url: `/variants/${id}`,
         method: "GET"
       }),
       providesTags: ["Products"]
@@ -96,7 +96,7 @@ export const productService = createApi({
     // get all variant products
     getVariantProducts: builder.query<any, { branch_id?: string } | void>({
       query: (params) => ({
-        url: "/variants/find-all",
+        url: "/variants",
         method: "GET",
         params: params || {}
       }),

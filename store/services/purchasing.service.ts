@@ -50,12 +50,12 @@ export const purchasingApi = createApi({
   tagTypes: ["Purchase", "PurchaseReceiving", "Products", "ProductStock"],
   endpoints: (builder) => ({
     getPurchases: builder.query<Purchase[], void>({
-      query: () => "/purchases/find-all",
+      query: () => "/purchases",
       providesTags: ["Purchase"]
     }),
     createPurchase: builder.mutation<Purchase, Partial<Purchase>>({
       query: (body) => ({
-        url: "/purchases/create",
+        url: "/purchases",
         method: "POST",
         body
       }),
@@ -67,7 +67,7 @@ export const purchasingApi = createApi({
     }),
     updatePurchase: builder.mutation<Purchase, { id: string; body: Partial<Purchase> }>({
       query: ({ id, body }) => ({
-        url: `/purchases/update/${id}`,
+        url: `/purchases/${id}`,
         method: "PATCH",
         body
       }),
@@ -75,14 +75,14 @@ export const purchasingApi = createApi({
     }),
     deletePurchase: builder.mutation<void, string>({
       query: (id) => ({
-        url: `/purchases/delete/${id}`,
+        url: `/purchases/${id}`,
         method: "DELETE"
       }),
       invalidatesTags: ["Purchase"]
     }),
 
     getPurchaseReceivings: builder.query<PurchaseReceiving[], void>({
-      query: () => "/purchase-receivings/find-all",
+      query: () => "/purchase-receivings",
       providesTags: ["PurchaseReceiving"]
     }),
     getPurchaseReceivingById: builder.query<PurchaseReceiving, string>({
@@ -91,7 +91,7 @@ export const purchasingApi = createApi({
     }),
     createPurchaseReceiving: builder.mutation<PurchaseReceiving, Partial<PurchaseReceiving>>({
       query: (body) => ({
-        url: "/purchase-receivings/create",
+        url: "/purchase-receivings",
         method: "POST",
         body
       }),
@@ -99,7 +99,7 @@ export const purchasingApi = createApi({
     }),
     deletePurchaseReceiving: builder.mutation<void, string>({
       query: (id) => ({
-        url: `/purchase-receivings/delete/${id}`,
+        url: `/purchase-receivings/${id}`,
         method: "DELETE"
       }),
       invalidatesTags: ["PurchaseReceiving"]

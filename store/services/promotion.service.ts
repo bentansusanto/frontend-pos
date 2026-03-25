@@ -8,7 +8,7 @@ export const promotionService = createApi({
   endpoints: (builder) => ({
     getPromotions: builder.query<any, { status?: string; branch_id?: string } | void>({
       query: (params) => ({
-        url: "/promotions/find-all",
+        url: "/promotions",
         method: "GET",
         params: params || undefined
       }),
@@ -37,7 +37,7 @@ export const promotionService = createApi({
     }),
     createPromotion: builder.mutation<any, any>({
       query: (body) => ({
-        url: "/promotions/create",
+        url: "/promotions",
         method: "POST",
         body
       }),
@@ -45,7 +45,7 @@ export const promotionService = createApi({
     }),
     updatePromotion: builder.mutation<any, { id: string; body: any }>({
       query: ({ id, body }) => ({
-        url: `/promotions/update/${id}`,
+        url: `/promotions/${id}`,
         method: "PATCH",
         body
       }),
@@ -53,7 +53,7 @@ export const promotionService = createApi({
     }),
     deletePromotion: builder.mutation<any, string>({
       query: (id) => ({
-        url: `/promotions/delete/${id}`,
+        url: `/promotions/${id}`,
         method: "DELETE"
       }),
       invalidatesTags: ["Promotions"]

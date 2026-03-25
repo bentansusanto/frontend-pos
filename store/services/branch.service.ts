@@ -9,7 +9,7 @@ export const branchService = createApi({
     // get all branches
     getBranches: builder.query<any, void>({
       query: () => ({
-        url: "/branches/find-all",
+        url: "/branches",
         method: "GET"
       }),
       transformResponse: (response: any) => response.data || response.datas || [],
@@ -27,7 +27,7 @@ export const branchService = createApi({
     // create branch
     createBranch: builder.mutation<any, any>({
       query: (data) => ({
-        url: "/branches/create",
+        url: "/branches",
         method: "POST",
         body: data
       }),
@@ -36,7 +36,7 @@ export const branchService = createApi({
     // update branch
     updateBranch: builder.mutation<any, any>({
       query: ({ id, data }) => ({
-        url: `/branches/update/${id}`,
+        url: `/branches/${id}`,
         method: "PUT",
         body: data
       }),
@@ -45,7 +45,7 @@ export const branchService = createApi({
     // delete branch
     deleteBranch: builder.mutation<any, any>({
       query: (id) => ({
-        url: `/branches/delete/${id}`,
+        url: `/branches/${id}`,
         method: "DELETE"
       }),
       invalidatesTags: ["Branches"]

@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Scale } from "lucide-react";
-import { formatRupiah } from "@/utils/format-rupiah";
+import { formatUSD } from "@/utils/format-rupiah";
 
 import { useAccountingDashboard } from "./hooks";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,12 +31,12 @@ function Section({
           key={item.name}
           className="flex items-center justify-between border-b border-dashed py-1.5 last:border-0">
           <span className="text-muted-foreground text-sm">{item.name}</span>
-          <span className="text-sm font-medium">{formatRupiah(item.amount)}</span>
+          <span className="text-sm font-medium">{formatUSD(item.amount)}</span>
         </div>
       ))}
       <div className="flex items-center justify-between pt-2">
         <span className="text-sm font-semibold">Subtotal</span>
-        <span className={`text-sm font-bold ${accent}`}>{formatRupiah(total)}</span>
+        <span className={`text-sm font-bold ${accent}`}>{formatUSD(total)}</span>
       </div>
     </div>
   );
@@ -111,19 +111,19 @@ export function BalanceSheetPage() {
         {[
           {
             label: "Total Assets",
-            value: formatRupiah(totalAssets),
+            value: formatUSD(totalAssets),
             color: "text-blue-600",
             bg: "bg-blue-50 dark:bg-blue-950/20"
           },
           {
             label: "Total Liabilities",
-            value: formatRupiah(totalLiabilities),
+            value: formatUSD(totalLiabilities),
             color: "text-red-600",
             bg: "bg-red-50 dark:bg-red-950/20"
           },
           {
             label: "Total Equity",
-            value: formatRupiah(totalEquity),
+            value: formatUSD(totalEquity),
             color: "text-emerald-600",
             bg: "bg-emerald-50 dark:bg-emerald-950/20"
           }
@@ -156,7 +156,7 @@ export function BalanceSheetPage() {
           />
           <div className="mt-4 flex items-center justify-between rounded-lg bg-blue-500/10 px-4 py-2">
             <span className="font-bold">TOTAL ASSETS</span>
-            <span className="font-bold text-blue-600">{formatRupiah(totalAssets)}</span>
+            <span className="font-bold text-blue-600">{formatUSD(totalAssets)}</span>
           </div>
         </div>
 
@@ -182,7 +182,7 @@ export function BalanceSheetPage() {
           <div className="mt-4 flex items-center justify-between rounded-lg bg-emerald-500/10 px-4 py-2">
             <span className="font-bold">TOTAL LIABILITIES & EQUITY</span>
             <span className="font-bold text-emerald-600">
-              {formatRupiah(totalLiabilitiesEquity)}
+              {formatUSD(totalLiabilitiesEquity)}
             </span>
           </div>
         </div>

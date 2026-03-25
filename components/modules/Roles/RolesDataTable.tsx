@@ -12,7 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ChevronDown, MoreHorizontal, Shield } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Edit, MoreHorizontal, Shield, Trash } from "lucide-react";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ManagePermissionsDialog } from "./ManagePermissionsDialog";
+import { EditRoleDialog } from "./EditRoleDialog";
+import { DeleteRoleDialog } from "./DeleteRoleDialog";
 
 export type Role = {
   id: string;
@@ -51,6 +53,8 @@ export default function RolesDataTable({ data }: { data: Role[] }) {
   const [rowSelection, setRowSelection] = React.useState({});
 
   const [managePermissionsRole, setManagePermissionsRole] = React.useState<Role | null>(null);
+  const [editRole, setEditRole] = React.useState<Role | null>(null);
+  const [deleteRole, setDeleteRole] = React.useState<Role | null>(null);
 
   const columns: ColumnDef<Role>[] = React.useMemo(
     () => [
@@ -86,6 +90,18 @@ export default function RolesDataTable({ data }: { data: Role[] }) {
                 <DropdownMenuItem onClick={() => setManagePermissionsRole(row.original)}>
                   <Shield className="mr-2 h-4 w-4" />
                   Manage Permissions
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setEditRole(row.original)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Role
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => setDeleteRole(row.original)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete Role
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -192,6 +208,19 @@ export default function RolesDataTable({ data }: { data: Role[] }) {
         isOpen={!!managePermissionsRole}
         onClose={() => setManagePermissionsRole(null)}
         role={managePermissionsRole}
+      />
+
+      <EditRoleDialog 
+        isOpen={!!editRole}
+        onClose={() => setEditRole(null)}
+        role={editRole}
+      />
+
+      <DeleteRoleDialog 
+        isOpen={!!deleteRole}
+        onClose={() => setDeleteRole(null)}
+        roleId={deleteRole?.id || ""}
+        roleName={deleteRole?.name || ""}
       />
     </div>
   );

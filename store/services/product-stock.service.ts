@@ -10,7 +10,7 @@ export const productStockService = createApi({
     // create product stock
     createProductStock: builder.mutation<ProductStockResponse, CreateProductStockRequest>({
       query: (body) => ({
-        url: "/product-stocks/create",
+        url: "/product-stocks",
         method: "POST",
         body
       }),
@@ -19,7 +19,7 @@ export const productStockService = createApi({
     // find all product stocks
     getProductStocks: builder.query<any, { branch_id?: string } | void>({
       query: (params) => ({
-        url: "/product-stocks/find-all",
+        url: "/product-stocks",
         method: "GET",
         params: params || {}
       }),

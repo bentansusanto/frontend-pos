@@ -9,7 +9,7 @@ export const customerService = createApi({
     // get all customers
     getAllCustomers: builder.query<any, void>({
       query: () => ({
-        url: "/customers/find-all",
+        url: "/customers",
         method: "GET"
       }),
       transformResponse: (response: any) => response.data || response.datas || [],
@@ -27,7 +27,7 @@ export const customerService = createApi({
     // create customer
     createCustomer: builder.mutation<any, any>({
       query: (data) => ({
-        url: "/customers/create",
+        url: "/customers",
         method: "POST",
         body: data
       }),

@@ -29,6 +29,20 @@ export default function StockTakePage() {
 
   const stockTakes = realStockTakes || [];
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalItems = stockTakes.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+  const currentData = stockTakes.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   const stats = useMemo(() => {
     const completed = stockTakes.filter((s: any) => s.status === "completed").length;
     const pending = stockTakes.filter((s: any) => s.status === "pending_approval").length;
@@ -189,7 +203,7 @@ export default function StockTakePage() {
               <TableRow>
                 <TableCell colSpan={6} className="h-32 text-center">Loading sessions...</TableCell>
               </TableRow>
-            ) : stockTakes.length === 0 ? (
+            ) : currentData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-32 text-center">
                   <div className="flex flex-col items-center gap-2">
@@ -199,7 +213,7 @@ export default function StockTakePage() {
                 </TableCell>
               </TableRow>
             ) : (
-              stockTakes.map((session: any) => (
+              currentData.map((session: any) => (
                 <TableRow
                   key={session.id}
                   className="cursor-pointer hover:bg-slate-50"
@@ -242,6 +256,47 @@ export default function StockTakePage() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="flex items-center justify-between px-2 py-4 border-t bg-white rounded-b-xl">
+        <p className="text-sm text-slate-500">
+          Showing <span className="font-medium text-slate-900">{totalItems > 0 ? startIndex + 1 : 0}</span> to{" "}
+          <span className="font-medium text-slate-900">{endIndex}</span> of{" "}
+          <span className="font-medium text-slate-900">{totalItems}</span> sessions
+        </p>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="h-8 px-3"
+          >
+            Previous
+          </Button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                variant={currentPage === page ? "default" : "outline"}
+                size="sm"
+                onClick={() => handlePageChange(page)}
+                className={`h-8 w-8 p-0 ${currentPage === page ? "bg-slate-900 text-white" : "text-slate-600"}`}
+              >
+                {page}
+              </Button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="h-8 px-3"
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { BarChart3, TrendingDown, TrendingUp } from "lucide-react";
-import { formatRupiah } from "@/utils/format-rupiah";
+import { formatUSD } from "@/utils/format-rupiah";
 
 import { useAccountingDashboard } from "./hooks";
 import { format } from "date-fns";
@@ -31,7 +31,7 @@ function StatRow({
       <span className={`text-sm ${bold ? "font-semibold" : "text-muted-foreground"}`}>{label}</span>
       <span
         className={`text-sm ${bold ? "font-bold" : "font-medium"} ${positive ? (value >= 0 ? "text-green-600" : "text-red-600") : "text-foreground"}`}>
-        {positive && value < 0 ? `(${formatRupiah(-value)})` : formatRupiah(value)}
+        {positive && value < 0 ? `(${formatUSD(-value)})` : formatUSD(value)}
       </span>
     </div>
   );
@@ -104,7 +104,7 @@ export function IncomeStatementPage() {
         {[
           {
             label: "Gross Profit",
-            value: formatRupiah(grossProfit),
+            value: formatUSD(grossProfit),
             sub: `${grossMargin}% margin`,
             color: "text-green-600",
             bg: "bg-green-50 dark:bg-green-950/20",
@@ -112,7 +112,7 @@ export function IncomeStatementPage() {
           },
           {
             label: "Operating Income",
-            value: formatRupiah(operatingIncome),
+            value: formatUSD(operatingIncome),
             sub: `${operatingMargin}% margin`,
             color: operatingIncome >= 0 ? "text-blue-600" : "text-red-600",
             bg: "bg-blue-50 dark:bg-blue-950/20",
@@ -120,7 +120,7 @@ export function IncomeStatementPage() {
           },
           {
             label: "Net Income",
-            value: formatRupiah(netIncome),
+            value: formatUSD(netIncome),
             sub: `${netMargin}% net margin`,
             color: netIncome >= 0 ? "text-violet-600" : "text-red-600",
             bg: "bg-violet-50 dark:bg-violet-950/20",
@@ -160,7 +160,7 @@ export function IncomeStatementPage() {
           ))}
           <div className="mt-2 flex items-center justify-between rounded-lg bg-green-500/10 px-4 py-2">
             <span className="text-sm font-bold">Total Revenue</span>
-            <span className="font-bold text-green-600">{formatRupiah(totalRevenue)}</span>
+            <span className="font-bold text-green-600">{formatUSD(totalRevenue)}</span>
           </div>
         </div>
 
@@ -174,14 +174,14 @@ export function IncomeStatementPage() {
           ))}
           <div className="mt-2 flex items-center justify-between rounded-lg bg-orange-500/10 px-4 py-2">
             <span className="text-sm font-bold">Total COGS</span>
-            <span className="font-bold text-orange-600">{formatRupiah(totalCOGS)}</span>
+            <span className="font-bold text-orange-600">{formatUSD(totalCOGS)}</span>
           </div>
         </div>
 
         {/* Gross Profit */}
         <div className="mb-4 flex items-center justify-between rounded-lg border border-green-200 bg-green-500/10 px-4 py-3 dark:border-green-800">
           <span className="font-bold">Gross Profit</span>
-          <span className="text-lg font-bold text-green-600">{formatRupiah(grossProfit)}</span>
+          <span className="text-lg font-bold text-green-600">{formatUSD(grossProfit)}</span>
         </div>
 
         {/* Operating Expenses */}
@@ -194,7 +194,7 @@ export function IncomeStatementPage() {
           ))}
           <div className="mt-2 flex items-center justify-between rounded-lg bg-red-500/10 px-4 py-2">
             <span className="text-sm font-bold">Total Operating Expenses</span>
-            <span className="font-bold text-red-600">{formatRupiah(totalOpex)}</span>
+            <span className="font-bold text-red-600">{formatUSD(totalOpex)}</span>
           </div>
         </div>
 
@@ -203,7 +203,7 @@ export function IncomeStatementPage() {
           <span className="font-bold">Operating Income (EBIT)</span>
           <span
             className={`text-lg font-bold ${operatingIncome >= 0 ? "text-blue-600" : "text-red-600"}`}>
-            {formatRupiah(operatingIncome)}
+            {formatUSD(operatingIncome)}
           </span>
         </div>
 
@@ -223,7 +223,7 @@ export function IncomeStatementPage() {
           <span className="text-base font-bold">NET INCOME</span>
           <span
             className={`text-xl font-bold ${netIncome >= 0 ? "text-violet-600" : "text-red-600"}`}>
-            {formatRupiah(netIncome)}
+            {formatUSD(netIncome)}
           </span>
         </div>
       </div>

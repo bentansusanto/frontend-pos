@@ -9,7 +9,7 @@ export const roleService = createApi({
     // Roles
     getAllRoles: builder.query<any, void>({
       query: () => ({
-        url: "/roles/find-all",
+        url: "/roles",
         method: "GET"
       }),
       transformResponse: (response: any) => response.data || response.datas || [],
@@ -25,7 +25,7 @@ export const roleService = createApi({
     }),
     createRole: builder.mutation<any, any>({
       query: (data) => ({
-        url: "/roles/create",
+        url: "/roles",
         method: "POST",
         body: data
       }),
@@ -50,7 +50,7 @@ export const roleService = createApi({
     // Permissions
     getAllPermissions: builder.query<any, void>({
       query: () => ({
-        url: "/permissions/find-all",
+        url: "/permissions",
         method: "GET"
       }),
       transformResponse: (response: any) => response.data || response.datas || [],
@@ -58,7 +58,7 @@ export const roleService = createApi({
     }),
     createPermission: builder.mutation<any, any>({
       query: (data) => ({
-        url: "/permissions/create",
+        url: "/permissions",
         method: "POST",
         body: data
       }),
@@ -66,7 +66,7 @@ export const roleService = createApi({
     }),
     updatePermission: builder.mutation<any, { id: string; data: any }>({
       query: ({ id, data }) => ({
-        url: `/permissions/update/${id}`,
+        url: `/permissions/${id}`,
         method: "PUT",
         body: data
       }),
@@ -74,7 +74,7 @@ export const roleService = createApi({
     }),
     deletePermission: builder.mutation<any, string>({
       query: (id) => ({
-        url: `/permissions/delete/${id}`,
+        url: `/permissions/${id}`,
         method: "DELETE"
       }),
       invalidatesTags: ["Permissions"]

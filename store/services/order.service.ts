@@ -10,7 +10,7 @@ export const orderService = createApi({
     // get all orders
     getOrders: builder.query<any, { branch_id?: string; status?: string } | void>({
       query: (params) => ({
-        url: "/orders/find-all",
+        url: "/orders",
         method: "GET",
         params: params || {}
       }),
@@ -20,7 +20,7 @@ export const orderService = createApi({
     // create order
     createOrder: builder.mutation({
       query: (body) => ({
-        url: "/orders/create",
+        url: "/orders",
         method: "POST",
         body
       }),

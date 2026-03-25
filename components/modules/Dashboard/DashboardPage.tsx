@@ -3,6 +3,11 @@
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { SectionCards } from "@/components/section-cards"
 import { SalesTable } from "@/components/modules/Dashboard/SalesTable"
+import { PaymentMethodChart } from "@/components/modules/Dashboard/PaymentMethodChart"
+import { TopProductsList } from "@/components/modules/Dashboard/TopProductsList"
+import { AiInsightCard } from "@/components/modules/Dashboard/AiInsightCard"
+import { LowStockAlerts } from "@/components/modules/Dashboard/LowStockAlerts"
+import { BranchPerformanceChart } from "@/components/modules/Dashboard/BranchPerformanceChart"
 import { useGetSalesSummaryQuery } from "@/store/services/sales-report.service"
 import { useGetProfileQuery } from "@/store/services/auth.service"
 import { useRouter } from "next/navigation"
@@ -42,18 +47,38 @@ export function DashboardPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-      <div className="flex items-center justify-between ">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard Overview</h1>
       </div>
+
+      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1">
+        <AiInsightCard />
+      </div>
+
       <SectionCards 
         totalSales={summaryData?.totalSales || 0}
         averageTransaction={summaryData?.averageTransaction || 0}
         totalCustomers={summaryData?.totalCustomers || 0}
         totalTransactions={summaryData?.totalTransactions || 0}
       />
-      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1">
-        <ChartAreaInteractive data={chartData} />
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ChartAreaInteractive data={chartData} />
+        </div>
+        <PaymentMethodChart data={summaryData?.paymentMethodSummary || {}} />
       </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <TopProductsList salesData={summaryData?.salesData || []} />
+        <LowStockAlerts />
+        <BranchPerformanceChart 
+          totalSales={summaryData?.totalSales || 0}
+          totalTransactions={summaryData?.totalTransactions || 0}
+          averageTransaction={summaryData?.averageTransaction || 0}
+        />
+      </div>
+
       <SalesTable data={summaryData?.salesData || []} />
     </div>
   )

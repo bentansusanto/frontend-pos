@@ -26,7 +26,7 @@ export const supplierService = createApi({
     // get all suppliers
     getSuppliers: builder.query<Supplier[], void>({
       query: () => ({
-        url: "/suppliers/find-all",
+        url: "/suppliers",
         method: "GET"
       }),
       transformResponse: (response: any) => response.data || response.datas || [],
@@ -44,7 +44,7 @@ export const supplierService = createApi({
     // create supplier
     createSupplier: builder.mutation<any, Partial<Supplier>>({
       query: (data) => ({
-        url: "/suppliers/create",
+        url: "/suppliers",
         method: "POST",
         body: data
       }),
@@ -53,7 +53,7 @@ export const supplierService = createApi({
     // update supplier
     updateSupplier: builder.mutation<any, { id: string; data: Partial<Supplier> }>({
       query: ({ id, data }) => ({
-        url: `/suppliers/update/${id}`,
+        url: `/suppliers/${id}`,
         method: "PUT",
         body: data
       }),
@@ -62,7 +62,7 @@ export const supplierService = createApi({
     // delete supplier (soft-delete)
     deleteSupplier: builder.mutation<any, string>({
       query: (id) => ({
-        url: `/suppliers/delete/${id}`,
+        url: `/suppliers/${id}`,
         method: "DELETE"
       }),
       invalidatesTags: ["Suppliers"]

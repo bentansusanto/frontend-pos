@@ -9,7 +9,7 @@ export const profileService = createApi({
     // create profile
     createProfile: builder.mutation({
       query: (body) => ({
-        url: "/profiles/create",
+        url: "/profiles",
         method: "POST",
         body
       }),
@@ -18,8 +18,8 @@ export const profileService = createApi({
     // update profile
     updateProfile: builder.mutation({
       query: ({ id, body }) => ({
-        url: `/profiles/update/${id}`,
-        method: "POST",
+        url: `/profiles/${id}`,
+        method: "PUT",
         body
       }),
       invalidatesTags: ["Profiles"]

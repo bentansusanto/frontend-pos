@@ -1,26 +1,36 @@
 "use client";
 
-import { Banknote, CreditCard, Eye, Receipt, Wallet } from "lucide-react";
+import {
+  Eye,
+  Receipt,
+  Wallet,
+  TrendingUp,
+  Users,
+  ShoppingCart,
+  DollarSign,
+  ChevronDown,
+} from "lucide-react";
+import { TransactionDetailModal } from "@/components/modules/Dashboard/TransactionDetailModal";
 import React, { useEffect, useMemo, useState } from "react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  type ChartConfig
+  type ChartConfig,
 } from "@/components/ui/chart";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog";
 import {
   Pagination,
   PaginationContent,
@@ -28,7 +38,7 @@ import {
   PaginationItem,
   PaginationLink,
   PaginationNext,
-  PaginationPrevious
+  PaginationPrevious,
 } from "@/components/ui/pagination";
 import {
   Table,
@@ -36,111 +46,197 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+import {
+  format,
+  subDays,
+  startOfMonth,
+  startOfYesterday,
+  endOfYesterday,
+  startOfWeek,
+  endOfWeek,
+  startOfYear,
+} from "date-fns";
+import { CalendarIcon, FileDown, Filter } from "lucide-react";
+import { DateRange } from "react-day-picker";
 import {
   useGetMonthlySalesReportQuery,
   useGetSalesReportQuery,
   useGetSalesSummaryQuery,
   useGetWeeklySalesReportQuery,
-  useGetYearlySalesReportQuery
+  useGetYearlySalesReportQuery,
 } from "@/store/services/sales-report.service";
 import { getCookie } from "@/utils/cookies";
 import { AiInsightSection } from "@/components/modules/AIInsights/AiInsightSection";
 import { InsightType } from "@/types/ai-insight.type";
+import axios from "axios";
+import { toast } from "sonner";
 
 const chartConfig = {
   amount: {
     label: "Sales",
-    color: "var(--primary)"
-  }
+    color: "var(--primary)",
+  },
 } satisfies ChartConfig;
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
   minimumFractionDigits: 2,
-  maximumFractionDigits: 2
+  maximumFractionDigits: 2,
 });
 
-const formatCurrency = (value?: number) => currencyFormatter.format(Number(value || 0));
+const formatCurrency = (value?: number) =>
+  currencyFormatter.format(Number(value || 0));
+
+// ─── Stat card config ──────────────────────────────────────────────────────────
+const PAYMENT_METHOD_COLORS: Record<string, string> = {
+  cash:     "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
+  qris:     "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400",
+  card:     "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400",
+  stripe:   "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400",
+  transfer: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
+};
 
 export default function SalesReportPage() {
   const branchId = getCookie("pos_branch_id");
   const branchParams = branchId ? { branchId } : undefined;
 
-  const { data: summaryData, isLoading: isSummaryLoading } = useGetSalesSummaryQuery(branchParams);
-  const { data: weeklyData, isLoading: isWeeklyLoading } =
-    useGetWeeklySalesReportQuery(branchParams);
-  const { data: monthlyData, isLoading: isMonthlyLoading } =
-    useGetMonthlySalesReportQuery(branchParams);
-  const { data: yearlyData, isLoading: isYearlyLoading } =
-    useGetYearlySalesReportQuery(branchParams);
-  const { data: salesData, isLoading: isSalesLoading } = useGetSalesReportQuery(branchParams);
+  const { data: summaryData, isLoading: isSummaryLoading } =
+    useGetSalesSummaryQuery(branchParams);
+  const { data: weeklyData } = useGetWeeklySalesReportQuery(branchParams);
+  const { data: monthlyData } = useGetMonthlySalesReportQuery(branchParams);
+  const { data: yearlyData } = useGetYearlySalesReportQuery(branchParams);
+  const { data: salesData, isLoading: isSalesLoading } =
+    useGetSalesReportQuery(branchParams);
 
-  const weeklySeries = useMemo(() => {
-    return Object.entries(weeklyData?.dailySales || {})
-      .map(([date, amount]) => ({
-        date,
-        amount: Number(amount || 0)
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [weeklyData]);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
 
-  const monthlySeries = useMemo(() => {
-    return Object.entries(monthlyData?.dailySales || {})
-      .map(([date, amount]) => ({
-        date,
-        amount: Number(amount || 0)
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [monthlyData]);
+  // ── Quick presets ────────────────────────────────────────────────────────────
+  const applyPreset = (preset: "today" | "yesterday" | "week" | "month" | "year") => {
+    const now = new Date();
+    switch (preset) {
+      case "today":       return setDateRange({ from: now, to: now });
+      case "yesterday":   return setDateRange({ from: startOfYesterday(), to: endOfYesterday() });
+      case "week":        return setDateRange({ from: startOfWeek(now), to: endOfWeek(now) });
+      case "month":       return setDateRange({ from: startOfMonth(now), to: now });
+      case "year":        return setDateRange({ from: startOfYear(now), to: now });
+    }
+  };
 
-  const yearlySeries = useMemo(() => {
-    return Object.entries(yearlyData?.monthlySales || {})
-      .map(([month, amount]) => ({
-        month,
-        amount: Number(amount || 0)
-      }))
-      .sort((a, b) => a.month.localeCompare(b.month));
-  }, [yearlyData]);
+  // ── Chart series ────────────────────────────────────────────────────────────
+  const weeklySeries = useMemo(() =>
+    Object.entries(weeklyData?.dailySales || {})
+      .map(([date, amount]) => ({ date, amount: Number(amount || 0) }))
+      .sort((a, b) => a.date.localeCompare(b.date)),
+  [weeklyData]);
 
-  const salesRows = useMemo(() => {
-    return (salesData || [])
+  const monthlySeries = useMemo(() =>
+    Object.entries(monthlyData?.dailySales || {})
+      .map(([date, amount]) => ({ date, amount: Number(amount || 0) }))
+      .sort((a, b) => a.date.localeCompare(b.date)),
+  [monthlyData]);
+
+  const yearlySeries = useMemo(() =>
+    Object.entries(yearlyData?.monthlySales || {})
+      .map(([month, amount]) => ({ month, amount: Number(amount || 0) }))
+      .sort((a, b) => a.month.localeCompare(b.month)),
+  [yearlyData]);
+
+  // ── Export ──────────────────────────────────────────────────────────────────
+  const handleExport = async (fmt: "excel" | "pdf") => {
+    try {
+      const params = new URLSearchParams();
+      if (dateRange?.from) params.append("startDate", dateRange.from.toISOString());
+      if (dateRange?.to)   params.append("endDate",   dateRange.to.toISOString());
+      if (branchId)        params.append("branchId",  branchId);
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await axios.get(
+        `${apiUrl}/sales-reports/export/${fmt}?${params.toString()}`,
+        {
+          responseType: "blob",
+          headers: {
+            Authorization: `Bearer ${getCookie("pos_token")}`,
+            "x-csrf-token": getCookie("pos_csrf_token") || "",
+          },
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `sales-report.${fmt === "excel" ? "xlsx" : "pdf"}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success(`Report exported to ${fmt.toUpperCase()}`);
+    } catch {
+      toast.error("Failed to export report");
+    }
+  };
+
+  // ── Table data ───────────────────────────────────────────────────────────────
+  const salesRows = useMemo(() =>
+    (salesData || [])
       .map((sale: any) => ({
-        paymentId: sale.paymentId,
-        orderId: sale.orderId,
-        amount: sale.amount,
-        paymentMethod: sale.paymentMethod,
-        status: sale.status,
-        paidAt: sale.paidAt,
-        branchName: sale.branch?.name || "-",
-        cashierName: sale.cashier?.name || "-",
-        customerName: sale.customer?.name || "-",
-        itemsCount: sale.items?.length || 0,
-        items: sale.items || [],
-        subtotal: sale.subtotal || 0,
-        taxAmount: sale.taxAmount || 0,
-        discountAmount: sale.discountAmount || 0
+        paymentId:        sale.paymentId,
+        orderId:          sale.orderId,
+        amount:           sale.amount,
+        paymentMethod:    sale.paymentMethod,
+        status:           sale.status,
+        paidAt:           sale.paidAt,
+        branchName:       sale.branch?.name    || "-",
+        cashierName:      sale.cashier?.name   || "-",
+        customerName:     sale.customer?.name  || "-",
+        itemsCount:       sale.items?.length   || 0,
+        items:            sale.items           || [],
+        subtotal:         sale.subtotal        || 0,
+        taxAmount:        sale.taxAmount       || 0,
+        discountAmount:   sale.discountAmount  || 0,
       }))
-      .sort((a: any, b: any) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
-  }, [salesData]);
+      .sort((a: any, b: any) =>
+        new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime()
+      ),
+  [salesData]);
 
-  const totalReportSales = useMemo(() => {
-    return salesRows.reduce((sum: number, row: any) => sum + Number(row.amount || 0), 0);
-  }, [salesRows]);
+  const totalReportSales = useMemo(
+    () => salesRows.reduce((sum: number, row: any) => sum + Number(row.amount || 0), 0),
+    [salesRows]
+  );
 
   const paymentMethodSummary = summaryData?.paymentMethodSummary || {};
+
+  // ── Selected transaction for modal ───────────────────────────────────────────
+  const [selectedSale, setSelectedSale] = useState<any | null>(null);
+
+  // Map a table row to the shape TransactionDetailModal expects
+  const toModalSale = (row: any) => ({
+    ...row,
+    totalAmount:    row.amount,
+    customer:       { name: row.customerName },
+    branch:         row.branchName !== "-" ? { name: row.branchName } : undefined,
+    cashier:        { name: row.cashierName },
+  });
+
+  // ── Pagination ───────────────────────────────────────────────────────────────
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 6;
-  const totalEntries = salesRows.length;
-  const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
+  const pageSize = 8;
+  const totalEntries  = salesRows.length;
+  const totalPages    = Math.max(1, Math.ceil(totalEntries / pageSize));
   const currentPageSafe = Math.min(currentPage, totalPages);
 
   useEffect(() => {
-    if (currentPage !== currentPageSafe) {
-      setCurrentPage(currentPageSafe);
-    }
+    if (currentPage !== currentPageSafe) setCurrentPage(currentPageSafe);
   }, [currentPage, currentPageSafe]);
 
   const paginatedRows = useMemo(() => {
@@ -149,337 +245,404 @@ export default function SalesReportPage() {
   }, [currentPageSafe, pageSize, salesRows]);
 
   const showingFrom = totalEntries === 0 ? 0 : (currentPageSafe - 1) * pageSize + 1;
-  const showingTo = totalEntries === 0 ? 0 : Math.min(currentPageSafe * pageSize, totalEntries);
+  const showingTo   = totalEntries === 0 ? 0 : Math.min(currentPageSafe * pageSize, totalEntries);
+
+  // ── Date range display ───────────────────────────────────────────────────────
+  const dateRangeLabel = dateRange?.from
+    ? dateRange.to
+      ? `${format(dateRange.from, "MMM dd, y")} – ${format(dateRange.to, "MMM dd, y")}`
+      : format(dateRange.from, "MMM dd, y")
+    : "Select date range…";
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h3 className="text-foreground text-2xl font-bold">Sales Report</h3>
-        <p className="text-muted-foreground text-sm">
+    <div className="space-y-6 pb-6">
+      {/* ── Page header ── */}
+      <div className="flex flex-col gap-1">
+        <h3 className="text-2xl font-bold tracking-tight">Sales Report</h3>
+        <p className="text-sm text-muted-foreground">
           Monitor revenue performance and payment trends across periods.
         </p>
       </div>
 
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Date picker + preset dropdown */}
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn(
+                  "w-[280px] justify-start text-left font-normal",
+                  !dateRange && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+                {dateRangeLabel}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              {/* Quick presets inside popover */}
+              <div className="flex gap-1.5 p-3 border-b flex-wrap">
+                {[
+                  { key: "today",     label: "Today"      },
+                  { key: "yesterday", label: "Yesterday"  },
+                  { key: "week",      label: "This Week"  },
+                  { key: "month",     label: "This Month" },
+                  { key: "year",      label: "This Year"  },
+                ].map((p) => (
+                  <button
+                    key={p.key}
+                    onClick={() => applyPreset(p.key as any)}
+                    className="rounded-md border bg-muted px-2.5 py-1 text-xs font-medium hover:bg-accent transition-colors"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={dateRange?.from}
+                selected={dateRange}
+                onSelect={setDateRange}
+                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setDateRange({ from: subDays(new Date(), 30), to: new Date() })}
+            title="Reset to 30 days"
+          >
+            <Filter className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Export */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="gap-2 bg-primary hover:bg-primary/90">
+              <FileDown className="h-4 w-4" />
+              Export Report
+              <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Export Format</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => handleExport("excel")}>
+              Export as Excel (.xlsx)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport("pdf")}>
+              Export as PDF (.pdf)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* ── Stat cards ── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Sales</CardDescription>
-            <CardTitle className="text-xl">
-              {isSummaryLoading ? "Loading..." : formatCurrency(summaryData?.totalSales)}
-            </CardTitle>
+        {/* Total Sales */}
+        <Card className="bg-gradient-to-br from-emerald-50/60 to-card dark:from-emerald-950/20 border shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2 flex flex-row items-start justify-between space-y-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/40">
+              <DollarSign className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" /> Revenue
+            </span>
           </CardHeader>
-          <CardContent className="text-muted-foreground text-xs">
-            {summaryData?.totalTransactions || 0} transaksi
+          <CardContent className="pt-2">
+            <p className="text-xs text-muted-foreground mb-0.5">Total Sales</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight">
+              {isSummaryLoading ? (
+                <span className="animate-pulse text-muted-foreground/40">——</span>
+              ) : (
+                formatCurrency(summaryData?.totalSales)
+              )}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {summaryData?.totalTransactions || 0} transactions
+            </p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Average Transaction</CardDescription>
-            <CardTitle className="text-xl">
-              {isSummaryLoading ? "Loading..." : formatCurrency(summaryData?.averageTransaction)}
-            </CardTitle>
+
+        {/* Average Transaction */}
+        <Card className="bg-gradient-to-br from-blue-50/60 to-card dark:from-blue-950/20 border shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2 flex flex-row items-start justify-between space-y-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/40">
+              <Receipt className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
+              Per txn
+            </span>
           </CardHeader>
-          <CardContent className="text-muted-foreground text-xs">
-            Rata-rata per transaksi
+          <CardContent className="pt-2">
+            <p className="text-xs text-muted-foreground mb-0.5">Avg Transaction</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight">
+              {isSummaryLoading ? (
+                <span className="animate-pulse text-muted-foreground/40">——</span>
+              ) : (
+                formatCurrency(summaryData?.averageTransaction)
+              )}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Average per transaction</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Payment Methods</CardDescription>
-            <CardTitle className="text-xl">
-              {Object.keys(paymentMethodSummary).length || 0} methods
-            </CardTitle>
+
+        {/* Payment Methods */}
+        <Card className="bg-gradient-to-br from-violet-50/60 to-card dark:from-violet-950/20 border shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2 flex flex-row items-start justify-between space-y-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-900/40">
+              <Wallet className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+            </div>
+            <span className="text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 px-2 py-0.5 rounded-full">
+              {Object.keys(paymentMethodSummary).length} methods
+            </span>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            {Object.entries(paymentMethodSummary).length ? (
-              Object.entries(paymentMethodSummary).map(([method, amount]) => (
-                <Badge key={method} variant="secondary" className="text-xs">
-                  {method}: {formatCurrency(Number(amount || 0))}
-                </Badge>
-              ))
-            ) : (
-                <span className="text-muted-foreground text-xs">No data yet</span>
-            )}
+          <CardContent className="pt-2">
+            <p className="text-xs text-muted-foreground mb-1.5">Payment Methods</p>
+            <div className="flex flex-wrap gap-1">
+              {Object.entries(paymentMethodSummary).length ? (
+                Object.entries(paymentMethodSummary).map(([method, amount]) => {
+                  const key = method.toLowerCase();
+                  const cls = PAYMENT_METHOD_COLORS[key] ?? "bg-muted text-muted-foreground";
+                  return (
+                    <span key={method} className={`rounded-md px-2 py-0.5 text-[10px] font-semibold capitalize ${cls}`}>
+                      {method}: {formatCurrency(Number(amount || 0))}
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="text-xs text-muted-foreground">No data yet</span>
+              )}
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Transactions</CardDescription>
-            <CardTitle className="text-xl">
-              {isSummaryLoading ? "Loading..." : summaryData?.totalTransactions || 0}
-            </CardTitle>
+
+        {/* Total Transactions */}
+        <Card className="bg-gradient-to-br from-orange-50/60 to-card dark:from-orange-950/20 border shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2 flex flex-row items-start justify-between space-y-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-900/40">
+              <ShoppingCart className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            </div>
+            <span className="text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <Users className="h-3 w-3" /> Orders
+            </span>
           </CardHeader>
-          <CardContent className="text-muted-foreground text-xs">
-            Jumlah pembayaran sukses
+          <CardContent className="pt-2">
+            <p className="text-xs text-muted-foreground mb-0.5">Total Transactions</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight">
+              {isSummaryLoading ? (
+                <span className="animate-pulse text-muted-foreground/40">——</span>
+              ) : (
+                (summaryData?.totalTransactions || 0).toLocaleString()
+              )}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Successful payments</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-l-4 border-l-indigo-500 shadow-sm bg-linear-to-r from-indigo-50 to-white dark:from-indigo-950/20 dark:to-transparent">
+      {/* ── AI Insight ── */}
+      <Card className="border-l-4 border-l-indigo-500 bg-gradient-to-r from-indigo-50/60 to-transparent dark:from-indigo-950/20 dark:to-transparent shadow-sm">
         <CardContent className="py-4 px-6">
-          <AiInsightSection 
-            branchId={branchId || ""} 
-            types={[InsightType.SALES_TREND, InsightType.BEST_SELLER, InsightType.REPORT_SUMMARY]} 
+          <AiInsightSection
+            branchId={branchId || ""}
+            types={[InsightType.SALES_TREND, InsightType.BEST_SELLER, InsightType.REPORT_SUMMARY]}
             title="AI Sales Analysis"
             limit={2}
           />
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="@container/card">
-          <CardHeader>
-            <CardTitle>Weekly Sales</CardTitle>
-            <CardDescription>Last 7 days</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isWeeklyLoading ? (
-              <div className="text-muted-foreground text-sm">Loading weekly chart...</div>
-            ) : weeklySeries.length ? (
-              <ChartContainer config={chartConfig} className="h-[220px] w-full">
-                <AreaChart data={weeklySeries}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Area
-                    dataKey="amount"
-                    type="monotone"
-                    fill="var(--color-amount)"
-                    fillOpacity={0.3}
-                    stroke="var(--color-amount)"
-                  />
-                </AreaChart>
-              </ChartContainer>
-            ) : (
-              <div className="text-muted-foreground text-sm">No data available.</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="@container/card">
-          <CardHeader>
-            <CardTitle>Monthly Sales</CardTitle>
-            <CardDescription>Last 30 days</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isMonthlyLoading ? (
-              <div className="text-muted-foreground text-sm">Loading monthly chart...</div>
-            ) : monthlySeries.length ? (
-              <ChartContainer config={chartConfig} className="h-[220px] w-full">
-                <AreaChart data={monthlySeries}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Area
-                    dataKey="amount"
-                    type="monotone"
-                    fill="var(--color-amount)"
-                    fillOpacity={0.3}
-                    stroke="var(--color-amount)"
-                  />
-                </AreaChart>
-              </ChartContainer>
-            ) : (
-              <div className="text-muted-foreground text-sm">No data available.</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="@container/card">
-          <CardHeader>
-            <CardTitle>Yearly Sales</CardTitle>
-            <CardDescription>Last 12 months</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isYearlyLoading ? (
-              <div className="text-muted-foreground text-sm">Loading yearly chart...</div>
-            ) : yearlySeries.length ? (
-              <ChartContainer config={chartConfig} className="h-[220px] w-full">
-                <BarChart data={yearlySeries}>
-                  <CartesianGrid vertical={false} />
-                  <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="amount" fill="var(--color-amount)" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ChartContainer>
-            ) : (
-              <div className="text-muted-foreground text-sm">No data available.</div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card className="overflow-hidden border-none shadow-xl bg-background/50 backdrop-blur-xl">
-        <CardHeader className="border-b bg-muted/20 pb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl font-black">Sales Transactions</CardTitle>
-              <CardDescription>Comprehensive log of completed business transactions</CardDescription>
+      {/* ── Sales Trends + Transactions Table ── */}
+      <Card className="overflow-hidden shadow-sm">
+        <CardHeader className="border-b bg-muted/20 pb-0">
+          <Tabs defaultValue="weekly" className="w-full">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <CardTitle className="text-lg">Sales Trends</CardTitle>
+                <CardDescription>Sales visualization across different periods</CardDescription>
+              </div>
+              <TabsList className="bg-muted/60 p-0.5">
+                <TabsTrigger value="weekly"  className="text-xs px-3">Weekly</TabsTrigger>
+                <TabsTrigger value="monthly" className="text-xs px-3">Monthly</TabsTrigger>
+                <TabsTrigger value="yearly"  className="text-xs px-3">Yearly</TabsTrigger>
+              </TabsList>
             </div>
-          </div>
+
+            {/* Weekly */}
+            <TabsContent value="weekly" className="m-0 border-none p-0">
+              <div className="h-[280px] w-full pb-4">
+                <ChartContainer config={chartConfig} className="h-full w-full">
+                  <AreaChart data={weeklySeries}>
+                    <defs>
+                      <linearGradient id="gWeekly" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="var(--primary)" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.01} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tickFormatter={(v) => format(new Date(v), "dd MMM")}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                    <ChartTooltip
+                      content={<ChartTooltipContent formatter={(v) => [formatCurrency(Number(v)), "Sales"]} />}
+                    />
+                    <Area dataKey="amount" type="monotone" fill="url(#gWeekly)" stroke="var(--primary)" strokeWidth={2} />
+                  </AreaChart>
+                </ChartContainer>
+              </div>
+            </TabsContent>
+
+            {/* Monthly */}
+            <TabsContent value="monthly" className="m-0 border-none p-0">
+              <div className="h-[280px] w-full pb-4">
+                <ChartContainer config={chartConfig} className="h-full w-full">
+                  <AreaChart data={monthlySeries}>
+                    <defs>
+                      <linearGradient id="gMonthly" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="var(--primary)" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.01} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis
+                      dataKey="date"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tickFormatter={(v) => format(new Date(v), "dd MMM")}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                    <ChartTooltip
+                      content={<ChartTooltipContent formatter={(v) => [formatCurrency(Number(v)), "Sales"]} />}
+                    />
+                    <Area dataKey="amount" type="monotone" fill="url(#gMonthly)" stroke="var(--primary)" strokeWidth={2} />
+                  </AreaChart>
+                </ChartContainer>
+              </div>
+            </TabsContent>
+
+            {/* Yearly */}
+            <TabsContent value="yearly" className="m-0 border-none p-0">
+              <div className="h-[280px] w-full pb-4">
+                <ChartContainer config={chartConfig} className="h-full w-full">
+                  <BarChart data={yearlySeries}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 11 }} />
+                    <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                    <ChartTooltip
+                      content={<ChartTooltipContent formatter={(v) => [formatCurrency(Number(v)), "Sales"]} />}
+                    />
+                    <Bar dataKey="amount" fill="var(--primary)" radius={[4, 4, 0, 0]} fillOpacity={0.85} />
+                  </BarChart>
+                </ChartContainer>
+              </div>
+            </TabsContent>
+          </Tabs>
         </CardHeader>
+
+        {/* ── Transactions table ── */}
         <CardContent className="p-0">
           {isSalesLoading ? (
-            <div className="text-muted-foreground text-sm">Loading sales data...</div>
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+              Loading transactions…
+            </div>
           ) : (
-            <div className="overflow-auto rounded-lg border">
+            <div className="overflow-auto">
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent">
-                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Payment ID</TableHead>
-                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Order ID</TableHead>
-                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Date</TableHead>
-                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Amount</TableHead>
-                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Method</TableHead>
-                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</TableHead>
-                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Branch</TableHead>
-                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Staff</TableHead>
-                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Customer</TableHead>
-                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Items</TableHead>
-                    <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Details</TableHead>
+                    {["Order ID", "Date", "Amount", "Method", "Status", "Branch", "Staff", "Customer", "Items", ""].map(
+                      (h) => (
+                        <TableHead
+                          key={h}
+                          className="py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+                        >
+                          {h}
+                        </TableHead>
+                      )
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedRows.length ? (
-                    paginatedRows.map((row: any) => (
-                      <TableRow key={row.paymentId} className="group transition-colors hover:bg-muted/30">
-                        <TableCell className="py-4 font-mono text-xs font-semibold text-primary">
-                          {row.paymentId}
-                        </TableCell>
-                        <TableCell className="py-4 font-mono text-xs text-muted-foreground">
-                          {row.orderId}
-                        </TableCell>
-                        <TableCell className="py-4 text-xs font-medium whitespace-nowrap">
-                          {row.paidAt ? new Date(row.paidAt).toLocaleDateString("en-US", { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}
-                        </TableCell>
-                        <TableCell className="py-4 text-right">
-                          <span className="text-sm font-black text-foreground">
+                    paginatedRows.map((row: any) => {
+                      const methodKey = (row.paymentMethod ?? "").toLowerCase();
+                      const methodClass =
+                        PAYMENT_METHOD_COLORS[methodKey] ?? "bg-muted text-muted-foreground";
+                      return (
+                        <TableRow key={row.paymentId} className="group hover:bg-muted/30 transition-colors">
+                          <TableCell className="py-3 font-mono text-xs text-muted-foreground">
+                            #{String(row.orderId ?? "—").slice(-8).toUpperCase()}
+                          </TableCell>
+                          <TableCell className="py-3 text-xs whitespace-nowrap">
+                            {row.paidAt
+                              ? new Date(row.paidAt).toLocaleDateString("en-US", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              : "-"}
+                          </TableCell>
+                          <TableCell className="py-3 text-sm font-bold tabular-nums text-right pr-4">
                             {formatCurrency(row.amount)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="py-4">
-                          <Badge variant="outline" className="flex w-fit items-center gap-1.5 px-2 py-1 text-[10px] font-bold uppercase transition-all group-hover:bg-background">
-                            {row.paymentMethod === "cash" && <Banknote className="size-3 text-emerald-500" />}
-                            {row.paymentMethod === "credit_card" && <CreditCard className="size-3 text-blue-500" />}
-                            {row.paymentMethod === "stripe" && <Wallet className="size-3 text-indigo-500" />}
-                            {row.paymentMethod}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-4">
-                          <Badge
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-tighter ${
-                              row.status === "success"
-                                ? "bg-emerald-500/10 text-emerald-600 border-none shadow-none"
-                                : row.status === "pending"
-                                  ? "bg-amber-500/10 text-amber-600 border-none shadow-none"
-                                  : "bg-rose-500/10 text-rose-600 border-none shadow-none"
-                            }`}>
-                            {row.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-4 text-xs font-medium text-muted-foreground">{row.branchName}</TableCell>
-                        <TableCell className="py-4 text-xs font-medium">{row.cashierName}</TableCell>
-                        <TableCell className="py-4 text-xs text-muted-foreground">{row.customerName}</TableCell>
-                        <TableCell className="py-4 text-right">
-                          <span className="inline-flex size-6 items-center justify-center rounded-full bg-muted text-[10px] font-black">
-                            {row.itemsCount}
-                          </span>
-                        </TableCell>
-                        <TableCell className="py-4 text-right">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>Order Details</DialogTitle>
-                                <DialogDescription>
-                                  Order ID: {row.orderId} •{" "}
-                                  {row.paidAt
-                                    ? new Date(row.paidAt).toLocaleDateString("en-US")
-                                    : "-"}
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="mt-4 max-h-[60vh] overflow-y-auto">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <TableHead>Product</TableHead>
-                                      <TableHead className="text-right">Qty</TableHead>
-                                      <TableHead className="text-right">Price</TableHead>
-                                      <TableHead className="text-right">Total</TableHead>
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {row.items?.map((item: any, idx: number) => (
-                                      <TableRow key={idx}>
-                                        <TableCell>
-                                          {item.productName || item.product?.name || "-"}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                          {item.quantity}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                          {formatCurrency(item.price)}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                          {formatCurrency((item.price || 0) * (item.quantity || 0))}
-                                        </TableCell>
-                                      </TableRow>
-                                    ))}
-                                    <TableRow>
-                                      <TableCell
-                                        colSpan={3}
-                                        className="text-muted-foreground text-right">
-                                        Subtotal
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                        {formatCurrency(row.subtotal)}
-                                      </TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                      <TableCell
-                                        colSpan={3}
-                                        className="text-muted-foreground text-right">
-                                        Tax Amount
-                                      </TableCell>
-                                      <TableCell className="text-right">
-                                        {formatCurrency(row.taxAmount)}
-                                      </TableCell>
-                                    </TableRow>
-                                    {row.discountAmount > 0 && (
-                                      <TableRow>
-                                        <TableCell
-                                          colSpan={3}
-                                          className="text-destructive text-right">
-                                          Discount
-                                        </TableCell>
-                                        <TableCell className="text-destructive text-right">
-                                          -{formatCurrency(row.discountAmount)}
-                                        </TableCell>
-                                      </TableRow>
-                                    )}
-                                    <TableRow>
-                                      <TableCell colSpan={3} className="text-right font-bold">
-                                        Total Amount
-                                      </TableCell>
-                                      <TableCell className="text-right font-bold">
-                                        {formatCurrency(row.amount)}
-                                      </TableCell>
-                                    </TableRow>
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                        </TableCell>
-                      </TableRow>
-                    ))
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <span className={`rounded-md px-2 py-0.5 text-[10px] font-semibold capitalize ${methodClass}`}>
+                              {row.paymentMethod ?? "—"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <Badge
+                              className={cn(
+                                "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight border-none",
+                                row.status === "success"
+                                  ? "bg-emerald-500/10 text-emerald-600"
+                                  : row.status === "pending"
+                                  ? "bg-amber-500/10 text-amber-600"
+                                  : "bg-rose-500/10 text-rose-600"
+                              )}
+                            >
+                              {row.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="py-3 text-xs text-muted-foreground">{row.branchName}</TableCell>
+                          <TableCell className="py-3 text-xs font-medium">{row.cashierName}</TableCell>
+                          <TableCell className="py-3 text-xs text-muted-foreground">{row.customerName}</TableCell>
+                          <TableCell className="py-3 text-center">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-black">
+                              {row.itemsCount}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-3 text-right pr-4">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => setSelectedSale(toModalSale(row))}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-muted-foreground text-center">
+                      <TableCell colSpan={10} className="py-12 text-center text-sm text-muted-foreground">
                         No sales data available.
                       </TableCell>
                     </TableRow>
@@ -488,97 +651,95 @@ export default function SalesReportPage() {
               </Table>
             </div>
           )}
-          
-          <div className="p-6 pt-0">
-            <div className="mt-6 flex flex-col gap-4 rounded-2xl bg-muted/30 p-4 ring-1 ring-border/50">
-              <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-3">
-                  <div className="inline-flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Receipt className="size-5" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Total Summary</span>
-                    <span className="text-sm font-bold text-foreground">Consolidated Transactions</span>
-                  </div>
+
+          {/* Footer: summary + pagination */}
+          <div className="space-y-4 p-6 pt-4 border-t">
+            {/* Revenue summary bar */}
+            <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 px-5 py-4 ring-1 ring-primary/20">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                  <Receipt className="h-5 w-5 text-primary" />
                 </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-primary">Total Revenue</span>
-                  <span className="text-2xl font-black tracking-tight text-primary">{formatCurrency(totalReportSales)}</span>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    Consolidated Total
+                  </p>
+                  <p className="text-sm font-bold">All filtered transactions</p>
                 </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Total Revenue</p>
+                <p className="text-2xl font-black tracking-tight text-primary">
+                  {formatCurrency(totalReportSales)}
+                </p>
               </div>
             </div>
 
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">
-                Showing <span className="text-foreground">{showingFrom}-{showingTo}</span> of <span className="text-foreground">{totalEntries}</span> records
-              </div>
-            <Pagination className="mx-0 w-auto justify-end">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setCurrentPage(Math.max(1, currentPageSafe - 1));
-                    }}
-                    className={
-                      currentPageSafe === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"
-                    }
-                  />
-                </PaginationItem>
-
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter((page) => {
-                    return (
-                      page === 1 || page === totalPages || Math.abs(page - currentPageSafe) <= 1
-                    );
-                  })
-                  .map((page, index, array) => {
-                    const prevPage = array[index - 1];
-                    const showEllipsis = prevPage && page - prevPage > 1;
-
-                    return (
-                      <React.Fragment key={page}>
-                        {showEllipsis && (
+            {/* Pagination */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-muted-foreground">
+                Showing{" "}
+                <span className="font-semibold text-foreground">{showingFrom}–{showingTo}</span>{" "}
+                of{" "}
+                <span className="font-semibold text-foreground">{totalEntries}</span> records
+              </p>
+              <Pagination className="mx-0 w-auto justify-end">
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(Math.max(1, currentPageSafe - 1));
+                      }}
+                      className={currentPageSafe === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPageSafe) <= 1)
+                    .map((page, index, arr) => {
+                      const showEllipsis = arr[index - 1] && page - arr[index - 1] > 1;
+                      return (
+                        <React.Fragment key={page}>
+                          {showEllipsis && (
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          )}
                           <PaginationItem>
-                            <PaginationEllipsis />
+                            <PaginationLink
+                              href="#"
+                              isActive={currentPageSafe === page}
+                              onClick={(e) => { e.preventDefault(); setCurrentPage(page); }}
+                            >
+                              {page}
+                            </PaginationLink>
                           </PaginationItem>
-                        )}
-                        <PaginationItem>
-                          <PaginationLink
-                            href="#"
-                            isActive={currentPageSafe === page}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentPage(page);
-                            }}>
-                            {page}
-                          </PaginationLink>
-                        </PaginationItem>
-                      </React.Fragment>
-                    );
-                  })}
-
-                <PaginationItem>
-                  <PaginationNext
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setCurrentPage(Math.min(totalPages, currentPageSafe + 1));
-                    }}
-                    className={
-                      currentPageSafe === totalPages
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+                        </React.Fragment>
+                      );
+                    })}
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage(Math.min(totalPages, currentPageSafe + 1));
+                      }}
+                      className={currentPageSafe === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
           </div>
-        </div>
         </CardContent>
       </Card>
+      {/* Transaction detail modal */}
+      <TransactionDetailModal
+        sale={selectedSale}
+        open={!!selectedSale}
+        onClose={() => setSelectedSale(null)}
+      />
     </div>
   );
 }

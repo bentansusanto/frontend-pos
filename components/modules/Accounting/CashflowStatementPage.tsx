@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
-import { formatRupiah } from "@/utils/format-rupiah";
+import { formatUSD } from "@/utils/format-rupiah";
 
 import { useAccountingDashboard } from "./hooks";
 import { format } from "date-fns";
@@ -45,7 +45,7 @@ function CashflowSection({
             </div>
             <span
               className={`text-sm font-medium ${item.amount >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {formatRupiah(item.amount)}
+              {formatUSD(item.amount)}
             </span>
           </div>
         ))}
@@ -53,7 +53,7 @@ function CashflowSection({
           className={`mt-3 flex items-center justify-between rounded-lg px-4 py-2 ${net >= 0 ? "bg-green-500/10" : "bg-red-500/10"}`}>
           <span className="text-sm font-semibold">Net Cash</span>
           <span className={`font-bold ${net >= 0 ? "text-green-600" : "text-red-600"}`}>
-            {formatRupiah(net)}
+            {formatUSD(net)}
           </span>
         </div>
       </div>
@@ -147,7 +147,7 @@ export function CashflowStatementPage() {
           }
         ].map((s) => (
           <div key={s.label} className="bg-card rounded-xl border p-4 text-center">
-            <p className={`text-lg font-bold ${s.color}`}>{formatRupiah(s.value)}</p>
+            <p className={`text-lg font-bold ${s.color}`}>{formatUSD(s.value)}</p>
             <p className="text-muted-foreground mt-1 text-xs">{s.label}</p>
           </div>
         ))}
@@ -181,17 +181,17 @@ export function CashflowStatementPage() {
         <div className="space-y-2">
           <div className="flex items-center justify-between border-b py-2">
             <span className="text-muted-foreground text-sm">Opening Cash Balance</span>
-            <span className="font-medium">{formatRupiah(openingBalance)}</span>
+            <span className="font-medium">{formatUSD(openingBalance)}</span>
           </div>
           <div className="flex items-center justify-between border-b py-2">
             <span className="text-muted-foreground text-sm">Net Change in Cash</span>
             <span className={`font-medium ${netChange >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {formatRupiah(netChange)}
+              {formatUSD(netChange)}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between rounded-lg bg-cyan-500/10 px-4 py-3">
             <span className="font-bold">Closing Cash Balance</span>
-            <span className="text-lg font-bold text-cyan-600">{formatRupiah(closingBalance)}</span>
+            <span className="text-lg font-bold text-cyan-600">{formatUSD(closingBalance)}</span>
           </div>
         </div>
       </div>

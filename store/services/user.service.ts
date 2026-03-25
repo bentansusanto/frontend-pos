@@ -9,7 +9,7 @@ export const userService = createApi({
     // get all users
     getAllUsers: builder.query<any, void>({
       query: () => ({
-        url: "/users/find-all",
+        url: "/users",
         method: "GET"
       }),
       transformResponse: (response: any) => response.data || response.datas || [],
@@ -27,7 +27,7 @@ export const userService = createApi({
     // create user
     createUser: builder.mutation<any, any>({
       query: (data) => ({
-        url: "/users/create",
+        url: "/users",
         method: "POST",
         body: data
       }),
@@ -36,7 +36,7 @@ export const userService = createApi({
     // update users
     updateUser: builder.mutation<any, any>({
       query: ({ id, data }) => ({
-        url: `/users/update/${id}`,
+        url: `/users/${id}`,
         method: "PUT",
         body: data
       }),
@@ -45,7 +45,7 @@ export const userService = createApi({
     // delete user
     deleteUser: builder.mutation<any, any>({
       query: (id) => ({
-        url: `/users/delete/${id}`,
+        url: `/users/${id}`,
         method: "DELETE"
       }),
       invalidatesTags: ["Users"]
@@ -54,7 +54,7 @@ export const userService = createApi({
     // find all roles
     getAllRoles: builder.query<any, void>({
       query: () => ({
-        url: "/roles/find-all",
+        url: "/roles",
         method: "GET"
       }),
       transformResponse: (response: any) => response.data || response.datas || []

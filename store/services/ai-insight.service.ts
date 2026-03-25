@@ -9,7 +9,7 @@ export const aiInsightService = createApi({
     // Get AI Insights
     getAiInsights: builder.query({
       query: (params) => ({
-        url: "/ai-insight/find",
+        url: "/ai-insight",
         params
       }),
       transformResponse: (response: any) =>

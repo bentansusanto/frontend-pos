@@ -18,7 +18,7 @@ export const posSessionApi = createApi({
     }),
     openSession: builder.mutation<any, { branch_id: string; openingBalance: number; notes?: string }>({
       query: (body) => ({
-        url: "/pos-sessions/open",
+        url: "/pos-sessions",
         method: "POST",
         body,
       }),
@@ -26,8 +26,8 @@ export const posSessionApi = createApi({
     }),
     closeSession: builder.mutation<any, { id: string; paymentDeclarations?: { method: string; declaredAmount: number }[]; notes?: string }>({
       query: ({ id, ...body }) => ({
-        url: `/pos-sessions/close/${id}`,
-        method: "POST",
+        url: `/pos-sessions/${id}/close`,
+        method: "PATCH",
         body,
       }),
       invalidatesTags: ["PosSession"],

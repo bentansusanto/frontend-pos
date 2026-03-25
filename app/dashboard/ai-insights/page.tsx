@@ -4,6 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig
+} from "@/components/ui/chart";
+import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -28,6 +34,7 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatCurrency } from "@/lib/utils";
 import {
   useGenerateAiInsightsMutation,
   useGetAiInsightsQuery
@@ -44,17 +51,16 @@ import {
   Package,
   TrendingUp
 } from "lucide-react";
-import { useState } from "react";
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis
-} from "recharts";
+import { useMemo, useState } from "react";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
+
+const chartConfig = {
+  amount: {
+    label: "Sales",
+    color: "var(--primary)"
+  }
+} satisfies ChartConfig;
 
 export default function AiInsightsDashboardPage() {
   const branchId = getCookie("pos_branch_id");
@@ -93,6 +99,19 @@ export default function AiInsightsDashboardPage() {
     (alertsPage - 1) * ITEMS_PER_PAGE,
     alertsPage * ITEMS_PER_PAGE
   );
+
+  // ── Mapped chart data ────────────────────────────────────────────────────────
+  const salesTrendsChartData = useMemo(() => {
+    return salesTrends
+      .map((i: any) => {
+        const meta = i.metadata || {};
+        return {
+          date: meta.date || meta.timestamp || i.createdAt,
+          amount: Number(meta.amount || meta.totalRevenue || meta.revenue || 0),
+        };
+      })
+      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [salesTrends]);
 
   const [promoPage, setPromoPage] = useState(1);
   const totalPromoPages = Math.ceil(promoSuggestions.length / ITEMS_PER_PAGE);
@@ -221,57 +240,64 @@ export default function AiInsightsDashboardPage() {
               <CardDescription>Revenue performance over time.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[350px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={salesTrends}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      className="stroke-muted/30"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="date"
-                      className="text-muted-foreground text-xs"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={10}
-                    />
-                    <YAxis
-                      className="text-muted-foreground text-xs"
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(value) => `$${value}`}
-                    />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-background rounded-lg border p-3 shadow-xl ring-1 ring-black/5">
-                              <div className="flex flex-col gap-1">
-                                <span className="text-muted-foreground text-[0.70rem] font-semibold uppercase">
-                                  {payload[0].payload.date}
-                                </span>
-                                <span className="text-primary text-lg font-bold">
-                                  ${Number(payload[0].value).toFixed(2)}
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="amount"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={3}
-                      dot={{ r: 4, strokeWidth: 2 }}
-                      activeDot={{ r: 6, strokeWidth: 0 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              <ChartContainer config={chartConfig} className="aspect-auto h-[350px] w-full">
+                <AreaChart data={salesTrendsChartData}>
+                  <defs>
+                    <linearGradient id="fillSalesAi" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.01} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    vertical={false}
+                    strokeDasharray="3 3"
+                    className="stroke-muted/50"
+                  />
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={12}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                    tickFormatter={(v) => {
+                      const date = new Date(v);
+                      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                    }}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={12}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
+                    tickFormatter={(v) => formatCurrency(v).replace(/\.00$/, "")}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={
+                      <ChartTooltipContent
+                        labelFormatter={(v) => {
+                          const date = new Date(v);
+                          return date.toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric"
+                          });
+                        }}
+                        formatter={(value) => [formatCurrency(Number(value)), "Revenue"]}
+                        indicator="dot"
+                      />
+                    }
+                  />
+                  <Area
+                    dataKey="amount"
+                    type="natural"
+                    fill="url(#fillSalesAi)"
+                    stroke="var(--primary)"
+                    strokeWidth={2.5}
+                    animationDuration={1500}
+                  />
+                </AreaChart>
+              </ChartContainer>
             </CardContent>
           </Card>
 

@@ -19,7 +19,7 @@ export const taxService = createApi({
     // get all taxes
     getTaxes: builder.query<Tax[], void>({
       query: () => ({
-        url: "/taxes/find-all",
+        url: "/taxes",
         method: "GET"
       }),
       transformResponse: (response: any) => response.data || response.datas || [],
@@ -28,7 +28,7 @@ export const taxService = createApi({
     // get active taxes (for branch default tax selector)
     getActiveTaxes: builder.query<Tax[], void>({
       query: () => ({
-        url: "/taxes/find-all",
+        url: "/taxes",
         method: "GET"
       }),
       transformResponse: (response: any) => {
@@ -49,7 +49,7 @@ export const taxService = createApi({
     // create tax
     createTax: builder.mutation<any, Partial<Tax>>({
       query: (data) => ({
-        url: "/taxes/create",
+        url: "/taxes",
         method: "POST",
         body: data
       }),
@@ -58,7 +58,7 @@ export const taxService = createApi({
     // update tax
     updateTax: builder.mutation<any, { id: string; data: Partial<Tax> }>({
       query: ({ id, data }) => ({
-        url: `/taxes/update/${id}`,
+        url: `/taxes/${id}`,
         method: "PUT",
         body: data
       }),
@@ -67,7 +67,7 @@ export const taxService = createApi({
     // delete tax (soft-delete)
     deleteTax: builder.mutation<any, string>({
       query: (id) => ({
-        url: `/taxes/delete/${id}`,
+        url: `/taxes/${id}`,
         method: "DELETE"
       }),
       invalidatesTags: ["Taxes"]

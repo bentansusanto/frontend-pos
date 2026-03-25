@@ -8,15 +8,15 @@ export const categoryService = createApi({
   endpoints: (builder) => ({
     getAllCategories: builder.query<any, void>({
       query: () => ({
-        url: "/categories/find-all",
-        method: "POST"
+        url: "/categories",
+        method: "GET"
       }),
       transformResponse: (response: any) => response.data || response.datas || [],
       providesTags: ["Categories"]
     }),
     createCategory: builder.mutation<any, { name: string }>({
       query: (body) => ({
-        url: "/categories/create",
+        url: "/categories",
         method: "POST",
         body
       }),

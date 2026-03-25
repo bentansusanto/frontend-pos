@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { BookOpen, Plus, Search } from "lucide-react";
 import { useState } from "react";
-import { formatRupiah } from "@/utils/format-rupiah";
+import { formatUSD } from "@/utils/format-rupiah";
 import { useJournalEntries } from "./hooks";
 import { format } from "date-fns";
 
@@ -92,8 +92,8 @@ export function JournalPage() {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: "Total Entries", value: filtered.length.toString(), color: "text-blue-600" },
-          { label: "Total Debit", value: formatRupiah(totalDebit), color: "text-green-600" },
-          { label: "Total Credit", value: formatRupiah(totalCredit), color: "text-orange-600" }
+          { label: "Total Debit", value: formatUSD(totalDebit), color: "text-green-600" },
+          { label: "Total Credit", value: formatUSD(totalCredit), color: "text-orange-600" }
         ].map((s) => (
           <div key={s.label} className="bg-card rounded-xl border p-4 text-center">
             <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
@@ -169,10 +169,10 @@ export function JournalPage() {
                   <TableCell className="text-sm">{entry.debitAccount}</TableCell>
                   <TableCell className="text-sm">{entry.creditAccount}</TableCell>
                   <TableCell className="text-right font-semibold text-green-600">
-                    {formatRupiah(entry.debit)}
+                    {formatUSD(entry.debit)}
                   </TableCell>
                   <TableCell className="text-right font-semibold text-orange-600">
-                    {formatRupiah(entry.credit)}
+                    {formatUSD(entry.credit)}
                   </TableCell>
                 </TableRow>
               ))

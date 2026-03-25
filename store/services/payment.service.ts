@@ -10,7 +10,7 @@ export const paymentService = createApi({
     // create payment
     createPayment: builder.mutation<any, any>({
       query: (data) => ({
-        url: "/payments/create",
+        url: "/payments",
         method: "POST",
         body: data
       }),
@@ -25,7 +25,7 @@ export const paymentService = createApi({
     // verify payment
     verifyPayment: builder.mutation<any, string>({
       query: (paymentId) => ({
-        url: `/payments/verify-payment/${paymentId}`,
+        url: `/payments/${paymentId}/verify`,
         method: "PUT"
       }),
       invalidatesTags: ["Payments"],
@@ -39,7 +39,7 @@ export const paymentService = createApi({
     // get all payments
     getPayments: builder.query<any, { branch_id?: string } | void>({
       query: (params) => ({
-        url: "/payments/find-all",
+        url: "/payments",
         method: "GET",
         params: params || {}
       }),
