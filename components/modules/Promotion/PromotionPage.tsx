@@ -55,6 +55,16 @@ import {
   MinusCircle
 } from "lucide-react";
 import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { usePromotionList, useCreatePromotion, useUpdatePromotion, getPromotionStatus } from "./hooks";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useGetBranchesQuery } from "@/store/services/branch.service";
@@ -239,6 +249,7 @@ function RuleForm({
                 <SelectItem value="ALWAYS_TRUE">Always True (Global)</SelectItem>
                 <SelectItem value="MIN_QTY">Minimum Quantity</SelectItem>
                 <SelectItem value="MIN_SPEND">Minimum Spend</SelectItem>
+                <SelectItem value="MIN_LOYALTY_POINTS">Minimum Loyalty Points</SelectItem>
                 <SelectItem value="PRODUCT_COMBO">Product Combo</SelectItem>
               </SelectContent>
             </Select>
@@ -258,6 +269,15 @@ function RuleForm({
                 placeholder="Min Spend ($)"
                 value={rule.conditionValue?.minSpend || ""}
                 onChange={(e) => formik.setFieldValue(`rules.${index}.conditionValue`, { minSpend: Number(e.target.value) })}
+              />
+            )}
+
+            {rule.conditionType === "MIN_LOYALTY_POINTS" && (
+              <Input
+                type="number"
+                placeholder="Min Loyalty Points"
+                value={rule.conditionValue?.minLoyaltyPoints || ""}
+                onChange={(e) => formik.setFieldValue(`rules.${index}.conditionValue`, { minLoyaltyPoints: Number(e.target.value) })}
               />
             )}
 
@@ -561,6 +581,7 @@ function PromotionForm({ formik, isLoading, onCancel, isEditing }: { formik: any
 export function PromotionPage() {
   const { filtered, isLoading, search, setSearch, handleDelete, stats } = usePromotionList();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
   const [editingPromotion, setEditingPromotion] = useState<any>(null);
 
   const createFormik = useCreatePromotion({
@@ -719,7 +740,7 @@ export function PromotionPage() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
-                            onClick={() => handleDelete(promotion.id, promotion.name)}
+                            onClick={() => setItemToDelete({ id: promotion.id, name: promotion.name })}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
@@ -763,6 +784,33 @@ export function PromotionPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the promotion <span className="font-bold text-foreground">"{itemToDelete?.name}"</span>. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (itemToDelete) {
+                  handleDelete(itemToDelete.id, itemToDelete.name);
+                  setItemToDelete(null);
+                }
+              }}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              Delete Promotion
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

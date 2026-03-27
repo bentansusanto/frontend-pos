@@ -379,7 +379,10 @@ export const PosPage = () => {
     try {
       await updateOrder({
         id: currentOrder.id,
-        body: { promotion_id: promotionId }
+        body: { 
+          promotion_id: promotionId,
+          customer_id: formik.values.customer_id
+        }
       }).unwrap();
       refetchOrders();
       setIsPromotionModalOpen(false);
@@ -1295,6 +1298,8 @@ export const PosPage = () => {
         onPrint={() => {
           window.print();
         }}
+        branch={profileData?.branches?.[0]}
+        cashierName={profileData?.name}
       />
     </form>
   );

@@ -86,7 +86,6 @@ export function usePromotionList() {
   );
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Delete promotion "${name}"?`)) return;
     try {
       await deletePromotion(id).unwrap();
       toast.success(`"${name}" deleted`);

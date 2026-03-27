@@ -59,17 +59,29 @@ export const CloseSessionModal = ({
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
-    if (summary?.paymentBreakdown && summary.paymentBreakdown.length > 0) {
-      setDeclarations(
-        summary.paymentBreakdown.map((p: { method: string }) => ({
+    // Methods to always show
+    const requiredMethods = ["cash", "stripe"];
+    const breakdown = summary?.paymentBreakdown || [];
+
+    const initialDeclarations = requiredMethods.map((method) => {
+      const systemTotal = breakdown.find((p: any) => p.method === method)?.total || 0;
+      return {
+        method,
+        declaredAmount: systemTotal,
+      };
+    });
+
+    // Add any other methods that might be in the breakdown but not in requiredMethods
+    breakdown.forEach((p: any) => {
+      if (!requiredMethods.includes(p.method)) {
+        initialDeclarations.push({
           method: p.method,
-          declaredAmount: 0,
-        }))
-      );
-    } else if (!isLoadingSummary) {
-      // Fallback: at least one cash entry
-      setDeclarations([{ method: "cash", declaredAmount: 0 }]);
-    }
+          declaredAmount: p.total,
+        });
+      }
+    });
+
+    setDeclarations(initialDeclarations);
   }, [summary, isLoadingSummary]);
 
   const totalDeclared = declarations.reduce(
@@ -126,16 +138,43 @@ export const CloseSessionModal = ({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5 py-2">
-            {/* Transactions Count — only neutral info */}
-            <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-              <Info className="size-4 shrink-0" />
-              <span>
-                You processed{" "}
-                <span className="font-semibold text-foreground">
-                  {summary?.transactionsCount ?? 0} completed transaction(s)
-                </span>{" "}
-                this shift.
-              </span>
+            {/* Sales Breakdown Summary */}
+            <div className="space-y-2.5 rounded-lg border bg-muted/30 p-4 text-sm">
+              <h4 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-1">
+                <Info className="size-3.5" />
+                System Sales Summary
+              </h4>
+              <div className="space-y-1.5">
+                {["cash", "stripe"].map((method) => {
+                  const systemTotal = summary?.paymentBreakdown?.find((p: any) => p.method === method)?.total || 0;
+                  return (
+                    <div key={method} className="flex justify-between items-center">
+                      <span className="text-muted-foreground capitalize">{method} Sales</span>
+                      <span className="font-semibold">${systemTotal.toFixed(2)}</span>
+                    </div>
+                  );
+                })}
+                {/* Show any other methods if they exist */}
+                {summary?.paymentBreakdown?.filter((p: any) => !["cash", "stripe"].includes(p.method)).map((p: any) => (
+                  <div key={p.method} className="flex justify-between items-center text-muted-foreground italic">
+                    <span className="capitalize">{p.method} Sales</span>
+                    <span className="font-semibold">${p.total.toFixed(2)}</span>
+                  </div>
+                ))}
+                {summary?.openingBalance > 0 && (
+                  <div className="flex justify-between items-center text-blue-600">
+                    <span>Opening Balance</span>
+                    <span className="font-semibold">${Number(summary.openingBalance).toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="border-t pt-1.5 mt-1.5 flex justify-between items-center font-bold text-primary">
+                  <span>Grand Total</span>
+                  <span>${((summary?.totalSales || 0) + (summary?.openingBalance || 0)).toFixed(2)}</span>
+                </div>
+              </div>
+              <div className="mt-2 text-[10px] text-muted-foreground italic border-t pt-2">
+                Processed {summary?.transactionsCount ?? 0} completed transaction(s) this shift.
+              </div>
             </div>
 
             {/* Per-method entries */}
@@ -150,7 +189,7 @@ export const CloseSessionModal = ({
                     className="flex items-center gap-2 text-sm font-medium"
                   >
                     {METHOD_LABELS[decl.method] ?? decl.method}
-                    <Badge variant="outline" className="text-xs font-normal capitalize">
+                    <Badge variant="outline" className="text-[10px] h-4 px-1 font-normal capitalize">
                       {decl.method}
                     </Badge>
                   </Label>

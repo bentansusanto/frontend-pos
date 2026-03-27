@@ -1,6 +1,7 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQuery } from "./baseQuery";
 import { posSessionApi } from "./pos-session.service";
+import { salesReportService } from "./sales-report.service";
 
 export const orderService = createApi({
   reducerPath: "orderService",
@@ -75,6 +76,22 @@ export const orderService = createApi({
           dispatch(posSessionApi.util.invalidateTags(["PosSession"]));
         } catch {}
       }
+    }),
+    // refund order
+    refundOrder: builder.mutation({
+      query: ({ id, reason }) => ({
+        url: `/orders/${id}/refund`,
+        method: "POST",
+        body: { reason }
+      }),
+      invalidatesTags: ["Orders"],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(posSessionApi.util.invalidateTags(["PosSession"]));
+          dispatch(salesReportService.util.invalidateTags(["SalesReports"]));
+        } catch {}
+      }
     })
   })
 });
@@ -84,5 +101,6 @@ export const {
   useGetOrdersQuery,
   useUpdateOrderMutation,
   useUpdateOrderQuantityMutation,
-  useDeleteOrderItemMutation
+  useDeleteOrderItemMutation,
+  useRefundOrderMutation
 } = orderService;

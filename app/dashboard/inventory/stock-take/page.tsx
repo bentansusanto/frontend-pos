@@ -135,53 +135,82 @@ export default function StockTakePage() {
         </Dialog>
       </div>
 
-      {/* KPI Cards Standard Style */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="rounded-xl border bg-white shadow-sm ring-1 ring-slate-200/50">
-          <CardContent>
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-sm font-medium text-slate-500">Total Sessions</p>
-              <div className="rounded-xl bg-slate-100 p-3 text-slate-600">
-                <Package className="size-6" />
+      {/* KPI Cards Modern 4-Column Layout */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="group overflow-hidden rounded-2xl border-none bg-white shadow-sm ring-1 ring-slate-200/50 transition-all hover:shadow-md hover:ring-indigo-500/30">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Sessions</p>
+                <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{stats.total}</p>
+              </div>
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 transition-transform group-hover:scale-110">
+                <ClipboardList className="size-6" />
               </div>
             </div>
-            <p className="mt-1 text-2xl font-bold tracking-tight text-slate-900">{stats.total}</p>
+            <div className="mt-4 h-1 w-full rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-indigo-500" style={{ width: '100%' }} />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border bg-white shadow-sm ring-1 ring-slate-200/50">
-          <CardContent>
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-sm font-medium text-slate-500">Completed</p>
-              <div className="rounded-xl bg-emerald-50 p-3 text-emerald-600">
+        <Card className="group overflow-hidden rounded-2xl border-none bg-white shadow-sm ring-1 ring-slate-200/50 transition-all hover:shadow-md hover:ring-emerald-500/30">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Completed</p>
+                <p className="mt-2 text-3xl font-bold tracking-tight text-emerald-600">{stats.completed}</p>
+              </div>
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 transition-transform group-hover:scale-110">
                 <CheckCircle2 className="size-6" />
               </div>
             </div>
-            <p className="mt-1 text-2xl font-bold tracking-tight text-emerald-600">{stats.completed}</p>
+            <div className="mt-4 h-1 w-full rounded-full bg-slate-100">
+              <div 
+                className="h-full rounded-full bg-emerald-500 transition-all duration-1000" 
+                style={{ width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%` }} 
+              />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border bg-white shadow-sm ring-1 ring-slate-200/50">
-          <CardContent>
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-sm font-medium text-slate-500">Wait Approval</p>
-              <div className="rounded-xl bg-amber-50 p-3 text-amber-600">
+        <Card className="group overflow-hidden rounded-2xl border-none bg-white shadow-sm ring-1 ring-slate-200/50 transition-all hover:shadow-md hover:ring-amber-500/30">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Wait Approval</p>
+                <p className="mt-2 text-3xl font-bold tracking-tight text-amber-600">{stats.pending}</p>
+              </div>
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 transition-transform group-hover:scale-110">
                 <Clock className="size-6" />
               </div>
             </div>
-            <p className="mt-1 text-2xl font-bold tracking-tight text-amber-600">{stats.pending}</p>
+            <div className="mt-4 h-1 w-full rounded-full bg-slate-100">
+              <div 
+                className="h-full rounded-full bg-amber-500 transition-all duration-1000" 
+                style={{ width: `${stats.total > 0 ? (stats.pending / stats.total) * 100 : 0}%` }} 
+              />
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border bg-white shadow-sm ring-1 ring-slate-200/50">
-          <CardContent>
-            <div className="flex items-center justify-between space-y-0 pb-2">
-              <p className="text-sm font-medium text-slate-500">Draft Sessions</p>
-              <div className="rounded-xl bg-slate-50 p-3 text-slate-400">
+        <Card className="group overflow-hidden rounded-2xl border-none bg-white shadow-sm ring-1 ring-slate-200/50 transition-all hover:shadow-md hover:ring-rose-500/30">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Draft Sessions</p>
+                <p className="mt-2 text-3xl font-bold tracking-tight text-rose-600">{stats.draft}</p>
+              </div>
+              <div className="flex size-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 transition-transform group-hover:scale-110">
                 <Plus className="size-6" />
               </div>
             </div>
-            <p className="mt-1 text-2xl font-bold tracking-tight text-slate-400">{stats.draft}</p>
+            <div className="mt-4 h-1 w-full rounded-full bg-slate-100">
+              <div 
+                className="h-full rounded-full bg-rose-500 transition-all duration-1000" 
+                style={{ width: `${stats.total > 0 ? (stats.draft / stats.total) * 100 : 0}%` }} 
+              />
+            </div>
           </CardContent>
         </Card>
       </div>

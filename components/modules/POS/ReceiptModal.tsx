@@ -11,15 +11,18 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, Printer, ArrowLeft } from "lucide-react";
 import Image from "next/image";
+import { ReceiptPrint } from "./ReceiptPrint";
 
 interface ReceiptModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: any;
   onPrint: () => void;
+  branch?: any;
+  cashierName?: string;
 }
 
-export const ReceiptModal = ({ isOpen, onClose, order, onPrint }: ReceiptModalProps) => {
+export const ReceiptModal = ({ isOpen, onClose, order, onPrint, branch, cashierName }: ReceiptModalProps) => {
   if (!order) return null;
 
   return (
@@ -41,7 +44,10 @@ export const ReceiptModal = ({ isOpen, onClose, order, onPrint }: ReceiptModalPr
                 <div key={item.id} className="flex justify-between text-sm">
                   <div className="flex gap-2">
                     <span className="text-muted-foreground">{item.qty}x</span>
-                    <span>{item.variant?.name_variant || item.product?.name_product || "Item"}</span>
+                    <span>
+                      {item.product_name || "Item"}
+                      {item.variant_name && !item.variant_name.toLowerCase().includes("default") && ` - ${item.variant_name}`}
+                    </span>
                   </div>
                   <span className="font-medium">${Number(item.subtotal || 0).toFixed(2)}</span>
                 </div>
@@ -84,6 +90,7 @@ export const ReceiptModal = ({ isOpen, onClose, order, onPrint }: ReceiptModalPr
             Back to POS
           </Button>
         </DialogFooter>
+        <ReceiptPrint order={order} branch={branch} cashierName={cashierName} />
       </DialogContent>
     </Dialog>
   );

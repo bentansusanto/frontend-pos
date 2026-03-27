@@ -7,6 +7,7 @@ import { productService } from "@/store/services/product.service";
 import { productStockService } from "@/store/services/product-stock.service";
 import { stockMovementsService } from "@/store/services/stock-movements.service";
 import { stockTakeApi } from "@/store/services/stock-take.service";
+import { customerService } from "@/store/services/customer.service";
 
 interface SocketContextType {
   socket: Socket | null;
@@ -59,6 +60,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       dispatch(productService.util.invalidateTags(["Products"]));
       dispatch(productStockService.util.invalidateTags(["ProductStocks"]));
       dispatch(stockMovementsService.util.invalidateTags(["StockMovements"]));
+    });
+
+    socketInstance.on("loyalty_updated", (data) => {
+      console.log("Loyalty points updated via WebSocket:", data);
+      dispatch(customerService.util.invalidateTags(["Customers"]));
     });
 
     setSocket(socketInstance);

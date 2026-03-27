@@ -28,11 +28,26 @@ import {
   TableHeader,
   TableRow
 } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 import { useGetSalesReportQuery } from "@/store/services/sales-report.service";
+import { useRefundOrderMutation } from "@/store/services/order.service";
 import { getCookie } from "@/utils/cookies";
-import { Eye } from "lucide-react";
+import { Eye, RotateCcw } from "lucide-react";
 import React, { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -48,8 +63,14 @@ export default function TransactionsPage() {
   const branchParams = branchId ? { branchId } : undefined;
 
   const { data: salesData, isLoading: isSalesLoading } = useGetSalesReportQuery(branchParams);
+  const [refundOrder, { isLoading: isRefunding }] = useRefundOrderMutation();
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
+  const [refundReason, setRefundReason] = useState("");
+  const [selectedOrderForRefund, setSelectedOrderForRefund] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("all");
+
   const itemsPerPage = 6;
 
   const allTransactions = useMemo(() => {
@@ -68,10 +89,16 @@ export default function TransactionsPage() {
         items: sale.items || [],
         subtotal: sale.subtotal || 0,
         taxAmount: sale.taxAmount || 0,
-        discountAmount: sale.discountAmount || 0
+        discountAmount: sale.discountAmount || 0,
+        refundReason: sale.refundReason,
+        refundedAt: sale.refundedAt
       }))
+      .filter((sale: any) => {
+        if (activeTab === "all") return true;
+        return sale.status === activeTab;
+      })
       .sort((a: any, b: any) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime());
-  }, [salesData]);
+  }, [salesData, activeTab]);
 
   const totalItems = allTransactions.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -87,6 +114,24 @@ export default function TransactionsPage() {
     }
   };
 
+  const handleRefund = async () => {
+    if (!selectedOrderForRefund) return;
+
+    try {
+      await refundOrder({
+        id: selectedOrderForRefund.orderId,
+        reason: refundReason || "Customer requested refund"
+      }).unwrap();
+
+      toast.success("Order refunded successfully");
+      setIsRefundDialogOpen(false);
+      setRefundReason("");
+      setSelectedOrderForRefund(null);
+    } catch (error: any) {
+      toast.error(error?.data?.message || "Failed to refund order");
+    }
+  };
+
   const indexOfFirstItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const indexOfLastItem = Math.min(currentPage * itemsPerPage, totalItems);
 
@@ -98,9 +143,18 @@ export default function TransactionsPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Transactions</CardTitle>
-          <CardDescription>List of all completed transactions.</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div>
+            <CardTitle>Transactions</CardTitle>
+            <CardDescription>List of all completed transactions.</CardDescription>
+          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="success">Success</TabsTrigger>
+              <TabsTrigger value="refunded">Refunded</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <CardContent>
           {isSalesLoading ? (
@@ -153,8 +207,10 @@ export default function TransactionsPage() {
                                   : row.status === "pending"
                                     ? "bg-yellow-600 hover:bg-yellow-700"
                                     : row.status === "failed"
-                                      ? "bg-red-600 hover:bg-red-700"
-                                      : ""
+                                       ? "bg-red-600 hover:bg-red-700"
+                                       : row.status === "refunded"
+                                         ? "bg-orange-600 hover:bg-orange-700"
+                                         : ""
                               }`}>
                               {row.status}
                             </Badge>
@@ -182,8 +238,25 @@ export default function TransactionsPage() {
                               : "-"}
                                   </DialogDescription>
                                 </DialogHeader>
-                                <div className="mt-4 max-h-[60vh] overflow-y-auto">
-                                  <Table>
+                                 <div className="mt-4 max-h-[60vh] overflow-y-auto">
+                                   {row.status === "refunded" && (
+                                     <div className="mb-4 rounded-md border border-orange-200 bg-orange-50 p-3">
+                                       <div className="flex items-center gap-2 text-sm font-semibold text-orange-800">
+                                         <RotateCcw className="h-4 w-4" />
+                                         Refund Information
+                                       </div>
+                                       <p className="mt-1 text-sm text-orange-700">
+                                         <span className="font-medium">Reason:</span>{" "}
+                                         {row.refundReason || "No reason provided"}
+                                       </p>
+                                       {row.refundedAt && (
+                                         <p className="text-xs text-orange-600">
+                                           Refunded on: {new Date(row.refundedAt).toLocaleString()}
+                                         </p>
+                                       )}
+                                     </div>
+                                   )}
+                                   <Table>
                                     <TableHeader>
                                       <TableRow>
                                         <TableHead>Product</TableHead>
@@ -252,9 +325,24 @@ export default function TransactionsPage() {
                                         </TableCell>
                                       </TableRow>
                                     </TableBody>
-                                  </Table>
-                                </div>
-                              </DialogContent>
+                                   </Table>
+                                 </div>
+
+                                 {row.status === "success" && (
+                                   <div className="mt-6 flex justify-end border-t pt-4">
+                                     <Button
+                                       variant="destructive"
+                                       className="gap-2"
+                                       onClick={() => {
+                                         setSelectedOrderForRefund(row);
+                                         setIsRefundDialogOpen(true);
+                                       }}>
+                                       <RotateCcw className="h-4 w-4" />
+                                       Refund Order
+                                     </Button>
+                                   </div>
+                                 )}
+                               </DialogContent>
                             </Dialog>
                           </TableCell>
                         </TableRow>
@@ -346,6 +434,46 @@ export default function TransactionsPage() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={isRefundDialogOpen} onOpenChange={setIsRefundDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <RotateCcw className="h-5 w-5" />
+              Confirm Refund
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to refund this order? This action will return items to stock and
+              revert any loyalty points earned. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-3 py-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="refund-reason">Reason for Refund</Label>
+              <Input
+                id="refund-reason"
+                placeholder="e.g., Damaged item, Customer change of mind..."
+                value={refundReason}
+                onChange={(e) => setRefundReason(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRefunding}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleRefund();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 text-white"
+              disabled={isRefunding}>
+              {isRefunding ? "Processing..." : "Confirm Refund"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

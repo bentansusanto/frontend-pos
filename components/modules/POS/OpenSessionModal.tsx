@@ -63,7 +63,6 @@ export const OpenSessionModal = ({
       }
       try {
         await openSession(values).unwrap();
-        toast.success("POS Session opened successfully");
         onSuccess?.();
         onOpenChange(false);
       } catch (error: any) {
