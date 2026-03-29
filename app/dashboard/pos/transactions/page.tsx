@@ -48,6 +48,7 @@ import { getCookie } from "@/utils/cookies";
 import { Eye, RotateCcw } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { RefundReceiptModal } from "@/components/modules/POS/RefundReceiptModal";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -91,7 +92,8 @@ export default function TransactionsPage() {
         taxAmount: sale.taxAmount || 0,
         discountAmount: sale.discountAmount || 0,
         refundReason: sale.refundReason,
-        refundedAt: sale.refundedAt
+        refundedAt: sale.refundedAt,
+        invoiceNumber: sale.invoiceNumber || sale.orderId
       }))
       .filter((sale: any) => {
         if (activeTab === "all") return true;
@@ -114,21 +116,85 @@ export default function TransactionsPage() {
     }
   };
 
+  const [isRefundReceiptOpen, setIsRefundReceiptOpen] = useState(false);
+  const [latestRefundData, setLatestRefundData] = useState<any>(null);
+
   const handleRefund = async () => {
     if (!selectedOrderForRefund) return;
 
     try {
-      await refundOrder({
+      const response = await refundOrder({
         id: selectedOrderForRefund.orderId,
         reason: refundReason || "Customer requested refund"
       }).unwrap();
 
       toast.success("Order refunded successfully");
       setIsRefundDialogOpen(false);
+      
+      // Show the refund receipt
+      if (response?.data?.refund) {
+        setLatestRefundData({
+          order: selectedOrderForRefund,
+          refund: response.data.refund
+        });
+        setIsRefundReceiptOpen(true);
+      }
+      
       setRefundReason("");
       setSelectedOrderForRefund(null);
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to refund order");
+    }
+  };
+
+  const handlePrintRefund = () => {
+    const printContent = document.getElementById("receipt-print-refund");
+    if (printContent) {
+      const windowUrl = "about:blank";
+      const uniqueName = new Date().getTime();
+      const windowName = "Print" + uniqueName;
+      const printWindow = window.open(windowUrl, windowName, "left=0,top=0,width=800,height=900");
+
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Print Receipt</title>
+              <script src="https://cdn.tailwindcss.com"></script>
+              <style>
+                @media print {
+                  @page { 
+                    margin: 5mm; 
+                  }
+                  body { 
+                    margin: 0;
+                    padding: 0;
+                    background: white;
+                  }
+                  #receipt-print-refund {
+                    display: block !important;
+                    width: 80mm;
+                    margin: 0 auto;
+                    padding: 4mm;
+                  }
+                }
+              </style>
+            </head>
+            <body class="bg-gray-100 min-h-screen flex justify-center py-10">
+              <div class="bg-white shadow-none">
+                ${printContent.innerHTML}
+              </div>
+              <script>
+                window.onload = () => {
+                  window.print();
+                  window.close();
+                };
+              </script>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
     }
   };
 
@@ -209,7 +275,7 @@ export default function TransactionsPage() {
                                     : row.status === "failed"
                                        ? "bg-red-600 hover:bg-red-700"
                                        : row.status === "refunded"
-                                         ? "bg-orange-600 hover:bg-orange-700"
+                                         ? "bg-red-600 hover:bg-red-700"
                                          : ""
                               }`}>
                               {row.status}
@@ -220,130 +286,159 @@ export default function TransactionsPage() {
                           <TableCell>{row.customerName}</TableCell>
                           <TableCell className="text-right">{row.itemsCount}</TableCell>
                           <TableCell className="text-right">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Eye className="h-4 w-4" />
+                            <div className="flex justify-end gap-1">
+                              {row.status === "refunded" && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => {
+                                    setLatestRefundData({
+                                      order: row,
+                                      refund: {
+                                        id: row.orderId,
+                                        amount: row.amount,
+                                        reason: row.refundReason,
+                                        refundedAt: row.refundedAt,
+                                        paymentMethod: row.paymentMethod,
+                                        stripeRefundId: row.stripeRefundId
+                                      }
+                                    });
+                                    setIsRefundReceiptOpen(true);
+                                  }}>
+                                  <RotateCcw className="h-4 w-4" />
                                 </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-2xl">
-                                <DialogHeader>
-                                  <DialogTitle>Order Details</DialogTitle>
-                                  <DialogDescription>
-                                    Order ID: {row.orderId} •{" "}
-                            {row.paidAt
-                              ? new Date(row.paidAt).toLocaleDateString("en-US") +
-                                " " +
-                                new Date(row.paidAt).toLocaleTimeString("en-US")
-                              : "-"}
-                                  </DialogDescription>
-                                </DialogHeader>
-                                 <div className="mt-4 max-h-[60vh] overflow-y-auto">
-                                   {row.status === "refunded" && (
-                                     <div className="mb-4 rounded-md border border-orange-200 bg-orange-50 p-3">
-                                       <div className="flex items-center gap-2 text-sm font-semibold text-orange-800">
-                                         <RotateCcw className="h-4 w-4" />
-                                         Refund Information
-                                       </div>
-                                       <p className="mt-1 text-sm text-orange-700">
-                                         <span className="font-medium">Reason:</span>{" "}
-                                         {row.refundReason || "No reason provided"}
-                                       </p>
-                                       {row.refundedAt && (
-                                         <p className="text-xs text-orange-600">
-                                           Refunded on: {new Date(row.refundedAt).toLocaleString()}
+                              )}
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-2xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Order Details</DialogTitle>
+                                    <DialogDescription>
+                                      Order ID: {row.orderId} •{" "}
+                              {row.paidAt
+                                ? new Date(row.paidAt).toLocaleDateString("en-US") +
+                                  " " +
+                                  new Date(row.paidAt).toLocaleTimeString("en-US")
+                                : "-"}
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                   <div className="mt-4 max-h-[60vh] overflow-y-auto">
+                                     {row.status === "refunded" && (
+                                       <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3">
+                                         <div className="flex items-center gap-2 text-sm font-semibold text-red-800">
+                                           <RotateCcw className="h-4 w-4" />
+                                           Refund Information
+                                         </div>
+                                         <p className="mt-1 text-sm text-red-700">
+                                           <span className="font-medium">Reason:</span>{" "}
+                                           {row.refundReason || "No reason provided"}
                                          </p>
-                                       )}
-                                     </div>
-                                   )}
-                                   <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead>Product</TableHead>
-                                        <TableHead className="text-right">Qty</TableHead>
-                                        <TableHead className="text-right">Price</TableHead>
-                                        <TableHead className="text-right">Total</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {row.items?.map((item: any, idx: number) => (
-                                        <TableRow key={idx}>
-                                          <TableCell>
-                                            {item.productName || item.product?.name || "-"}
-                                          </TableCell>
-                                          <TableCell className="text-right">
-                                            {item.quantity}
-                                          </TableCell>
-                                          <TableCell className="text-right">
-                                            {formatCurrency(item.price)}
-                                          </TableCell>
-                                          <TableCell className="text-right">
-                                            {formatCurrency(
-                                              (item.price || 0) * (item.quantity || 0)
-                                            )}
-                                          </TableCell>
+                                         {row.refundedAt && (
+                                           <p className="text-xs text-red-600">
+                                             Refunded on: {new Date(row.refundedAt).toLocaleString()}
+                                           </p>
+                                         )}
+                                         {row.stripeRefundId && (
+                                           <p className="mt-1 text-[10px] font-mono text-red-500 break-all">
+                                             Stripe ID: {row.stripeRefundId}
+                                           </p>
+                                         )}
+                                       </div>
+                                     )}
+                                     <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>Product</TableHead>
+                                          <TableHead className="text-right">Qty</TableHead>
+                                          <TableHead className="text-right">Price</TableHead>
+                                          <TableHead className="text-right">Total</TableHead>
                                         </TableRow>
-                                      ))}
-                                      <TableRow>
-                                        <TableCell
-                                          colSpan={3}
-                                          className="text-muted-foreground text-right">
-                                          Subtotal
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                          {formatCurrency(row.subtotal)}
-                                        </TableCell>
-                                      </TableRow>
-                                      <TableRow>
-                                        <TableCell
-                                          colSpan={3}
-                                          className="text-muted-foreground text-right">
-                                          Tax Amount
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                          {formatCurrency(row.taxAmount)}
-                                        </TableCell>
-                                      </TableRow>
-                                      {row.discountAmount > 0 && (
+                                      </TableHeader>
+                                      <TableBody>
+                                        {row.items?.map((item: any, idx: number) => (
+                                          <TableRow key={idx}>
+                                            <TableCell>
+                                              {item.productName || item.product?.name || "-"}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                              {item.quantity}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                              {formatCurrency(item.price)}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                              {formatCurrency(
+                                                (item.price || 0) * (item.quantity || 0)
+                                              )}
+                                            </TableCell>
+                                          </TableRow>
+                                        ))}
                                         <TableRow>
                                           <TableCell
                                             colSpan={3}
-                                            className="text-destructive text-right">
-                                            Discount
+                                            className="text-muted-foreground text-right">
+                                            Subtotal
                                           </TableCell>
-                                          <TableCell className="text-destructive text-right">
-                                            -{formatCurrency(row.discountAmount)}
+                                          <TableCell className="text-right">
+                                            {formatCurrency(row.subtotal)}
                                           </TableCell>
                                         </TableRow>
-                                      )}
-                                      <TableRow>
-                                        <TableCell colSpan={3} className="text-right font-bold">
-                                          Total Amount
-                                        </TableCell>
-                                        <TableCell className="text-right font-bold">
-                                          {formatCurrency(row.amount)}
-                                        </TableCell>
-                                      </TableRow>
-                                    </TableBody>
-                                   </Table>
-                                 </div>
-
-                                 {row.status === "success" && (
-                                   <div className="mt-6 flex justify-end border-t pt-4">
-                                     <Button
-                                       variant="destructive"
-                                       className="gap-2"
-                                       onClick={() => {
-                                         setSelectedOrderForRefund(row);
-                                         setIsRefundDialogOpen(true);
-                                       }}>
-                                       <RotateCcw className="h-4 w-4" />
-                                       Refund Order
-                                     </Button>
+                                        <TableRow>
+                                          <TableCell
+                                            colSpan={3}
+                                            className="text-muted-foreground text-right">
+                                            Tax Amount
+                                          </TableCell>
+                                          <TableCell className="text-right">
+                                            {formatCurrency(row.taxAmount)}
+                                          </TableCell>
+                                        </TableRow>
+                                        {row.discountAmount > 0 && (
+                                          <TableRow>
+                                            <TableCell
+                                              colSpan={3}
+                                              className="text-destructive text-right">
+                                              Discount
+                                            </TableCell>
+                                            <TableCell className="text-destructive text-right">
+                                              -{formatCurrency(row.discountAmount)}
+                                            </TableCell>
+                                          </TableRow>
+                                        )}
+                                        <TableRow>
+                                          <TableCell colSpan={3} className="text-right font-bold">
+                                            Total Amount
+                                          </TableCell>
+                                          <TableCell className="text-right font-bold">
+                                            {formatCurrency(row.amount)}
+                                          </TableCell>
+                                        </TableRow>
+                                      </TableBody>
+                                     </Table>
                                    </div>
-                                 )}
-                               </DialogContent>
-                            </Dialog>
+
+                                   {row.status === "success" && (
+                                     <div className="mt-6 flex justify-end border-t pt-4">
+                                       <Button
+                                         variant="destructive"
+                                         className="gap-2"
+                                         onClick={() => {
+                                           setSelectedOrderForRefund(row);
+                                           setIsRefundDialogOpen(true);
+                                         }}>
+                                         <RotateCcw className="h-4 w-4" />
+                                         Refund Order
+                                       </Button>
+                                     </div>
+                                   )}
+                                 </DialogContent>
+                              </Dialog>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -474,6 +569,18 @@ export default function TransactionsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {latestRefundData && (
+        <RefundReceiptModal
+          isOpen={isRefundReceiptOpen}
+          onClose={() => setIsRefundReceiptOpen(false)}
+          order={latestRefundData.order}
+          refund={latestRefundData.refund}
+          onPrint={handlePrintRefund}
+          branch={{ name: getCookie("pos_branch_name") }}
+          cashierName={latestRefundData.refund?.cashierName || latestRefundData.order?.cashierName}
+        />
+      )}
     </div>
   );
 }

@@ -10,13 +10,15 @@ interface AiInsightSectionProps {
   types?: InsightType[];
   title?: string;
   limit?: number;
+  hideTitle?: boolean;
 }
 
 export const AiInsightSection = ({ 
   branchId, 
   types, 
   title = "AI Business Insights",
-  limit = 3 
+  limit = 3,
+  hideTitle = false
 }: AiInsightSectionProps) => {
   const { data: insightsData, isLoading } = useGetAiInsightsQuery(
     branchId && branchId !== "all" ? { branchId } : {}
@@ -42,14 +44,16 @@ export const AiInsightSection = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 px-1 mb-1">
-        <div className="rounded-lg bg-indigo-100 p-1 dark:bg-indigo-900/30">
-          <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+      {!hideTitle && (
+        <div className="flex items-center gap-2 px-1 mb-1">
+          <div className="rounded-lg bg-indigo-100 p-1 dark:bg-indigo-900/30">
+            <Sparkles className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+          </div>
+          <h4 className="text-sm font-bold tracking-tight text-foreground uppercase">
+            {title}
+          </h4>
         </div>
-        <h4 className="text-sm font-bold tracking-tight text-foreground uppercase">
-          {title}
-        </h4>
-      </div>
+      )}
       <div className="grid gap-3">
         {filteredInsights.map((insight: any) => (
           <AiInsightCard key={insight.id} insight={insight} compact />

@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/utils";
-import { IconExternalLink } from "@tabler/icons-react";
+import { IconCircleCheck, IconClock, IconExternalLink, IconRotate2 } from "@tabler/icons-react";
 import { TransactionDetailModal } from "./TransactionDetailModal";
 
 interface SalesTableProps {
@@ -76,6 +76,8 @@ export function SalesTable({ data }: SalesTableProps) {
               {currentData.map((sale) => {
                 const methodKey = (sale.paymentMethod ?? "").toLowerCase();
                 const methodClass = paymentMethodColors[methodKey] ?? "bg-muted text-muted-foreground";
+                const isSuccess = sale.status === "success";
+                const isRefunded = sale.status === "refunded";
                 return (
                   <TableRow
                     key={sale.paymentId}
@@ -104,10 +106,22 @@ export function SalesTable({ data }: SalesTableProps) {
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={sale.status === "success" ? "default" : "secondary"}
-                        className={sale.status === "success" ? "bg-emerald-500 hover:bg-emerald-600 text-white" : ""}
+                        className={
+                          isSuccess 
+                            ? "bg-emerald-500 text-white hover:bg-emerald-600" 
+                            : isRefunded 
+                              ? "bg-red-500 text-white hover:bg-red-600" 
+                              : ""
+                        }
+                        variant={isSuccess || isRefunded ? "default" : "secondary"}
                       >
-                        {sale.status}
+                        {isSuccess ? (
+                          <><IconCircleCheck className="mr-1 h-3 w-3" />{sale.status}</>
+                        ) : isRefunded ? (
+                          <><IconRotate2 className="mr-1 h-3 w-3" />{sale.status}</>
+                        ) : (
+                          <><IconClock className="mr-1 h-3 w-3" />{sale.status}</>
+                        )}
                       </Badge>
                     </TableCell>
                     <TableCell className="pr-4 text-right">

@@ -9,6 +9,10 @@ import {
   ShoppingCart,
   DollarSign,
   ChevronDown,
+  CalendarIcon,
+  FileDown,
+  Filter,
+  Sparkles,
 } from "lucide-react";
 import { TransactionDetailModal } from "@/components/modules/Dashboard/TransactionDetailModal";
 import React, { useEffect, useMemo, useState } from "react";
@@ -63,7 +67,6 @@ import {
   endOfWeek,
   startOfYear,
 } from "date-fns";
-import { CalendarIcon, FileDown, Filter } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import {
   useGetMonthlySalesReportQuery,
@@ -108,18 +111,25 @@ export default function SalesReportPage() {
   const branchId = getCookie("pos_branch_id");
   const branchParams = branchId ? { branchId } : undefined;
 
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+
+  const summaryParams = useMemo(() => ({
+    ...branchParams,
+    startDate: dateRange?.from?.toISOString(),
+    endDate: dateRange?.to?.toISOString(),
+  }), [branchParams, dateRange]);
+
   const { data: summaryData, isLoading: isSummaryLoading } =
-    useGetSalesSummaryQuery(branchParams);
+    useGetSalesSummaryQuery(summaryParams);
+
   const { data: weeklyData } = useGetWeeklySalesReportQuery(branchParams);
   const { data: monthlyData } = useGetMonthlySalesReportQuery(branchParams);
   const { data: yearlyData } = useGetYearlySalesReportQuery(branchParams);
   const { data: salesData, isLoading: isSalesLoading } =
     useGetSalesReportQuery(branchParams);
-
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
-    to: new Date(),
-  });
 
   // ── Quick presets ────────────────────────────────────────────────────────────
   const applyPreset = (preset: "today" | "yesterday" | "week" | "month" | "year") => {
@@ -210,11 +220,42 @@ export default function SalesReportPage() {
   [salesData]);
 
   const totalReportSales = useMemo(
-    () => salesRows.reduce((sum: number, row: any) => sum + Number(row.amount || 0), 0),
+    () => salesRows
+      .filter((row: any) => row.status === "success")
+      .reduce((sum: number, row: any) => sum + Number(row.amount || 0), 0),
     [salesRows]
   );
 
   const paymentMethodSummary = summaryData?.paymentMethodSummary || {};
+
+  // ── Top selling products aggregation ────────────────────────────────────────
+  const topProducts = useMemo(() => {
+    if (!summaryData?.salesData) return [];
+    
+    const productMap: Record<string, { id: string; name: string; quantity: number; revenue: number }> = {};
+    
+    summaryData.salesData.forEach((sale: any) => {
+      // already filtered by success/refunded status in backend summary potentially, 
+      // but let's be double sure it's success
+      if (sale.status !== "success") return;
+      (sale.items || []).forEach((item: any) => {
+        const id = item.productId || "unknown";
+        if (!productMap[id]) {
+          productMap[id] = { id, name: item.productName || "Unknown Product", quantity: 0, revenue: 0 };
+        }
+        productMap[id].quantity += Number(item.quantity || 0);
+        productMap[id].revenue += Number(item.subtotal || 0);
+      });
+    });
+
+    return Object.values(productMap)
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 5);
+  }, [summaryData]);
+
+  const maxQuantity = useMemo(() => 
+    Math.max(...topProducts.map(p => p.quantity), 1)
+  , [topProducts]);
 
   // ── Selected transaction for modal ───────────────────────────────────────────
   const [selectedSale, setSelectedSale] = useState<any | null>(null);
@@ -262,85 +303,6 @@ export default function SalesReportPage() {
         <p className="text-sm text-muted-foreground">
           Monitor revenue performance and payment trends across periods.
         </p>
-      </div>
-
-      {/* ── Toolbar ── */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Date picker + preset dropdown */}
-        <div className="flex items-center gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-[280px] justify-start text-left font-normal",
-                  !dateRange && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                {dateRangeLabel}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              {/* Quick presets inside popover */}
-              <div className="flex gap-1.5 p-3 border-b flex-wrap">
-                {[
-                  { key: "today",     label: "Today"      },
-                  { key: "yesterday", label: "Yesterday"  },
-                  { key: "week",      label: "This Week"  },
-                  { key: "month",     label: "This Month" },
-                  { key: "year",      label: "This Year"  },
-                ].map((p) => (
-                  <button
-                    key={p.key}
-                    onClick={() => applyPreset(p.key as any)}
-                    className="rounded-md border bg-muted px-2.5 py-1 text-xs font-medium hover:bg-accent transition-colors"
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={dateRange?.from}
-                selected={dateRange}
-                onSelect={setDateRange}
-                numberOfMonths={2}
-              />
-            </PopoverContent>
-          </Popover>
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setDateRange({ from: subDays(new Date(), 30), to: new Date() })}
-            title="Reset to 30 days"
-          >
-            <Filter className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Export */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button className="gap-2 bg-primary hover:bg-primary/90">
-              <FileDown className="h-4 w-4" />
-              Export Report
-              <ChevronDown className="h-3.5 w-3.5 opacity-70" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Export Format</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handleExport("excel")}>
-              Export as Excel (.xlsx)
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExport("pdf")}>
-              Export as PDF (.pdf)
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       {/* ── Stat cards ── */}
@@ -393,33 +355,26 @@ export default function SalesReportPage() {
           </CardContent>
         </Card>
 
-        {/* Payment Methods */}
-        <Card className="bg-gradient-to-br from-violet-50/60 to-card dark:from-violet-950/20 border shadow-sm hover:shadow-md transition-shadow">
+        {/* Total Customers */}
+        <Card className="bg-gradient-to-br from-indigo-50/60 to-card dark:from-indigo-950/20 border shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="pb-2 flex flex-row items-start justify-between space-y-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-900/40">
-              <Wallet className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-900/40">
+              <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             </div>
-            <span className="text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/30 px-2 py-0.5 rounded-full">
-              {Object.keys(paymentMethodSummary).length} methods
+            <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-full">
+              Unique
             </span>
           </CardHeader>
           <CardContent className="pt-2">
-            <p className="text-xs text-muted-foreground mb-1.5">Payment Methods</p>
-            <div className="flex flex-wrap gap-1">
-              {Object.entries(paymentMethodSummary).length ? (
-                Object.entries(paymentMethodSummary).map(([method, amount]) => {
-                  const key = method.toLowerCase();
-                  const cls = PAYMENT_METHOD_COLORS[key] ?? "bg-muted text-muted-foreground";
-                  return (
-                    <span key={method} className={`rounded-md px-2 py-0.5 text-[10px] font-semibold capitalize ${cls}`}>
-                      {method}: {formatCurrency(Number(amount || 0))}
-                    </span>
-                  );
-                })
+            <p className="text-xs text-muted-foreground mb-0.5">Total Customers</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight">
+              {isSummaryLoading ? (
+                <span className="animate-pulse text-muted-foreground/40">——</span>
               ) : (
-                <span className="text-xs text-muted-foreground">No data yet</span>
+                (summaryData?.totalCustomers || 0).toLocaleString()
               )}
-            </div>
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Customers who ordered</p>
           </CardContent>
         </Card>
 
@@ -447,121 +402,301 @@ export default function SalesReportPage() {
         </Card>
       </div>
 
-      {/* ── AI Insight ── */}
-      <Card className="border-l-4 border-l-indigo-500 bg-gradient-to-r from-indigo-50/60 to-transparent dark:from-indigo-950/20 dark:to-transparent shadow-sm">
-        <CardContent className="py-4 px-6">
-          <AiInsightSection
-            branchId={branchId || ""}
-            types={[InsightType.SALES_TREND, InsightType.BEST_SELLER, InsightType.REPORT_SUMMARY]}
-            title="AI Sales Analysis"
-            limit={2}
-          />
-        </CardContent>
-      </Card>
-
-      {/* ── Sales Trends + Transactions Table ── */}
-      <Card className="overflow-hidden shadow-sm">
-        <CardHeader className="border-b bg-muted/20 pb-0">
-          <Tabs defaultValue="weekly" className="w-full">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <CardTitle className="text-lg">Sales Trends</CardTitle>
-                <CardDescription>Sales visualization across different periods</CardDescription>
+      {/* ── Main Analysis & Trends Grid (3 Columns) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch lg:h-[480px] lg:overflow-hidden min-h-0">
+        {/* ── Sales Trends Chart (Left & Wider) ── */}
+        <Card className="overflow-hidden shadow-sm lg:col-span-2 h-full flex flex-col min-h-[400px] lg:max-h-[480px]">
+          <Tabs defaultValue="weekly" className="w-full h-full flex flex-col">
+            <CardHeader className="border-b bg-muted/20 pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg">Sales Trends</CardTitle>
+                  <CardDescription className="text-xs">Sales visualization across different periods</CardDescription>
+                </div>
+                <TabsList className="bg-muted/60 p-0.5">
+                  <TabsTrigger value="weekly"  className="text-xs px-3">Weekly</TabsTrigger>
+                  <TabsTrigger value="monthly" className="text-xs px-3">Monthly</TabsTrigger>
+                  <TabsTrigger value="yearly"  className="text-xs px-3">Yearly</TabsTrigger>
+                </TabsList>
               </div>
-              <TabsList className="bg-muted/60 p-0.5">
-                <TabsTrigger value="weekly"  className="text-xs px-3">Weekly</TabsTrigger>
-                <TabsTrigger value="monthly" className="text-xs px-3">Monthly</TabsTrigger>
-                <TabsTrigger value="yearly"  className="text-xs px-3">Yearly</TabsTrigger>
-              </TabsList>
+            </CardHeader>
+            <CardContent className="p-0 flex-1 overflow-hidden h-full flex flex-col">
+              {/* Weekly */}
+              <TabsContent value="weekly" className="m-0 border-none p-0 flex-1 h-full">
+                <div className="h-full w-full p-4">
+                  <ChartContainer config={chartConfig} className="h-[320px] w-full">
+                    <AreaChart data={weeklySeries}>
+                      <defs>
+                        <linearGradient id="gWeekly" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%"  stopColor="var(--primary)" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.01} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis
+                        dataKey="date"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        tickFormatter={(v) => format(new Date(v), "dd MMM")}
+                        tick={{ fontSize: 11 }}
+                      />
+                      <YAxis 
+                        tickLine={false} 
+                        axisLine={false} 
+                        tick={{ fontSize: 11 }} 
+                        tickFormatter={(v) => `$${v}`}
+                        domain={[0, 'auto']}
+                      />
+                      <ChartTooltip
+                        content={<ChartTooltipContent formatter={(v) => [formatCurrency(Number(v)), "Sales"]} />}
+                      />
+                      <Area dataKey="amount" type="monotone" fill="url(#gWeekly)" stroke="var(--primary)" strokeWidth={2} />
+                    </AreaChart>
+                  </ChartContainer>
+                </div>
+              </TabsContent>
+
+              {/* Monthly */}
+              <TabsContent value="monthly" className="m-0 border-none p-0 flex-1 h-full">
+                <div className="h-full w-full p-4">
+                  <ChartContainer config={chartConfig} className="h-[320px] w-full">
+                    <AreaChart data={monthlySeries}>
+                      <defs>
+                        <linearGradient id="gMonthly" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%"  stopColor="var(--primary)" stopOpacity={0.25} />
+                          <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.01} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis
+                        dataKey="date"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                        tickFormatter={(v) => format(new Date(v), "dd MMM")}
+                        tick={{ fontSize: 11 }}
+                      />
+                      <YAxis 
+                        tickLine={false} 
+                        axisLine={false} 
+                        tick={{ fontSize: 11 }} 
+                        tickFormatter={(v) => `$${v}`}
+                        domain={[0, 'auto']}
+                      />
+                      <ChartTooltip
+                        content={<ChartTooltipContent formatter={(v) => [formatCurrency(Number(v)), "Sales"]} />}
+                      />
+                      <Area dataKey="amount" type="monotone" fill="url(#gMonthly)" stroke="var(--primary)" strokeWidth={2} />
+                    </AreaChart>
+                  </ChartContainer>
+                </div>
+              </TabsContent>
+
+              {/* Yearly */}
+              <TabsContent value="yearly" className="m-0 border-none p-0 flex-1 h-full">
+                <div className="h-full w-full p-4">
+                  <ChartContainer config={chartConfig} className="h-[320px] w-full">
+                    <BarChart data={yearlySeries}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 11 }} />
+                      <YAxis 
+                        tickLine={false} 
+                        axisLine={false} 
+                        tick={{ fontSize: 11 }} 
+                        tickFormatter={(v) => `$${v}`}
+                        domain={[0, 'auto']}
+                      />
+                      <ChartTooltip
+                        content={<ChartTooltipContent formatter={(v) => [formatCurrency(Number(v)), "Sales"]} />}
+                      />
+                      <Bar dataKey="amount" fill="var(--primary)" radius={[4, 4, 0, 0]} fillOpacity={0.85} />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
+              </TabsContent>
+            </CardContent>
+          </Tabs>
+        </Card>
+
+        {/* ── Right Column (AI + Top Products) ── */}
+        <div className="lg:col-span-1 h-full flex flex-col gap-6 min-h-0 overflow-hidden">
+          {/* ── AI Insight ── */}
+          <Card className="shadow-sm h-fit overflow-hidden min-h-0">
+            <CardHeader className="pb-3 border-b bg-muted/10">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-indigo-500" />
+                AI Insights
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 flex flex-col justify-start overflow-auto scrollbar-none">
+              <AiInsightSection
+                branchId={branchId || ""}
+                types={[InsightType.SALES_TREND, InsightType.BEST_SELLER, InsightType.REPORT_SUMMARY]}
+                hideTitle={true}
+                limit={2}
+              />
+            </CardContent>
+          </Card>
+
+          {/* ── Top Selling Products ── */}
+          <Card className="shadow-sm flex-1 overflow-hidden flex flex-col min-h-0">
+            <CardHeader className="pb-3 border-b bg-muted/10">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <ShoppingCart className="h-4 w-4 text-primary" />
+                Top Selling Products
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-auto p-4 scrollbar-none">
+              {isSummaryLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-3 animate-pulse">
+                      <div className="h-10 w-10 rounded-lg bg-muted" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 w-3/4 bg-muted rounded" />
+                        <div className="h-2 w-1/2 bg-muted rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : topProducts.length > 0 ? (
+                <div className="space-y-5">
+                  {topProducts.map((product, idx) => (
+                    <div key={product.id} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 max-w-[70%]">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-[10px] font-bold text-primary">
+                            {idx + 1}
+                          </span>
+                          <span className="font-semibold truncate" title={product.name}>
+                            {product.name}
+                          </span>
+                        </div>
+                        <span className="font-bold tabular-nums">
+                          {product.quantity} sold
+                        </span>
+                      </div>
+                      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
+                        <div 
+                          className="h-full bg-primary transition-all duration-500" 
+                          style={{ width: `${(product.quantity / maxQuantity) * 100}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <span className="text-[10px] text-muted-foreground font-medium">
+                          {formatCurrency(product.revenue)} revenue
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground py-8">
+                  <ShoppingCart className="h-8 w-8 mb-2 opacity-20" />
+                  <p className="text-xs">No product data available</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* ── Transactions table (Full Width) ── */}
+      <Card className="overflow-hidden shadow-sm mt-12">
+        <CardHeader className="border-b bg-muted/20">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-bold">Recent Transactions</CardTitle>
+              <CardDescription className="text-xs">Detailed log of all sales and refunds</CardDescription>
             </div>
 
-            {/* Weekly */}
-            <TabsContent value="weekly" className="m-0 border-none p-0">
-              <div className="h-[280px] w-full pb-4">
-                <ChartContainer config={chartConfig} className="h-full w-full">
-                  <AreaChart data={weeklySeries}>
-                    <defs>
-                      <linearGradient id="gWeekly" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="var(--primary)" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.01} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis
-                      dataKey="date"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      tickFormatter={(v) => format(new Date(v), "dd MMM")}
-                      tick={{ fontSize: 11 }}
+            {/* toolbar moved hither */}
+            <div className="flex flex-col gap-4 items-start sm:flex-row sm:items-center sm:justify-end w-full sm:w-auto">
+              <div className="flex items-center gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "w-[240px] justify-start text-left font-normal h-9",
+                        !dateRange && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs truncate">{dateRangeLabel}</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <div className="flex gap-1.5 p-3 border-b flex-wrap">
+                      {[
+                        { key: "today",     label: "Today"      },
+                        { key: "yesterday", label: "Yesterday"  },
+                        { key: "week",      label: "This Week"  },
+                        { key: "month",     label: "This Month" },
+                        { key: "year",      label: "This Year"  },
+                      ].map((p) => (
+                        <button
+                          key={p.key}
+                          onClick={() => applyPreset(p.key as any)}
+                          className="rounded-md border bg-muted px-2 py-0.5 text-[10px] font-medium hover:bg-accent transition-colors"
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateRange?.from}
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      numberOfMonths={2}
                     />
-                    <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
-                    <ChartTooltip
-                      content={<ChartTooltipContent formatter={(v) => [formatCurrency(Number(v)), "Sales"]} />}
-                    />
-                    <Area dataKey="amount" type="monotone" fill="url(#gWeekly)" stroke="var(--primary)" strokeWidth={2} />
-                  </AreaChart>
-                </ChartContainer>
-              </div>
-            </TabsContent>
+                  </PopoverContent>
+                </Popover>
 
-            {/* Monthly */}
-            <TabsContent value="monthly" className="m-0 border-none p-0">
-              <div className="h-[280px] w-full pb-4">
-                <ChartContainer config={chartConfig} className="h-full w-full">
-                  <AreaChart data={monthlySeries}>
-                    <defs>
-                      <linearGradient id="gMonthly" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="var(--primary)" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.01} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis
-                      dataKey="date"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      tickFormatter={(v) => format(new Date(v), "dd MMM")}
-                      tick={{ fontSize: 11 }}
-                    />
-                    <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
-                    <ChartTooltip
-                      content={<ChartTooltipContent formatter={(v) => [formatCurrency(Number(v)), "Sales"]} />}
-                    />
-                    <Area dataKey="amount" type="monotone" fill="url(#gMonthly)" stroke="var(--primary)" strokeWidth={2} />
-                  </AreaChart>
-                </ChartContainer>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setDateRange({ from: subDays(new Date(), 30), to: new Date() })}
+                  title="Reset to 30 days"
+                >
+                  <Filter className="h-3.5 w-3.5" />
+                </Button>
               </div>
-            </TabsContent>
 
-            {/* Yearly */}
-            <TabsContent value="yearly" className="m-0 border-none p-0">
-              <div className="h-[280px] w-full pb-4">
-                <ChartContainer config={chartConfig} className="h-full w-full">
-                  <BarChart data={yearlySeries}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 11 }} />
-                    <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
-                    <ChartTooltip
-                      content={<ChartTooltipContent formatter={(v) => [formatCurrency(Number(v)), "Sales"]} />}
-                    />
-                    <Bar dataKey="amount" fill="var(--primary)" radius={[4, 4, 0, 0]} fillOpacity={0.85} />
-                  </BarChart>
-                </ChartContainer>
-              </div>
-            </TabsContent>
-          </Tabs>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 h-9 text-xs">
+                    <FileDown className="h-3.5 w-3.5" />
+                    Export
+                    <ChevronDown className="h-3 w-3 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel className="text-xs">Export Format</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-xs" onClick={() => handleExport("excel")}>
+                    Export as Excel (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="text-xs" onClick={() => handleExport("pdf")}>
+                    Export as PDF (.pdf)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </CardHeader>
-
-        {/* ── Transactions table ── */}
         <CardContent className="p-0">
           {isSalesLoading ? (
             <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
               Loading transactions…
             </div>
           ) : (
-            <div className="overflow-auto">
+            <div className="overflow-auto text-sm">
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent">
@@ -569,7 +704,7 @@ export default function SalesReportPage() {
                       (h) => (
                         <TableHead
                           key={h}
-                          className="py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+                          className="py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground px-4"
                         >
                           {h}
                         </TableHead>
@@ -584,11 +719,11 @@ export default function SalesReportPage() {
                       const methodClass =
                         PAYMENT_METHOD_COLORS[methodKey] ?? "bg-muted text-muted-foreground";
                       return (
-                        <TableRow key={row.paymentId} className="group hover:bg-muted/30 transition-colors">
-                          <TableCell className="py-3 font-mono text-xs text-muted-foreground">
+                        <TableRow key={row.paymentId} className="group hover:bg-muted/30 transition-colors border-b last:border-0 text-xs">
+                          <TableCell className="py-3 font-mono text-[10px] text-muted-foreground px-4">
                             #{String(row.orderId ?? "—").slice(-8).toUpperCase()}
                           </TableCell>
-                          <TableCell className="py-3 text-xs whitespace-nowrap">
+                          <TableCell className="py-3 whitespace-nowrap px-4">
                             {row.paidAt
                               ? new Date(row.paidAt).toLocaleDateString("en-US", {
                                   day: "2-digit",
@@ -597,15 +732,15 @@ export default function SalesReportPage() {
                                 })
                               : "-"}
                           </TableCell>
-                          <TableCell className="py-3 text-sm font-bold tabular-nums text-right pr-4">
+                          <TableCell className="py-3 font-bold tabular-nums text-right pr-6 px-4">
                             {formatCurrency(row.amount)}
                           </TableCell>
-                          <TableCell className="py-3">
+                          <TableCell className="py-3 px-4">
                             <span className={`rounded-md px-2 py-0.5 text-[10px] font-semibold capitalize ${methodClass}`}>
                               {row.paymentMethod ?? "—"}
                             </span>
                           </TableCell>
-                          <TableCell className="py-3">
+                          <TableCell className="py-3 px-4">
                             <Badge
                               className={cn(
                                 "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-tight border-none",
@@ -619,15 +754,15 @@ export default function SalesReportPage() {
                               {row.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="py-3 text-xs text-muted-foreground">{row.branchName}</TableCell>
-                          <TableCell className="py-3 text-xs font-medium">{row.cashierName}</TableCell>
-                          <TableCell className="py-3 text-xs text-muted-foreground">{row.customerName}</TableCell>
-                          <TableCell className="py-3 text-center">
+                          <TableCell className="py-3 text-muted-foreground px-4">{row.branchName}</TableCell>
+                          <TableCell className="py-3 font-medium px-4">{row.cashierName}</TableCell>
+                          <TableCell className="py-3 text-muted-foreground px-4">{row.customerName}</TableCell>
+                          <TableCell className="py-3 text-center px-4">
                             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-black">
                               {row.itemsCount}
                             </span>
                           </TableCell>
-                          <TableCell className="py-3 text-right pr-4">
+                          <TableCell className="py-3 text-right pr-4 px-4">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -668,7 +803,7 @@ export default function SalesReportPage() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Total Revenue</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary">Total Sales</p>
                 <p className="text-2xl font-black tracking-tight text-primary">
                   {formatCurrency(totalReportSales)}
                 </p>
@@ -734,7 +869,7 @@ export default function SalesReportPage() {
           </div>
         </CardContent>
       </Card>
-      {/* Transaction detail modal */}
+
       <TransactionDetailModal
         sale={selectedSale}
         open={!!selectedSale}

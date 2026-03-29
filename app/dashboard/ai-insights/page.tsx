@@ -34,7 +34,7 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import {
   useGenerateAiInsightsMutation,
   useGetAiInsightsQuery
@@ -49,11 +49,14 @@ import {
   Info,
   Loader2,
   Package,
-  TrendingUp
+  TrendingUp,
+  X
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
+import { AiInsightCard } from "@/components/modules/AIInsights/AiInsightCard";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 
 const chartConfig = {
   amount: {
@@ -73,6 +76,7 @@ export default function AiInsightsDashboardPage() {
   const [timeRange, setTimeRange] = useState("monthly");
   const [recommendationsPage, setRecommendationsPage] = useState(1);
   const [alertsPage, setAlertsPage] = useState(1);
+  const [promoPage, setPromoPage] = useState(1);
   const ITEMS_PER_PAGE = 7;
 
   const insights = Array.isArray(aiData) ? aiData : [];
@@ -88,6 +92,12 @@ export default function AiInsightsDashboardPage() {
   const summary = insights.find((i: any) => i.type === "report_summary") || {};
   const summaryMetadata = summary.metadata || {};
 
+  // Calculate last updated time from the most recent insight
+  const lastUpdated = useMemo(() => {
+    if (insights.length === 0) return null;
+    return new Date(Math.max(...insights.map((i: any) => new Date(i.createdAt).getTime())));
+  }, [insights]);
+
   const totalRecommendationPages = Math.ceil(recommendations.length / ITEMS_PER_PAGE);
   const paginatedRecommendations = recommendations.slice(
     (recommendationsPage - 1) * ITEMS_PER_PAGE,
@@ -100,35 +110,42 @@ export default function AiInsightsDashboardPage() {
     alertsPage * ITEMS_PER_PAGE
   );
 
-  // ── Mapped chart data ────────────────────────────────────────────────────────
-  const salesTrendsChartData = useMemo(() => {
-    return salesTrends
-      .map((i: any) => {
-        const meta = i.metadata || {};
-        return {
-          date: meta.date || meta.timestamp || i.createdAt,
-          amount: Number(meta.amount || meta.totalRevenue || meta.revenue || 0),
-        };
-      })
-      .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [salesTrends]);
-
-  const [promoPage, setPromoPage] = useState(1);
   const totalPromoPages = Math.ceil(promoSuggestions.length / ITEMS_PER_PAGE);
   const paginatedPromos = promoSuggestions.slice(
     (promoPage - 1) * ITEMS_PER_PAGE,
     promoPage * ITEMS_PER_PAGE
   );
 
+  // ── Mapped chart data (Aggregated by date to prevent duplicates) ────────────────
+  const salesTrendsChartData = useMemo(() => {
+    const dataMap: Record<string, number> = {};
+    
+    salesTrends.forEach((i: any) => {
+      const meta = i.metadata || {};
+      const rawDate = meta.date || meta.timestamp || i.createdAt;
+      if (!rawDate) return;
+      
+      const dateKey = new Date(rawDate).toISOString().split('T')[0];
+      const amount = Number(meta.amount || meta.totalRevenue || meta.revenue || 0);
+      
+      dataMap[dateKey] = (dataMap[dateKey] || 0) + amount;
+    });
+
+    return Object.entries(dataMap)
+      .map(([date, amount]) => ({ date, amount }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [salesTrends]);
+
   const handleGenerateAnalysis = async () => {
     try {
       await generateAiInsights({
         branchId: branchId || "",
-        timeRange
+        timeRange,
+        force: true
       }).unwrap();
-      toast.success(`AI Analysis (${timeRange}) generated successfully!`);
+      toast.success(`Analysis refreshed successfully!`);
     } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to generate analysis.");
+      toast.error(error?.data?.message || "Failed to refresh analysis.");
     }
   };
 
@@ -137,37 +154,51 @@ export default function AiInsightsDashboardPage() {
       {/* Header Section */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">AI Insights Dashboard</h1>
-          <p className="text-muted-foreground">
-            comprehensive AI-powered analysis of your business performance.
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">AI Insights Dashboard</h1>
+            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[10px] uppercase tracking-wider">
+              System Automated
+            </Badge>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Comprehensive AI-powered analysis. Updated daily at 01:00 AM.
           </p>
+          {lastUpdated && (
+            <p className="text-[10px] font-medium text-slate-400 italic mt-1">
+              Last Analysis: {new Date(lastUpdated).toLocaleString("en-US", { 
+                day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' 
+              })}
+            </p>
+          )}
         </div>
+
         <div className="flex items-center gap-2">
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="bg-background w-[180px]">
+            <SelectTrigger className="w-[140px] h-9">
               <SelectValue placeholder="Select range" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="weekly">Weekly (7 Days)</SelectItem>
-              <SelectItem value="monthly">Monthly (30 Days)</SelectItem>
-              <SelectItem value="yearly">Yearly (365 Days)</SelectItem>
+              <SelectItem value="daily">Daily View</SelectItem>
+              <SelectItem value="weekly">Weekly View</SelectItem>
+              <SelectItem value="monthly">Monthly View</SelectItem>
             </SelectContent>
           </Select>
 
           <Button
             onClick={handleGenerateAnalysis}
-            disabled={isLoading || isFetching || isGenerating}
-            size="lg"
-            className="bg-linear-to-r from-indigo-500 to-purple-600 text-white shadow-lg transition-all duration-300 hover:from-indigo-600 hover:to-purple-700">
-            {isLoading || isFetching || isGenerating ? (
+            disabled={isGenerating}
+            size="sm"
+            className="gap-2 shadow-lg shadow-primary/20 transition-all hover:shadow-primary/40 active:scale-95"
+          >
+            {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Refreshing...
               </>
             ) : (
               <>
-                <BrainCircuit className="mr-2 h-4 w-4" />
-                Generate
+                <BrainCircuit className="h-4 w-4" />
+                Refresh Analysis
               </>
             )}
           </Button>
@@ -197,7 +228,7 @@ export default function AiInsightsDashboardPage() {
                 <div className="prose dark:prose-invert max-w-none">
                   <p className="text-muted-foreground text-lg leading-relaxed">
                     {summaryMetadata.executive_summary ||
-                      "No summary available. Click 'Generate AI Analysis' to start."}
+                      "No summary available. Click 'Refresh Analysis' to start."}
                   </p>
                 </div>
               </CardContent>
@@ -230,205 +261,112 @@ export default function AiInsightsDashboardPage() {
             </Card>
           </div>
 
-          {/* Middle Section: Sales Trends Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-blue-500" />
-                Sales Trends Analysis
-              </CardTitle>
-              <CardDescription>Revenue performance over time.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer config={chartConfig} className="aspect-auto h-[350px] w-full">
-                <AreaChart data={salesTrendsChartData}>
-                  <defs>
-                    <linearGradient id="fillSalesAi" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0.01} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    vertical={false}
-                    strokeDasharray="3 3"
-                    className="stroke-muted/50"
-                  />
-                  <XAxis
-                    dataKey="date"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={12}
-                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-                    tickFormatter={(v) => {
-                      const date = new Date(v);
-                      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                    }}
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={12}
-                    tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
-                    tickFormatter={(v) => formatCurrency(v).replace(/\.00$/, "")}
-                  />
-                  <ChartTooltip
-                    cursor={false}
-                    content={
-                      <ChartTooltipContent
-                        labelFormatter={(v) => {
-                          const date = new Date(v);
-                          return date.toLocaleDateString("en-US", {
-                            month: "long",
-                            day: "numeric",
-                            year: "numeric"
-                          });
-                        }}
-                        formatter={(value) => [formatCurrency(Number(value)), "Revenue"]}
-                        indicator="dot"
-                      />
-                    }
-                  />
-                  <Area
-                    dataKey="amount"
-                    type="natural"
-                    fill="url(#fillSalesAi)"
-                    stroke="var(--primary)"
-                    strokeWidth={2.5}
-                    animationDuration={1500}
-                  />
-                </AreaChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          {/* Bottom Section: Tabs for Stock & Alerts & Promos */}
-          <Tabs defaultValue="stock" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
-              <TabsTrigger value="stock">Stock Recommendations</TabsTrigger>
-              <TabsTrigger value="alerts">System Alerts</TabsTrigger>
-              <TabsTrigger value="promos">Promo Suggestions</TabsTrigger>
+          <Tabs defaultValue="trends" className="space-y-6">
+            <TabsList className="bg-slate-100 p-1 dark:bg-slate-800">
+              <TabsTrigger value="trends" className="gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Sales Trends
+              </TabsTrigger>
+              <TabsTrigger value="recommendations" className="gap-2">
+                <Package className="h-4 w-4" />
+                Product Insights
+              </TabsTrigger>
+              <TabsTrigger value="alerts" className="gap-2 text-destructive data-[state=active]:bg-destructive data-[state=active]:text-white">
+                <Bell className="h-4 w-4" />
+                Critical Alerts
+                {alerts.length > 0 && (
+                  <Badge variant="destructive" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center">
+                    {alerts.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="promos" className="gap-2">
+                <ArrowRight className="h-4 w-4" />
+                Promo Strategy
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="stock" className="mt-4">
+            <TabsContent value="trends">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-purple-500" />
-                    Restock Recommendations
-                  </CardTitle>
-                  <CardDescription>AI-suggested inventory replenishment actions.</CardDescription>
+                  <CardTitle>Revenue Forecast & Trends</CardTitle>
+                  <CardDescription>Visualizing your business growth over time.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead>Current Stock</TableHead>
-                        <TableHead>Recommended</TableHead>
-                        <TableHead>Priority</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {recommendations.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
-                            No stock recommendations at this time.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        paginatedRecommendations.map((item: any, index: number) => {
-                          const meta = item.metadata || {};
-                          return (
-                            <TableRow key={index}>
-                              <TableCell className="font-medium">
-                                <div className="flex items-center gap-2">
-                                  <Package className="text-muted-foreground h-4 w-4" />
-                                  {meta.product_name || item.summary || "Unknown Product"}
-                                </div>
-                              </TableCell>
-                              <TableCell>{meta.current_stock || "N/A"}</TableCell>
-                              <TableCell className="font-bold text-green-600">
-                                +{meta.recommended_quantity || 0}
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={meta.priority === "high" ? "destructive" : "secondary"}
-                                  className="capitalize">
-                                  {meta.priority || "medium"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <Button size="sm" variant="outline" className="h-8">
-                                  Create PO <ArrowRight className="ml-2 h-3 w-3" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })
-                      )}
-                    </TableBody>
-                  </Table>
-                  {/* Pagination Controls */}
-                  {recommendations.length > 0 && (
-                    <div className="flex items-center justify-between py-4">
-                      <div className="text-muted-foreground text-sm">
-                        Showing {(recommendationsPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
-                        {Math.min(recommendationsPage * ITEMS_PER_PAGE, recommendations.length)} of{" "}
-                        {recommendations.length} entries
-                      </div>
-                      <Pagination className="mx-0 w-auto justify-end">
+                  {salesTrendsChartData.length > 0 ? (
+                    <ChartContainer config={chartConfig} className="h-[400px] w-full">
+                      <AreaChart data={salesTrendsChartData}>
+                        <defs>
+                          <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="var(--color-amount)" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="var(--color-amount)" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={(value) => new Date(value).toLocaleDateString("en-US", { month: 'short', day: 'numeric' })}
+                        />
+                        <YAxis tickFormatter={(value) => `$${value}`} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Area
+                          type="monotone"
+                          dataKey="amount"
+                          stroke="var(--color-amount)"
+                          fillOpacity={1}
+                          fill="url(#colorAmount)"
+                        />
+                      </AreaChart>
+                    </ChartContainer>
+                  ) : (
+                    <div className="flex h-[300px] items-center justify-center rounded-lg border-2 border-dashed bg-slate-50/50">
+                      <p className="text-muted-foreground italic">Insufficient data for chart generation.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="recommendations">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Inventory Intelligence</CardTitle>
+                  <CardDescription>AI-driven suggestions for stock management.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                    {paginatedRecommendations.map((rec: any) => (
+                      <AiInsightCard key={rec.id} insight={rec} compact={true} />
+                    ))}
+                  </div>
+                  {totalRecommendationPages > 1 && (
+                    <div className="mt-4 text-right">
+                      <Pagination>
                         <PaginationContent>
                           <PaginationItem>
                             <PaginationPrevious
                               href="#"
                               onClick={(e) => {
                                 e.preventDefault();
-                                if (recommendationsPage > 1)
-                                  setRecommendationsPage(recommendationsPage - 1);
+                                if (recommendationsPage > 1) setRecommendationsPage(recommendationsPage - 1);
                               }}
-                              className={
-                                recommendationsPage === 1
-                                  ? "pointer-events-none opacity-50"
-                                  : "cursor-pointer"
-                              }
+                              className={recommendationsPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
-
-                          {Array.from({ length: totalRecommendationPages }, (_, i) => i + 1)
-                            .filter((page) => {
-                              return (
-                                page === 1 ||
-                                page === totalRecommendationPages ||
-                                Math.abs(page - recommendationsPage) <= 1
-                              );
-                            })
-                            .map((page, index, array) => {
-                              const prevPage = array[index - 1];
-                              const showEllipsis = prevPage && page - prevPage > 1;
-
-                              return (
-                                <div key={page} className="flex items-center">
-                                  {showEllipsis && (
-                                    <PaginationItem>
-                                      <PaginationEllipsis />
-                                    </PaginationItem>
-                                  )}
-                                  <PaginationItem>
-                                    <PaginationLink
-                                      href="#"
-                                      isActive={recommendationsPage === page}
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        setRecommendationsPage(page);
-                                      }}>
-                                      {page}
-                                    </PaginationLink>
-                                  </PaginationItem>
-                                </div>
-                              );
-                            })}
-
+                          {Array.from({ length: totalRecommendationPages }, (_, i) => i + 1).map((p) => (
+                            <PaginationItem key={p}>
+                              <PaginationLink
+                                href="#"
+                                isActive={recommendationsPage === p}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setRecommendationsPage(p);
+                                }}
+                              >
+                                {p}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
                           <PaginationItem>
                             <PaginationNext
                               href="#"
@@ -437,11 +375,7 @@ export default function AiInsightsDashboardPage() {
                                 if (recommendationsPage < totalRecommendationPages)
                                   setRecommendationsPage(recommendationsPage + 1);
                               }}
-                              className={
-                                recommendationsPage === totalRecommendationPages
-                                  ? "pointer-events-none opacity-50"
-                                  : "cursor-pointer"
-                              }
+                              className={recommendationsPage === totalRecommendationPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
                         </PaginationContent>
@@ -452,89 +386,32 @@ export default function AiInsightsDashboardPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="alerts" className="mt-4">
-              <Card>
+            <TabsContent value="alerts">
+              <Card className="border-destructive/20 bg-destructive/5 shadow-inner">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell className="h-5 w-5 text-orange-500" />
-                    Active Alerts
+                  <CardTitle className="text-destructive flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Actionable Alerts
                   </CardTitle>
-                  <CardDescription>Operational warnings and system notifications.</CardDescription>
+                  <CardDescription>Critical issues requiring immediate attention.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Severity</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Message</TableHead>
-                        <TableHead>Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {alerts.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={4} className="text-muted-foreground py-8 text-center">
-                            No active alerts at this time.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        paginatedAlerts.map((alert: any, index: number) => {
-                          const meta = alert.metadata || {};
-                          return (
-                            <TableRow key={index}>
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    meta.severity === "critical" || meta.severity === "high"
-                                      ? "destructive"
-                                      : "outline"
-                                  }
-                                  className={`capitalize ${
-                                    meta.severity === "warning" || meta.severity === "medium"
-                                      ? "border-orange-200 bg-orange-100 text-orange-800 dark:border-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
-                                      : ""
-                                  }`}>
-                                  {meta.severity || "info"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {meta.type === "critical" ? (
-                                    <AlertTriangle className="text-destructive h-4 w-4" />
-                                  ) : meta.type === "warning" ? (
-                                    <Bell className="h-4 w-4 text-orange-500" />
-                                  ) : (
-                                    <Info className="h-4 w-4 text-blue-500" />
-                                  )}
-                                  <span className="text-sm font-medium capitalize">
-                                    {meta.type || alert.type.replace(/_/g, " ")}
-                                  </span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="font-medium">
-                                {meta.message || alert.summary}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground text-sm">
-                                {new Date(
-                                  alert.createdAt || alert.created_at || new Date()
-                                ).toLocaleDateString()}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })
-                      )}
-                    </TableBody>
-                  </Table>
-                  {/* Pagination Controls */}
-                  {alerts.length > 0 && (
-                    <div className="flex items-center justify-between py-4">
-                      <div className="text-muted-foreground text-sm">
-                        Showing {(alertsPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
-                        {Math.min(alertsPage * ITEMS_PER_PAGE, alerts.length)} of {alerts.length}{" "}
-                        entries
+                  <div className="space-y-4">
+                    {paginatedAlerts.length > 0 ? (
+                      paginatedAlerts.map((alert: any) => (
+                        <AiInsightCard key={alert.id} insight={alert} />
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-12 text-center bg-white/50 rounded-xl border-2 border-dashed border-slate-200">
+                        <CheckCircle className="h-10 w-10 text-emerald-500 mb-3" />
+                        <p className="font-bold text-slate-800">No Critical Issues</p>
+                        <p className="text-sm text-muted-foreground">Your inventory and sales patterns look healthy.</p>
                       </div>
-                      <Pagination className="mx-0 w-auto justify-end">
+                    )}
+                  </div>
+                  {totalAlertPages > 1 && (
+                    <div className="mt-4 text-right">
+                      <Pagination>
                         <PaginationContent>
                           <PaginationItem>
                             <PaginationPrevious
@@ -543,48 +420,23 @@ export default function AiInsightsDashboardPage() {
                                 e.preventDefault();
                                 if (alertsPage > 1) setAlertsPage(alertsPage - 1);
                               }}
-                              className={
-                                alertsPage === 1
-                                  ? "pointer-events-none opacity-50"
-                                  : "cursor-pointer"
-                              }
+                              className={alertsPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
-
-                          {Array.from({ length: totalAlertPages }, (_, i) => i + 1)
-                            .filter((page) => {
-                              return (
-                                page === 1 ||
-                                page === totalAlertPages ||
-                                Math.abs(page - alertsPage) <= 1
-                              );
-                            })
-                            .map((page, index, array) => {
-                              const prevPage = array[index - 1];
-                              const showEllipsis = prevPage && page - prevPage > 1;
-
-                              return (
-                                <div key={page} className="flex items-center">
-                                  {showEllipsis && (
-                                    <PaginationItem>
-                                      <PaginationEllipsis />
-                                    </PaginationItem>
-                                  )}
-                                  <PaginationItem>
-                                    <PaginationLink
-                                      href="#"
-                                      isActive={alertsPage === page}
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        setAlertsPage(page);
-                                      }}>
-                                      {page}
-                                    </PaginationLink>
-                                  </PaginationItem>
-                                </div>
-                              );
-                            })}
-
+                          {Array.from({ length: totalAlertPages }, (_, i) => i + 1).map((p) => (
+                            <PaginationItem key={p}>
+                              <PaginationLink
+                                href="#"
+                                isActive={alertsPage === p}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setAlertsPage(p);
+                                }}
+                              >
+                                {p}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
                           <PaginationItem>
                             <PaginationNext
                               href="#"
@@ -592,11 +444,7 @@ export default function AiInsightsDashboardPage() {
                                 e.preventDefault();
                                 if (alertsPage < totalAlertPages) setAlertsPage(alertsPage + 1);
                               }}
-                              className={
-                                alertsPage === totalAlertPages
-                                  ? "pointer-events-none opacity-50"
-                                  : "cursor-pointer"
-                              }
+                              className={alertsPage === totalAlertPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
                         </PaginationContent>
@@ -607,78 +455,55 @@ export default function AiInsightsDashboardPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="promos" className="mt-4">
+            <TabsContent value="promos">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-emerald-500" />
-                    Promo Suggestions
-                  </CardTitle>
-                  <CardDescription>Actions to boost sales or move inventory</CardDescription>
+                  <CardTitle>Promotion Suggestions</CardTitle>
+                  <CardDescription>AI recommendations for increasing conversion.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead>Reason</TableHead>
-                        <TableHead>Suggested Discount</TableHead>
-                        <TableHead>Promo Type</TableHead>
-                        <TableHead>Urgency</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {promoSuggestions.length === 0 ? (
+                  <div className="rounded-md border overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-slate-50 dark:bg-slate-900">
                         <TableRow>
-                          <TableCell colSpan={5} className="text-muted-foreground py-8 text-center">
-                            No promo suggestions at this time.
-                          </TableCell>
+                          <TableHead>Strategy</TableHead>
+                          <TableHead>Reasoning</TableHead>
+                          <TableHead>Confidence</TableHead>
                         </TableRow>
-                      ) : (
-                        paginatedPromos.map((promo: any, index: number) => {
-                          const meta = promo.metadata || {};
-                          return (
-                            <TableRow key={index}>
-                              <TableCell className="font-medium">
-                                {meta.product_name || promo.summary || "-"}
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedPromos.length > 0 ? (
+                          paginatedPromos.map((promo: any) => (
+                            <TableRow key={promo.id}>
+                              <TableCell className="font-bold text-primary">
+                                {promo.summary}
                               </TableCell>
-                              <TableCell className="capitalize">
-                                {meta.reason?.replace(/_/g, " ") || "-"}
+                              <TableCell className="text-sm italic text-muted-foreground">
+                                {promo.metadata?.reason === 'near_expiry' ? 'Near Expiry' : 
+                                 promo.metadata?.reason === 'slow_moving' ? 'Slow Moving Stock' : 
+                                 promo.metadata?.reason === 'overstock' ? 'Overstock Clearance' :
+                                 'Boost Sales'}
                               </TableCell>
-                              <TableCell className="font-bold text-emerald-600">
-                                {meta.recommended_discount_pct
-                                  ? `${meta.recommended_discount_pct}%`
-                                  : "-"}
-                              </TableCell>
-                              <TableCell>{meta.promo_type || "-"}</TableCell>
                               <TableCell>
-                                <Badge
-                                  variant={
-                                    meta.urgency === "high" || meta.urgency === "critical"
-                                      ? "destructive"
-                                      : meta.urgency === "medium"
-                                        ? "secondary"
-                                        : "outline"
-                                  }
-                                  className="capitalize">
-                                  {meta.urgency || "low"}
+                                <Badge variant="secondary">
+                                  {promo.metadata?.recommended_discount_pct ? `${promo.metadata.recommended_discount_pct}% Discount` : "Special Promo"}
                                 </Badge>
                               </TableCell>
                             </TableRow>
-                          );
-                        })
-                      )}
-                    </TableBody>
-                  </Table>
-                  {/* Pagination Controls */}
-                  {promoSuggestions.length > 0 && (
-                    <div className="flex items-center justify-between py-4">
-                      <div className="text-muted-foreground text-sm">
-                        Showing {(promoPage - 1) * ITEMS_PER_PAGE + 1} to{" "}
-                        {Math.min(promoPage * ITEMS_PER_PAGE, promoSuggestions.length)} of{" "}
-                        {promoSuggestions.length} entries
-                      </div>
-                      <Pagination className="mx-0 w-auto justify-end">
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={3} className="h-32 text-center text-muted-foreground">
+                              No promo suggestions available yet.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {totalPromoPages > 1 && (
+                    <div className="mt-4 flex justify-end">
+                      <Pagination>
                         <PaginationContent>
                           <PaginationItem>
                             <PaginationPrevious
@@ -687,48 +512,23 @@ export default function AiInsightsDashboardPage() {
                                 e.preventDefault();
                                 if (promoPage > 1) setPromoPage(promoPage - 1);
                               }}
-                              className={
-                                promoPage === 1
-                                  ? "pointer-events-none opacity-50"
-                                  : "cursor-pointer"
-                              }
+                              className={promoPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
-
-                          {Array.from({ length: totalPromoPages }, (_, i) => i + 1)
-                            .filter((page) => {
-                              return (
-                                page === 1 ||
-                                page === totalPromoPages ||
-                                Math.abs(page - promoPage) <= 1
-                              );
-                            })
-                            .map((page, index, array) => {
-                              const prevPage = array[index - 1];
-                              const showEllipsis = prevPage && page - prevPage > 1;
-
-                              return (
-                                <div key={page} className="flex items-center">
-                                  {showEllipsis && (
-                                    <PaginationItem>
-                                      <PaginationEllipsis />
-                                    </PaginationItem>
-                                  )}
-                                  <PaginationItem>
-                                    <PaginationLink
-                                      href="#"
-                                      isActive={promoPage === page}
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        setPromoPage(page);
-                                      }}>
-                                      {page}
-                                    </PaginationLink>
-                                  </PaginationItem>
-                                </div>
-                              );
-                            })}
-
+                          {Array.from({ length: totalPromoPages }, (_, i) => i + 1).map((p) => (
+                            <PaginationItem key={p}>
+                              <PaginationLink
+                                href="#"
+                                isActive={promoPage === p}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setPromoPage(p);
+                                }}
+                              >
+                                {p}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
                           <PaginationItem>
                             <PaginationNext
                               href="#"
@@ -736,11 +536,7 @@ export default function AiInsightsDashboardPage() {
                                 e.preventDefault();
                                 if (promoPage < totalPromoPages) setPromoPage(promoPage + 1);
                               }}
-                              className={
-                                promoPage === totalPromoPages
-                                  ? "pointer-events-none opacity-50"
-                                  : "cursor-pointer"
-                              }
+                              className={promoPage === totalPromoPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
                         </PaginationContent>

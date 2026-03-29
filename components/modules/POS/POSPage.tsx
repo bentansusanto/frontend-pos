@@ -348,7 +348,6 @@ export const PosPage = () => {
 
   const handleProcessPayment = async () => {
     if (!currentOrder?.id) {
-      toast.error("No active order to update");
       return;
     }
     if (orderItems.length === 0) {
@@ -441,7 +440,9 @@ export const PosPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold tracking-tight">New Order</h1>
-              <p className="text-muted-foreground text-xs">Branch: {profileData?.branches?.[0]?.name || "Main"}</p>
+              <p className="text-muted-foreground text-xs">
+                Branch: {profileData?.branches?.[0]?.name || (branchId ? "Current Session" : "No branch assigned")}
+              </p>
             </div>
             {activeSession && (
               <Button
@@ -556,8 +557,18 @@ export const PosPage = () => {
           </div>
           {!isProductsLoading && products.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-              <Search className="size-10 mb-2 opacity-20" />
-              <p className="text-sm">No products found</p>
+              {!branchId ? (
+                <>
+                  <AlertTriangle className="size-10 mb-2 text-amber-500 opacity-50" />
+                  <p className="text-sm font-semibold">No active branch found</p>
+                  <p className="text-xs">Please contact your administrator to assign a branch.</p>
+                </>
+              ) : (
+                <>
+                  <Search className="size-10 mb-2 opacity-20" />
+                  <p className="text-sm">No products found</p>
+                </>
+              )}
             </div>
           ) : null}
         </div>

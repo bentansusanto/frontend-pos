@@ -8,13 +8,14 @@ import React, { useEffect } from "react";
 export default function PosLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { data: profileData, isLoading } = useGetProfileQuery();
-  const userRole = profileData?.role;
+  const userPermissions = profileData?.permissions || [];
+  const canAccessPos = userPermissions.includes("orders:create") || userPermissions.includes("orders:read");
 
   useEffect(() => {
-    if (!isLoading && userRole && userRole !== "cashier") {
+    if (!isLoading && profileData && !canAccessPos) {
       router.push("/access-denied");
     }
-  }, [userRole, isLoading, router]);
+  }, [profileData, isLoading, canAccessPos, router]);
 
   if (isLoading) {
     return (
@@ -24,7 +25,7 @@ export default function PosLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (userRole && userRole !== "cashier") {
+  if (profileData && !canAccessPos) {
     return null;
   }
 
