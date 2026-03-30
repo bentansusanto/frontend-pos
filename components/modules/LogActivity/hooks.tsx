@@ -14,10 +14,8 @@ export const ACTION_COLORS: Record<ActionType, { bg: string; text: string; dot: 
   create: { bg: "bg-emerald-500/10", text: "text-emerald-700", dot: "bg-emerald-500" },
   update: { bg: "bg-blue-500/10", text: "text-blue-700", dot: "bg-blue-500" },
   delete: { bg: "bg-red-500/10", text: "text-red-700", dot: "bg-red-500" },
-  login: { bg: "bg-violet-500/10", text: "text-violet-700", dot: "bg-violet-500" },
-  logout: { bg: "bg-orange-500/10", text: "text-orange-700", dot: "bg-orange-500" },
   approve: { bg: "bg-teal-500/10", text: "text-teal-700", dot: "bg-teal-500" },
-  cancel: { bg: "bg-rose-500/10", text: "text-rose-700", dot: "bg-rose-500" }
+  refund: { bg: "bg-orange-500/10", text: "text-orange-700", dot: "bg-orange-500" }
 };
 
 // ── Entity icon map (lowercase keys = backend EntityType) ─────────────────────

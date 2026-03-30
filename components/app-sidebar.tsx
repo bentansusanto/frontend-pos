@@ -164,7 +164,8 @@ const data = {
             { title: "Users", url: "/dashboard/users" },
             { title: "Branch", url: "/dashboard/branches" },
             { title: "Roles", url: "/dashboard/settings/roles" },
-            { title: "Permissions", url: "/dashboard/settings/permissions" }
+            { title: "Permissions", url: "/dashboard/settings/permissions" },
+            { title: "Reason Categories", url: "/dashboard/settings/reason-categories" }
           ],
         },
         {
@@ -259,6 +260,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       "/dashboard/branches": ["system:view"],
       "/dashboard/settings/roles": ["system:view"],
       "/dashboard/settings/permissions": ["system:view"],
+      "/dashboard/settings/reason-categories": ["system:view"],
       "/dashboard/user-logs": ["system:view"],
     };
 

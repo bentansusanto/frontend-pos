@@ -9,14 +9,16 @@ import {
   DollarSign, 
   FileText, 
   Info, 
-  Loader2, 
+  Loader2,
   Receipt, 
   User as UserIcon,
-  Wallet
+  Wallet,
+  Copy
 } from "lucide-react";
 import React from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -52,29 +54,29 @@ export const SessionDetailModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] overflow-hidden p-0 gap-0 border-none shadow-2xl">
-        <div className="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-6">
-          <DialogHeader className="text-left space-y-1">
-            <div className="flex items-center justify-between">
+        {/* Header gradient banner matching TransactionDetailModal */}
+        <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-6 pt-6 pb-4">
+          <DialogHeader>
+            <div className="flex items-center justify-between mb-3">
               <Badge className={cn(
-                "mb-2",
                 isClosed 
-                  ? "bg-zinc-500/20 text-zinc-300 border-zinc-500/30" 
-                  : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                  ? "bg-zinc-500/20 text-zinc-700 dark:text-zinc-300 border-zinc-500/30" 
+                  : "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
               )}>
                 {summary?.status?.toUpperCase() || "LOADING"}
               </Badge>
             </div>
-            <DialogTitle className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-              <Receipt className="h-6 w-6 text-primary" />
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Receipt className="h-5 w-5 text-primary" />
               Session Summary
             </DialogTitle>
-            <DialogDescription className="text-slate-400">
+            <DialogDescription className="text-muted-foreground mt-1">
               Detailed financial and activity record for this shift.
             </DialogDescription>
           </DialogHeader>
         </div>
 
-        <div className="p-6 space-y-6 bg-white dark:bg-slate-950">
+        <div className="p-6 space-y-6">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -83,127 +85,167 @@ export const SessionDetailModal = ({
           ) : (
             <>
               {/* Financial Dashboard */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all hover:shadow-md">
-                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-1">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="bg-muted/30 p-4 rounded-2xl border shadow-sm transition-all hover:bg-muted/50">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
                     <Wallet className="h-4 w-4" />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Opening</span>
                   </div>
-                  <p className="text-xl font-bold">{formatUSD(summary?.openingBalance || 0)}</p>
+                  <p className="text-xl font-bold tracking-tight">{formatUSD(summary?.openingBalance || 0)}</p>
                 </div>
                 
-                <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 transition-all hover:shadow-md">
+                <div className="bg-emerald-500/5 dark:bg-emerald-500/10 p-4 rounded-2xl border border-emerald-500/20 shadow-sm transition-all hover:bg-emerald-500/10">
                   <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 mb-1">
                     <DollarSign className="h-4 w-4" />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Total Sales</span>
                   </div>
-                  <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">+{formatUSD(summary?.totalSales || 0)}</p>
+                  <p className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">+{formatUSD(summary?.totalSales || 0)}</p>
                 </div>
 
-                <div className="bg-primary/5 dark:bg-primary/10 p-4 rounded-2xl border border-primary/10 dark:border-primary/20 transition-all hover:shadow-md">
+                <div className="bg-primary/5 p-4 rounded-2xl border border-primary/20 shadow-sm transition-all hover:bg-primary/10">
                   <div className="flex items-center gap-2 text-primary mb-1">
                     <Receipt className="h-4 w-4" />
                     <span className="text-[10px] font-bold uppercase tracking-wider">Expected</span>
                   </div>
-                  <p className="text-xl font-bold text-primary">{formatUSD(summary?.expected_cash || 0)}</p>
+                  <p className="text-xl font-bold tracking-tight text-primary">{formatUSD(summary?.expected_cash || 0)}</p>
                 </div>
               </div>
 
               {/* Status Section */}
               {isClosed && (
                 <div className={cn(
-                  "p-4 rounded-xl flex items-center justify-between border",
+                  "p-4 rounded-2xl flex items-center justify-between border bg-muted/20 shadow-sm",
                   (summary?.difference || 0) < 0 
-                    ? "bg-red-50 border-red-100 text-red-900 dark:bg-red-900/10 dark:border-red-900/30 dark:text-red-300" 
-                    : "bg-blue-50 border-blue-100 text-blue-900 dark:bg-blue-900/10 dark:border-blue-900/30 dark:text-blue-300"
+                    ? "border-red-500/20" 
+                    : "border-blue-500/20"
                 )}>
                   <div className="flex items-center gap-3">
                     <div className={cn(
-                      "p-2 rounded-full",
-                      (summary?.difference || 0) < 0 ? "bg-red-200/50 dark:bg-red-900/30" : "bg-blue-200/50 dark:bg-blue-900/30"
+                      "p-2 rounded-xl flex items-center justify-center shrink-0",
+                      (summary?.difference || 0) < 0 
+                        ? "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400" 
+                        : "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
                     )}>
-                      <Info className="h-5 w-5" />
+                      <Info className="h-4 w-4" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold">Cash Reconciliation</p>
-                      <p className="text-xs opacity-80">Difference: {formatUSD(summary?.difference || 0)}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs uppercase font-bold tracking-tighter opacity-70 mb-0.5">Closing Balance</p>
-                    <p className="text-lg font-black">{formatUSD(summary?.closingBalance || 0)}</p>
-                  </div>
-                </div>
-              )}
-
-              <Separator />
-
-              {/* Information Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-8">
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Responsible Details</h4>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center border border-slate-200 dark:border-slate-800">
-                      <UserIcon className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Cashier Staff</p>
-                      <p className="text-sm font-bold">{userName}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center border border-slate-200 dark:border-slate-800">
-                      <Building2 className="h-5 w-5 text-slate-600 dark:text-slate-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Branch Location</p>
-                      <p className="text-sm font-bold">{branchName}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Session Timeline</h4>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center border border-emerald-100 dark:border-emerald-800">
-                      <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 font-medium">Opened On</p>
-                      <p className="text-sm font-bold">{summary?.startTime ? format(new Date(summary.startTime), "PPP") : "-"}</p>
-                      <p className="text-[10px] text-muted-foreground">at {summary?.startTime ? format(new Date(summary.startTime), "HH:mm:ss") : "-"}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center border border-zinc-200 dark:border-zinc-800">
-                      <Clock className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium">Closed On</p>
-                      <p className="text-sm font-bold">{summary?.endTime ? format(new Date(summary.endTime), "PPP") : "Currently Active"}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {summary?.endTime ? `at ${format(new Date(summary.endTime), "HH:mm:ss")}` : "---"}
+                      <p className="text-sm font-semibold text-foreground">Cash Reconciliation</p>
+                      <p className={cn(
+                        "text-xs font-medium",
+                        (summary?.difference || 0) < 0 ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400"
+                      )}>
+                        Difference: {formatUSD(summary?.difference || 0)}
                       </p>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {summary?.notes && (
-                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center gap-2 text-slate-500 mb-2">
-                    <FileText className="h-3 w-3" />
-                    <span className="text-[10px] font-bold uppercase">Cashier Remarks</span>
+                  <div className="text-right">
+                    <p className="text-xs uppercase font-bold tracking-tighter text-muted-foreground mb-0.5">Closing Balance</p>
+                    <p className="text-xl font-bold tabular-nums tracking-tight text-foreground">{formatUSD(summary?.closingBalance || 0)}</p>
                   </div>
-                  <p className="text-xs italic text-slate-600 dark:text-slate-400">"{summary.notes}"</p>
                 </div>
               )}
 
               <Separator />
 
-              <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
-                <span>Transactions Processed: {summary?.transactionsCount || 0}</span>
-                <span>Generated by POS Core System</span>
+              {/* Main Information Grid with clean DetailRow design pattern */}
+              <div className="grid grid-cols-2 gap-y-4 gap-x-6 px-1">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <UserIcon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-muted-foreground">Cashier Staff</p>
+                    <p className="text-sm font-medium truncate">{userName}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-muted-foreground">Branch</p>
+                    <p className="text-sm font-medium truncate">{branchName}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-muted-foreground">Opened On</p>
+                    <p className="text-sm font-medium truncate">
+                      {summary?.startTime 
+                        ? `${format(new Date(summary.startTime), "PP")} at ${format(new Date(summary.startTime), "HH:mm")}` 
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-muted-foreground">Closed On</p>
+                    <p className="text-sm font-medium truncate">
+                      {summary?.endTime 
+                        ? `${format(new Date(summary.endTime), "PP")} at ${format(new Date(summary.endTime), "HH:mm")}` 
+                        : "Currently Active"}
+                    </p>
+                  </div>
+                </div>
+
+                {sessionId && (
+                   <div className="flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <Receipt className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-muted-foreground">Session ID</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <code className="text-sm font-mono font-medium truncate text-foreground bg-muted/50 px-1 py-0.5 rounded">
+                          {sessionId}
+                        </code>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-5 w-5 hover:text-primary shrink-0"
+                          onClick={() => {
+                            navigator.clipboard.writeText(sessionId);
+                            import("sonner").then((m) => m.toast.success("Session ID copied to clipboard"));
+                          }}
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {summary?.notes && (
+                <div className="bg-muted/30 p-4 rounded-xl border border-dashed text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1.5">
+                    <FileText className="h-3.5 w-3.5" />
+                    <span className="font-semibold text-xs uppercase tracking-wider">Cashier Remarks</span>
+                  </div>
+                  <p className="italic text-muted-foreground">"{summary.notes}"</p>
+                </div>
+              )}
+
+              <Separator className="opacity-60" />
+
+              <div className="rounded-2xl bg-muted/40 p-5 border shadow-inner text-sm flex items-center justify-between">
+                <div>
+                  <span className="text-muted-foreground block mb-0.5">Transactions</span>
+                  <span className="font-bold text-lg tabular-nums">{summary?.transactionsCount || 0}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground opacity-70">Source</span>
+                  <p className="font-medium font-mono text-xs mt-1">POS Core System</p>
+                </div>
               </div>
             </>
           )}

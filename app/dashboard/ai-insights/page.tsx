@@ -274,11 +274,6 @@ export default function AiInsightsDashboardPage() {
               <TabsTrigger value="alerts" className="gap-2 text-destructive data-[state=active]:bg-destructive data-[state=active]:text-white">
                 <Bell className="h-4 w-4" />
                 Critical Alerts
-                {alerts.length > 0 && (
-                  <Badge variant="destructive" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center">
-                    {alerts.length}
-                  </Badge>
-                )}
               </TabsTrigger>
               <TabsTrigger value="promos" className="gap-2">
                 <ArrowRight className="h-4 w-4" />
