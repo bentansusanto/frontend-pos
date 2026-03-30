@@ -2,7 +2,7 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQuery } from "./baseQuery";
 
 // ── Enums — lowercase matches backend enum values ────────────────────────────
-export type ActionType = "create" | "update" | "delete" | "login" | "logout" | "approve" | "cancel";
+export type ActionType = "create" | "update" | "delete" | "approve" | "refund";
 
 export type EntityType =
   | "product"

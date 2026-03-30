@@ -3,6 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useGetProfileQuery } from "@/store/services/auth.service";
+import { NotificationDropdown } from "./modules/Notifications/NotificationDropdown";
 import { Bell, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePathname, useRouter } from "next/navigation";
@@ -12,6 +14,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { setTheme, theme } = useTheme();
+  const { data: user } = useGetProfileQuery();
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
   const title = React.useMemo(() => {
@@ -38,14 +41,9 @@ export function SiteHeader() {
         <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
         <h1 className="text-base font-medium">{title}</h1>
         <div className="ml-auto flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Notifications"
-            onClick={() => router.push("/dashboard/ai-insights")}
-          >
-            <Bell className="size-4" />
-          </Button>
+          {user?.role !== "cashier" && (
+            <NotificationDropdown />
+          )}
           <Button
             variant="ghost"
             size="icon"

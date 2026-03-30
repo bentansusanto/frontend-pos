@@ -49,6 +49,15 @@ import { Eye, RotateCcw } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { RefundReceiptModal } from "@/components/modules/POS/RefundReceiptModal";
+import { useGetReasonCategoriesQuery } from "@/store/services/reason-category.service";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -69,7 +78,11 @@ export default function TransactionsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
   const [refundReason, setRefundReason] = useState("");
+  const [refundCategoryId, setRefundCategoryId] = useState("");
+  const [refundError, setRefundError] = useState<string | null>(null);
   const [selectedOrderForRefund, setSelectedOrderForRefund] = useState<any>(null);
+
+  const { data: refundCategories, isLoading: isLoadingReasons } = useGetReasonCategoriesQuery({ type: "refund" });
   const [activeTab, setActiveTab] = useState("all");
 
   const itemsPerPage = 6;
@@ -120,12 +133,23 @@ export default function TransactionsPage() {
   const [latestRefundData, setLatestRefundData] = useState<any>(null);
 
   const handleRefund = async () => {
-    if (!selectedOrderForRefund) return;
-
     try {
+      const selectedCategory = refundCategories?.find(c => c.id === refundCategoryId);
+      
+      if (!refundCategoryId) {
+        toast.error("Please select a reason category");
+        return;
+      }
+
+      if (selectedCategory && refundReason.length < selectedCategory.min_description_length) {
+        toast.error(`The '${selectedCategory.label}' category requires at least ${selectedCategory.min_description_length} characters of explanation.`);
+        return;
+      }
+
       const response = await refundOrder({
         id: selectedOrderForRefund.orderId,
-        reason: refundReason || "Customer requested refund"
+        reason: refundReason,
+        reason_category_id: refundCategoryId
       }).unwrap();
 
       toast.success("Order refunded successfully");
@@ -141,9 +165,14 @@ export default function TransactionsPage() {
       }
       
       setRefundReason("");
+      setRefundCategoryId("");
       setSelectedOrderForRefund(null);
     } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to refund order");
+      if (error?.data?.Error?.body) {
+        setRefundError(error.data.Error.body);
+      } else {
+        toast.error(error?.data?.message || "Failed to refund order");
+      }
     }
   };
 
@@ -543,15 +572,59 @@ export default function TransactionsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <div className="space-y-3 py-4">
+          <div className="space-y-4 py-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="refund-reason">Reason for Refund</Label>
-              <Input
+              <Label htmlFor="refund-category">Reason Category</Label>
+              <Select
+                value={refundCategoryId}
+                onValueChange={(val) => {
+                  setRefundCategoryId(val);
+                  setRefundError(null);
+                }}
+                disabled={isLoadingReasons}
+              >
+                <SelectTrigger id="refund-category">
+                  <SelectValue placeholder="Select a reason category" />
+                </SelectTrigger>
+                <SelectContent className="z-[100]" position="popper">
+                  {refundCategories?.map((cat: any) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.label} {cat.min_description_length > 0 ? `(Details Required)` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="refund-reason" className="flex justify-between">
+                <span>Refund Details</span>
+                {refundCategoryId && (
+                  <span className="text-[10px] text-muted-foreground italic">
+                    Min. {refundCategories?.find((c: any) => c.id === refundCategoryId)?.min_description_length || 0} chars
+                  </span>
+                )}
+              </Label>
+              <Textarea
                 id="refund-reason"
-                placeholder="e.g., Damaged item, Customer change of mind..."
+                placeholder="Please provide more context for this refund..."
                 value={refundReason}
-                onChange={(e) => setRefundReason(e.target.value)}
+                onChange={(e) => {
+                  setRefundReason(e.target.value);
+                  setRefundError(null);
+                }}
+                rows={3}
+                className={
+                  (refundCategoryId && refundReason.length < (refundCategories?.find((c: any) => c.id === refundCategoryId)?.min_description_length || 0)) || refundError
+                    ? "border-destructive focus-visible:ring-destructive"
+                    : ""
+                }
               />
+              {refundError && (
+                <p className="text-[11px] font-medium text-destructive animate-heading-in">
+                  {refundError}
+                </p>
+              )}
             </div>
           </div>
 

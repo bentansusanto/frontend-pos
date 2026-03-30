@@ -21,7 +21,15 @@ import {
   useCloseSessionMutation,
   useGetSessionSummaryQuery
 } from "@/store/services/pos-session.service";
-import { Loader2, ClipboardList, Info } from "lucide-react";
+import { useGetReasonCategoriesQuery } from "@/store/services/reason-category.service";
+import { Loader2, ClipboardList, Info, AlertTriangle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PaymentDeclaration {
   method: string;
@@ -57,6 +65,10 @@ export const CloseSessionModal = ({
   // Initialize one input per payment method used in this session
   const [declarations, setDeclarations] = useState<PaymentDeclaration[]>([]);
   const [notes, setNotes] = useState("");
+  const [reasonCategoryId, setReasonCategoryId] = useState<string>("");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const { data: reasonCategories, isLoading: isLoadingReasons } = useGetReasonCategoriesQuery({ type: "pos_session" });
 
   useEffect(() => {
     // Methods to always show
@@ -106,16 +118,29 @@ export const CloseSessionModal = ({
       return;
     }
     try {
+      const selectedCategory = reasonCategories?.find(c => c.id === reasonCategoryId);
+      
+      // Client-side validation for description length
+      if (selectedCategory && notes.length < selectedCategory.min_description_length) {
+        toast.error(`The '${selectedCategory.label}' category requires at least ${selectedCategory.min_description_length} characters of explanation.`);
+        return;
+      }
+
       await closeSession({
         id: sessionId,
         paymentDeclarations: declarations.map(d => ({ method: d.method, declaredAmount: d.declaredAmount || 0 })),
         notes,
+        reasonCategoryId,
       }).unwrap();
       toast.success("POS Session closed successfully");
       onSuccess?.();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error(error?.data?.message || "Failed to close POS session");
+      if (error?.data?.Error?.body) {
+        setFormError(error.data.Error.body);
+      } else {
+        toast.error(error?.data?.message || "Failed to close POS session");
+      }
     }
   };
 
@@ -211,15 +236,73 @@ export const CloseSessionModal = ({
             </div>
 
 
-            <div className="grid gap-2">
-              <Label htmlFor="close-notes">Notes (Optional)</Label>
-              <Textarea
-                id="close-notes"
-                placeholder="E.g. Cash count matches, card machine verified"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-              />
+            <div className="space-y-3 pt-2">
+              <div className="grid gap-2">
+                <Label htmlFor="reason-category" className="flex items-center gap-2">
+                  Reason Category
+                  {Math.abs(totalDeclared - ((summary?.totalSales || 0) + (summary?.openingBalance || 0))) > 0.01 && (
+                    <Badge variant="destructive" className="text-[10px] h-4 px-1 animate-pulse">
+                      Discrepancy Detected
+                    </Badge>
+                  )}
+                </Label>
+                <Select
+                  value={reasonCategoryId}
+                  onValueChange={(val) => {
+                    setReasonCategoryId(val);
+                    setFormError(null);
+                  }}
+                  disabled={isLoadingReasons}
+                >
+                  <SelectTrigger id="reason-category">
+                    <SelectValue placeholder="Select a reason category" />
+                  </SelectTrigger>
+                  <SelectContent className="z-[100]" position="popper">
+                    {reasonCategories?.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.label} {cat.min_description_length > 0 ? `(Details Required)` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {reasonCategoryId && reasonCategories?.find(c => c.id === reasonCategoryId)?.is_anomaly_trigger && (
+                  <p className="text-[10px] text-destructive flex items-center gap-1">
+                    <AlertTriangle className="size-3" />
+                    This reason will trigger a high-priority audit flag.
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="close-notes" className="flex justify-between">
+                  <span>Additional Details</span>
+                  {reasonCategoryId && (
+                    <span className="text-[10px] text-muted-foreground italic">
+                      Min. {reasonCategories?.find(c => c.id === reasonCategoryId)?.min_description_length || 0} chars
+                    </span>
+                  )}
+                </Label>
+                <Textarea
+                  id="close-notes"
+                  placeholder="Provide more context here..."
+                  value={notes}
+                  onChange={(e) => {
+                    setNotes(e.target.value);
+                    setFormError(null);
+                  }}
+                  rows={2}
+                  className={
+                    (reasonCategoryId && notes.length < (reasonCategories?.find(c => c.id === reasonCategoryId)?.min_description_length || 0)) || formError
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : ""
+                  }
+                />
+                {formError && (
+                  <p className="text-[11px] font-medium text-destructive animate-heading-in">
+                    {formError}
+                  </p>
+                )}
+              </div>
             </div>
 
             <DialogFooter className="pt-2">

@@ -27,8 +27,9 @@ export function DashboardPage() {
   const chartData = useMemo(() => {
     if (!summaryData?.salesData) return []
     
-    // Group sales by date
+    // Group sales by date (only successful transactions)
     const grouped = summaryData.salesData.reduce((acc: any, sale: any) => {
+      if (sale.status !== "success") return acc;
       const date = new Date(sale.paidAt).toISOString().split('T')[0]
       acc[date] = (acc[date] || 0) + sale.totalAmount
       return acc

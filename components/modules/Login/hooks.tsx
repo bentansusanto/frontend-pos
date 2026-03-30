@@ -37,7 +37,7 @@ export const HooksLogin = () => {
       // Reset ALL API states to ensure fresh start for the new user
       resetAllApiStates(dispatch);
       
-      toast.success("Login berhasil! Mengalihkan...");
+      toast.success("Login successful! Redirecting...");
       
       setTimeout(() => {
         if (role === "cashier") {
@@ -47,13 +47,13 @@ export const HooksLogin = () => {
         }
       }, 1000);
     } else {
-      toast.error("Login gagal. Token tidak diterima.");
+      toast.error("Login failed. Token not received.");
     }
   };
 
   const handleLoginError = (err: any) => {
     const msgs = err?.data?.Error;
-    let errorMessage = "Login gagal. Periksa kredensial Anda.";
+    let errorMessage = "Login failed. Please check your credentials.";
     if (Array.isArray(msgs)) {
       errorMessage = msgs.map((e: any) => e.body).join(", ");
     } else if (msgs?.body) {

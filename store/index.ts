@@ -25,6 +25,8 @@ import { expenseApi } from "./services/expense.service";
 import { stockTakeApi } from "./services/stock-take.service";
 import { productBatchService } from "./services/product-batch.service";
 import { promotionService } from "./services/promotion.service";
+import { reasonCategoryService } from "./services/reason-category.service";
+import { notificationService } from "./services/notification.service";
 
 export const store = configureStore({
   reducer: {
@@ -51,7 +53,9 @@ export const store = configureStore({
     [expenseApi.reducerPath]: expenseApi.reducer,
     [stockTakeApi.reducerPath]: stockTakeApi.reducer,
     [productBatchService.reducerPath]: productBatchService.reducer,
-    [promotionService.reducerPath]: promotionService.reducer
+    [promotionService.reducerPath]: promotionService.reducer,
+    [reasonCategoryService.reducerPath]: reasonCategoryService.reducer,
+    [notificationService.reducerPath]: notificationService.reducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -78,7 +82,9 @@ export const store = configureStore({
       expenseApi.middleware,
       stockTakeApi.middleware,
       productBatchService.middleware,
-      promotionService.middleware
+      promotionService.middleware,
+      reasonCategoryService.middleware,
+      notificationService.middleware
     )
 });
 
@@ -109,7 +115,9 @@ export const allApis = [
   expenseApi,
   stockTakeApi,
   productBatchService,
-  promotionService
+  promotionService,
+  reasonCategoryService,
+  notificationService
 ];
 
 export const resetAllApiStates = (dispatch: AppDispatch) => {

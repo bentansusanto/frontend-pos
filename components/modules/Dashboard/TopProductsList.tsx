@@ -20,6 +20,7 @@ export function TopProductsList({ salesData }: TopProductsListProps) {
     const productStats: Record<string, { name: string; quantity: number; revenue: number }> = {};
 
     salesData.forEach((sale) => {
+      if (sale.status !== "success") return;
       sale.items?.forEach((item: any) => {
         const key = item.productId || item.productName;
         if (!productStats[key]) {

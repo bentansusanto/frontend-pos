@@ -79,10 +79,10 @@ export const orderService = createApi({
     }),
     // refund order
     refundOrder: builder.mutation({
-      query: ({ id, reason }) => ({
+      query: ({ id, reason, reason_category_id }) => ({
         url: `/orders/${id}/refund`,
         method: "POST",
-        body: { reason }
+        body: { reason, reason_category_id }
       }),
       invalidatesTags: ["Orders"],
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
