@@ -66,7 +66,6 @@ const data = {
       title: "Dashboard",
       url: "/dashboard",
       icon: IconDashboard,
-      roles: ["owner", "admin", "super_admin"]
     }
   ],
   sections: [
@@ -81,13 +80,11 @@ const data = {
             { title: "New Order", url: "/dashboard/pos/new-order" },
             { title: "Transactions", url: "/dashboard/pos/transactions" }
           ],
-          roles: ["cashier"]
         },
         {
           title: "Customers",
           icon: IconUsers,
           url: "/dashboard/customers",
-          roles: ["owner", "super_admin", "admin", "cashier"]
         },
         {
           title: "Inventory",
@@ -99,14 +96,12 @@ const data = {
             { title: "Stock Overview", url: "/dashboard/inventory/stock-overview" },
             { title: "Stock Take", url: "/dashboard/inventory/stock-take" }
           ],
-          roles: ["owner", "admin"]
         },
         {
           title: "Reports",
           icon: IconChartBar,
           defaultOpen: true,
           items: [{ title: "Sales Report", url: "/dashboard/reports/sales-report" }],
-          roles: ["owner", "admin"]
         }
       ]
     },
@@ -121,19 +116,16 @@ const data = {
             { title: "Promotions", url: "/dashboard/finance/promotions" },
             { title: "Taxes", url: "/dashboard/finance/taxes" }
           ],
-          roles: ["owner", "admin"]
         },
         {
           title: "Expenses",
           icon: Receipt,
           url: "/dashboard/finance/expenses",
-          roles: ["owner", "admin"]
         },
         {
           title: "Suppliers",
           icon: Truck,
           url: "/dashboard/suppliers",
-          roles: ["owner", "admin"]
         },
         {
           title: "Purchasing",
@@ -143,7 +135,6 @@ const data = {
             { title: "Purchase Orders", url: "/dashboard/purchasing" },
             { title: "Purchase Receiving", url: "/dashboard/purchasing/receiving" }
           ],
-          roles: ["owner", "admin"]
         }
       ]
     },
@@ -154,13 +145,11 @@ const data = {
           title: "AI Insights",
           icon: Sparkles,
           url: "/dashboard/ai-insights",
-          roles: ["owner"]
         },
         {
           title: "POS Log",
           icon: ClipboardList,
           url: "/dashboard/pos-log",
-          roles: ["owner", "admin"]
         }
       ]
     },
@@ -173,17 +162,15 @@ const data = {
           defaultOpen: true,
           items: [
             { title: "Users", url: "/dashboard/users" },
-            { title: "Branch", url: "/dashboard/branches", roles: ["owner"] },
+            { title: "Branch", url: "/dashboard/branches" },
             { title: "Roles", url: "/dashboard/settings/roles" },
             { title: "Permissions", url: "/dashboard/settings/permissions" }
           ],
-          roles: ["owner", "admin"]
         },
         {
           title: "Activity Logs",
           icon: ClipboardList,
           url: "/dashboard/user-logs",
-          roles: ["owner", "admin"]
         }
       ]
     }
@@ -193,11 +180,18 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
   const { data: user, isLoading: isLoadingProfile } = useGetProfileQuery();
+  const { data: branchesData, isLoading: isLoadingBranches } = useGetBranchesQuery();
 
-  // Fetch all branches if user is owner
-  const { data: branchesData, isLoading: isLoadingBranches } = useGetBranchesQuery(undefined, {
-    skip: user?.role !== "owner"
-  });
+  const brand = {
+    name: "Nexus POS",
+    description: "Main Branch • Admin"
+  };
+
+  const defaultUser = {
+    name: "Alex Johnson",
+    email: "Manager",
+    avatar: "https://i.pravatar.cc/150?img=32"
+  };
 
   const availableBranches = user?.role === "owner" ? branchesData || [] : user?.branches || [];
 
@@ -224,9 +218,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setSelectedBranch(branch);
     setCookie("pos_branch_id", branch.id);
     window.location.reload(); // Refresh to update context
-  };
-
-  const sidebarUser = user
+  };  const sidebarUser = user
     ? {
         name: user.name,
         email: user.email,
@@ -238,42 +230,90 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         avatar: data.user.avatar
       };
 
-  const userRole = user?.role;
+  const userPermissions = user?.permissions || [];
+  const isAdmin = user?.role === "owner" || user?.role === "super_admin";
 
-  // Filter sections based on user role
+  const getRequiredPermissions = (item: any): string[] => {
+    if (!item.url || item.url === "#") return [];
+    
+    // Explicit mapping for special cases
+    const specialMappings: Record<string, string[]> = {
+      "/dashboard": ["dashboard:view"],
+      "/dashboard/pos/new-order": ["orders:create"],
+      "/dashboard/pos/transactions": ["orders:read"],
+      "/dashboard/inventory/products": ["inventory:view"],
+      "/dashboard/inventory/product-batches": ["inventory:view"],
+      "/dashboard/inventory/stock-overview": ["inventory:view"],
+      "/dashboard/inventory/stock-take": ["inventory:view"],
+      "/dashboard/finance/promotions": ["marketing:view"],
+      "/dashboard/finance/taxes": ["marketing:view"],
+      "/dashboard/finance/expenses": ["finance:view"],
+      "/dashboard/customers": ["customers:read"],
+      "/dashboard/suppliers": ["suppliers:read"],
+      "/dashboard/purchasing": ["purchasing:view"],
+      "/dashboard/purchasing/receiving": ["purchasing:view"],
+      "/dashboard/reports/sales-report": ["reports:view"],
+      "/dashboard/ai-insights": ["ai_insight:read"],
+      "/dashboard/pos-log": ["pos_log:view"],
+      "/dashboard/users": ["system:view"],
+      "/dashboard/branches": ["system:view"],
+      "/dashboard/settings/roles": ["system:view"],
+      "/dashboard/settings/permissions": ["system:view"],
+      "/dashboard/user-logs": ["system:view"],
+    };
+
+    if (specialMappings[item.url]) return specialMappings[item.url];
+
+    // Generic inference logic if needed (optional fallback)
+    return [];
+  };
+
+  const isAuthorized = (item: any): boolean => {
+    const required = getRequiredPermissions(item);
+    
+    // If permissions are explicitly required, everyone (including Admins/Owners) 
+    // must respect them to see the menu.
+    if (required.length > 0) {
+      if (!userPermissions.length && !isAdmin) return false;
+      return required.some((p: string) => userPermissions.includes(p));
+    }
+
+    // Default bypass for Admins/Owners for items NOT explicitly mapped in specialMappings
+    if (isAdmin) return true;
+    
+    // Check if it's a folder/parent (no URL), allow if any child is authorized
+    if (item.items && item.items.length > 0) {
+      return item.items.some((sub: any) => isAuthorized(sub));
+    }
+    
+    // If it has a URL but no mapping found, default to hidden for safe-mode
+    return false;
+  };
+
+  // Filter sections based on user permissions
   const filteredSections =
-    !userRole && isLoadingProfile
+    !user && isLoadingProfile
       ? []
       : data.sections
           .map((section) => ({
             ...section,
             items: section.items
-              .filter((item) => {
-                if (!item.roles) return true;
-                return item.roles.includes(userRole);
-              })
+              .filter((item) => isAuthorized(item))
               .map((item: any) => ({
                 ...item,
                 items: item.items
-                  ? item.items.filter((subItem: any) => {
-                      if (!subItem.roles) return true;
-                      return subItem.roles.includes(userRole);
-                    })
+                  ? item.items.filter((subItem: any) => isAuthorized(subItem))
                   : undefined
               }))
           }))
           .filter((section) => section.items.length > 0);
 
-  // Filter primary items based on user role
+  // Filter primary items based on user permissions
   const filteredPrimary =
-    !userRole && isLoadingProfile
+    !user && isLoadingProfile
       ? []
-      : data.primary.filter((item) => {
-          // @ts-ignore
-          if (!item.roles) return true;
-          // @ts-ignore
-          return item.roles.includes(userRole);
-        });
+      : data.primary.filter((item) => isAuthorized(item));
+;
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -306,7 +346,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                         {selectedBranch?.name || data.brand.description}
                       </span>
                     </div>
-                    <ChevronsUpDown className="ml-auto size-4" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -380,7 +419,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenu>
                 {section.items.map((item: any) =>
                   item.items ? (
-                    <Collapsible key={item.title} defaultOpen={item.defaultOpen}>
+                    <Collapsible key={item.title} defaultOpen={item.defaultOpen} className="group/collapsible">
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton tooltip={item.title}>

@@ -46,10 +46,17 @@ import {
   Info,
   Package,
   RefreshCcw,
-  Search
+  Search,
+  Calendar as CalendarIcon,
+  X
 } from "lucide-react";
 import { BranchName } from "@/components/modules/Inventory/Shared/BranchName";
 import React, { useMemo, useState } from "react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DateRange } from "react-day-picker";
+import { cn } from "@/lib/utils";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 
 const MOVEMENT_TYPES: Record<string, { label: string; color: string; icon: any }> = {
   sale: { label: "Sale", color: "destructive", icon: ArrowDownRight },
@@ -70,6 +77,7 @@ export default function StockOverviewPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -84,10 +92,19 @@ export default function StockOverviewPage() {
 
       const matchesSearch = searchString.includes(searchTerm.toLowerCase());
       const matchesType = typeFilter === "all" || movement.referenceType === typeFilter;
+      
+      // Date filtering logic
+      let matchesDate = true;
+      if (dateRange?.from) {
+        const movementDate = new Date(movement.createdAt);
+        const start = startOfDay(dateRange.from);
+        const end = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
+        matchesDate = isWithinInterval(movementDate, { start, end });
+      }
 
-      return matchesSearch && matchesType;
+      return matchesSearch && matchesType && matchesDate;
     }).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [movementsData, searchTerm, typeFilter]);
+  }, [movementsData, searchTerm, typeFilter, dateRange]);
 
   // Pagination logic
   const totalItems = filteredMovements.length;
@@ -107,7 +124,7 @@ export default function StockOverviewPage() {
   // Reset page when filters change
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, typeFilter]);
+  }, [searchTerm, typeFilter, dateRange]);
 
   // Metrics
   const metrics = useMemo(() => {
@@ -185,10 +202,60 @@ export default function StockOverviewPage() {
               <CardTitle>Stock Movements</CardTitle>
               <CardDescription>Detailed log of stock changes.</CardDescription>
             </div>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !dateRange && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "LLL dd, y")} -{" "}
+                          {format(dateRange.to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(dateRange.from, "LLL dd, y")
+                      )
+                    ) : (
+                      <span>Pick a date range</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              {dateRange && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8" 
+                  onClick={() => setDateRange(undefined)}
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              )}
+
+              <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Refresh
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

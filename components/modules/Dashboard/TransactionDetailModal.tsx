@@ -18,6 +18,7 @@ import {
   IconBuildingStore,
   IconCircleCheck,
   IconClock,
+  IconRotate2,
 } from "@tabler/icons-react";
 
 interface TransactionDetailModalProps {
@@ -63,6 +64,7 @@ export function TransactionDetailModal({ sale, open, onClose }: TransactionDetai
   const methodKey = (sale.paymentMethod ?? "").toLowerCase();
   const methodClass = PAYMENT_COLORS[methodKey] ?? "bg-muted text-muted-foreground";
   const isSuccess = sale.status === "success";
+  const isRefunded = sale.status === "refunded";
   const items: any[] = sale.order?.items ?? sale.items ?? [];
 
   return (
@@ -87,11 +89,19 @@ export function TransactionDetailModal({ sale, open, onClose }: TransactionDetai
             </div>
             <div className="flex flex-col items-end gap-1.5">
               <Badge
-                className={isSuccess ? "bg-emerald-500 text-white hover:bg-emerald-600" : ""}
-                variant={isSuccess ? "default" : "secondary"}
+                className={
+                  isSuccess 
+                    ? "bg-emerald-500 text-white hover:bg-emerald-600" 
+                    : isRefunded 
+                      ? "bg-red-500 text-white hover:bg-red-600" 
+                      : ""
+                }
+                variant={isSuccess || isRefunded ? "default" : "secondary"}
               >
                 {isSuccess ? (
                   <><IconCircleCheck className="mr-1 h-3 w-3" />{sale.status}</>
+                ) : isRefunded ? (
+                  <><IconRotate2 className="mr-1 h-3 w-3" />{sale.status}</>
                 ) : (
                   <><IconClock className="mr-1 h-3 w-3" />{sale.status}</>
                 )}
