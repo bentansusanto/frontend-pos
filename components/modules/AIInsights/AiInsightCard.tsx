@@ -1,19 +1,16 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { 
-  IconAlertTriangle, 
-  IconBell, 
-  IconInfoCircle, 
-  IconPackage, 
-  IconTrendingUp, 
-  IconBolt, 
-  IconSparkles,
-  IconClock,
+import {
+  IconAlertTriangle,
+  IconInfoCircle,
+  IconPackage,
+  IconTrendingUp,
+  IconBolt,
   IconUser,
   IconFingerprint,
-  IconCoin
+  IconCoin,
+  IconCornerDownRight,
 } from "@tabler/icons-react";
 import { InsightType } from "@/types/ai-insight.type";
 import { cn } from "@/lib/utils";
@@ -27,207 +24,197 @@ export const AiInsightCard = ({ insight, compact = false }: AiInsightCardProps) 
   const meta = insight.metadata || {};
   const type = insight.type as InsightType;
 
-  const getIcon = (className?: string) => {
-    const size = className ? "" : "h-4 w-4";
-    const classes = cn(size, className);
-    
+  const getTypeConfig = () => {
     switch (type) {
       case InsightType.STOCK_SUGGESTION:
       case InsightType.LOW_STOCK_ALERT:
-        return <IconPackage className={classes} />;
+        return { icon: IconPackage, label: "Stock Alert" };
       case InsightType.SALES_TREND:
       case InsightType.BEST_SELLER:
-        return <IconTrendingUp className={classes} />;
+        return { icon: IconTrendingUp, label: "Sales Trend" };
       case InsightType.PROMO_SUGGESTION:
-        return <IconBolt className={classes} />;
+        return { icon: IconBolt, label: "Promo" };
       case InsightType.ANOMALY_ALERT:
-        return <IconAlertTriangle className={classes} />;
+        return { icon: IconAlertTriangle, label: "Anomaly Alert" };
       default:
-        return <IconInfoCircle className={classes} />;
+        return { icon: IconInfoCircle, label: "Insight" };
     }
   };
 
+  const { icon: Icon, label: typeLabel } = getTypeConfig();
   const riskLevel = meta.risk_level || meta.priority;
-  const isHighRisk = riskLevel === 'high' || riskLevel === 'critical';
-  const isMediumRisk = riskLevel === 'medium';
+  const isHighRisk = riskLevel === "high" || riskLevel === "critical";
+  const isMediumRisk = riskLevel === "medium";
 
+  // ── Compact mode (Product Insights tab) ────────────────────────────────────
   if (compact) {
-    const badgeVariant = isHighRisk ? 'destructive' : 
-                        isMediumRisk ? 'outline' : 'secondary';
-
     return (
-      <div className="flex items-start gap-3 rounded-xl border bg-white p-3 shadow-sm transition-all hover:shadow-md dark:bg-slate-900">
-        <div className={cn(
-          "mt-0.5 rounded-lg p-2 shrink-0 shadow-inner",
-          isHighRisk ? "bg-red-50 text-red-600 dark:bg-red-950/30" : "bg-primary/5 text-primary dark:bg-primary/10"
-        )}>
-          {getIcon("h-5 w-5")}
+      <div className="w-full overflow-hidden flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800/60">
+        <div className="mt-0.5 shrink-0 rounded-md border border-slate-100 bg-slate-50 p-1.5 dark:border-slate-700 dark:bg-slate-800">
+          <Icon className="h-4 w-4 text-slate-400" />
         </div>
-        <div className="flex-1 min-w-0 space-y-1">
-          <div className="flex items-start justify-between gap-2 overflow-hidden">
-            <p className="text-sm font-bold leading-tight truncate text-slate-900 dark:text-white">
+        <div className="flex-1 min-w-0 space-y-0.5">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-sm font-semibold leading-snug text-slate-900 dark:text-white truncate">
               {insight.summary}
             </p>
             {riskLevel && (
-              <Badge 
-                variant={badgeVariant as any} 
-                className={cn(
-                  "h-4 px-1.5 text-[9px] uppercase tracking-wider font-black shrink-0",
-                  isMediumRisk && "bg-amber-50 text-amber-700 border-amber-200"
-                )}
-              >
-                {riskLevel}
-              </Badge>
+              <RiskBadge level={riskLevel} isHigh={isHighRisk} isMedium={isMediumRisk} />
             )}
           </div>
           <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-            {meta.message || meta.reason || meta.executive_summary || "Operational insight available"}
+            {meta.message || meta.reason || meta.executive_summary || "Operational insight available."}
           </p>
         </div>
       </div>
     );
   }
 
-  // Determine accent color
-  const accentClass = isHighRisk 
-    ? "border-l-red-500 bg-red-50/10 dark:bg-red-950/5" 
-    : "border-l-primary bg-primary/5 dark:bg-primary/10";
-
+  // ── Full card (Critical Alerts tab) ────────────────────────────────────────
+  // IMPORTANT: overflow-hidden + w-full prevent horizontal page blowout
   return (
-    <Card className={cn(
-      "overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md",
-      "border-l-4",
-      accentClass
-    )}>
-      <CardContent className="p-5">
-        <div className="flex items-start gap-4">
-          <div className={cn(
-            "rounded-2xl p-3 shadow-inner shrink-0",
-            isHighRisk ? "bg-red-100 text-red-600 dark:bg-red-900/40" : "bg-primary/10 text-primary"
-          )}>
-            {getIcon("h-6 w-6")}
-          </div>
-          
-          <div className="flex-1 space-y-4">
-            {/* Header Area */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="space-y-1">
-                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-[9px] uppercase tracking-[0.1em] font-black">
-                  {type.replace("_", " ")}
-                </Badge>
-                <h4 className="text-base font-black text-slate-900 dark:text-white leading-tight">
-                  {insight.summary}
-                </h4>
-              </div>
-              
-              {riskLevel && (
-                <Badge 
-                  variant={isHighRisk ? "destructive" : "outline"} 
-                  className={cn(
-                    "text-[10px] px-2 py-0.5 uppercase tracking-widest font-black",
-                    isMediumRisk && "bg-amber-50 text-amber-700 border-amber-200"
-                  )}
-                >
-                  {riskLevel} RISK
-                </Badge>
-              )}
-            </div>
-
-            {/* Description / Summary - Only show if different from summary title */}
-            {(meta.executive_summary || meta.message || meta.reason) && (
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
-                {meta.executive_summary || meta.message || meta.reason}
-              </p>
+    <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      {/* Header row */}
+      <div className="flex items-start gap-3 px-4 pt-4 pb-3">
+        <div className="mt-0.5 shrink-0 rounded-md border border-slate-100 bg-slate-50 p-1.5 dark:border-slate-700 dark:bg-slate-800">
+          <Icon
+            className={cn(
+              "h-4 w-4",
+              isHighRisk ? "text-red-500" : "text-slate-400"
             )}
-
-            {/* Metrics Grid for Operational Anomalies */}
-            {(meta.sessionId || meta.cashierName || meta.diff !== undefined || meta.totalRefunds || meta.discountPct) && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {meta.sessionId && (
-                  <MetricBox 
-                    icon={IconFingerprint} 
-                    label="Transaction Session" 
-                    value={`#${meta.sessionId}`} 
-                    mono 
-                  />
-                )}
-                {meta.cashierName && (
-                  <MetricBox 
-                    icon={IconUser} 
-                    label="Responsible Staff" 
-                    value={meta.cashierName} 
-                  />
-                )}
-                {meta.diff !== undefined && (
-                  <MetricBox 
-                    icon={IconCoin} 
-                    label="Discrepancy" 
-                    value={`${meta.diff < 0 ? '-' : '+'}$${Math.abs(meta.diff).toFixed(2)}`}
-                    accent={meta.diff < 0 ? 'destructive' : 'success'} 
-                  />
-                )}
-                {meta.totalRefunds && (
-                  <MetricBox 
-                    icon={IconClock} 
-                    label="Refund Events" 
-                    value={`${meta.totalRefunds} transactions`} 
-                    accent="destructive"
-                  />
-                )}
-              </div>
-            )}
-
-            {/* Audit Hint - The Action Box */}
-            {meta.audit_hint && (
-              <div className="flex items-start gap-3 bg-blue-50/80 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-3 rounded-2xl shadow-sm">
-                <div className="bg-blue-100 dark:bg-blue-800 p-1.5 rounded-lg">
-                  <IconSparkles className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div className="space-y-0.5">
-                  <span className="block text-[10px] uppercase tracking-widest font-black text-blue-600/70 dark:text-blue-400/70">
-                    Recommended Audit Action
-                  </span>
-                  <p className="text-xs text-blue-900 dark:text-blue-300 font-bold leading-normal">
-                    {meta.audit_hint}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+          />
         </div>
-      </CardContent>
-    </Card>
-  );
-};
-
-// Helper component for cleanly styled metrics
-const MetricBox = ({ 
-  icon: Icon, 
-  label, 
-  value, 
-  mono = false,
-  accent = 'default'
-}: { 
-  icon: any, 
-  label: string, 
-  value: string, 
-  mono?: boolean,
-  accent?: 'default' | 'destructive' | 'success' 
-}) => {
-  return (
-    <div className="flex flex-col gap-1 rounded-xl bg-slate-50/50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 p-2.5 transition-colors hover:bg-white dark:hover:bg-slate-800 shadow-sm">
-      <div className="flex items-center gap-1.5 opacity-60">
-        <Icon className="h-3 w-3" />
-        <span className="text-[10px] uppercase tracking-tight font-bold">{label}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              {typeLabel}
+            </span>
+            {riskLevel && (
+              <RiskBadge level={riskLevel} isHigh={isHighRisk} isMedium={isMediumRisk} />
+            )}
+          </div>
+          <p className="text-sm font-semibold text-slate-900 dark:text-white leading-snug break-words">
+            {insight.summary}
+          </p>
+          {(meta.executive_summary || meta.message || meta.reason) && (
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed break-words">
+              {meta.executive_summary || meta.message || meta.reason}
+            </p>
+          )}
+        </div>
       </div>
-      <span className={cn(
-        "text-xs font-black truncate",
-        mono && "font-mono tracking-tighter",
-        accent === 'destructive' && "text-red-600",
-        accent === 'success' && "text-emerald-600"
-      )}>
-        {value}
-      </span>
+
+      {/* Inline metadata row */}
+      {(meta.sessionId || meta.cashierName || meta.diff !== undefined || meta.totalRefunds) && (
+        <div className="mx-4 mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-800/40">
+          {meta.sessionId && (
+            <MetricInline
+              icon={IconFingerprint}
+              label="Session"
+              value={`#${meta.sessionId}`}
+              mono
+            />
+          )}
+          {meta.cashierName && (
+            <MetricInline
+              icon={IconUser}
+              label="Staff"
+              value={meta.cashierName}
+            />
+          )}
+          {meta.diff !== undefined && (
+            <MetricInline
+              icon={IconCoin}
+              label="Discrepancy"
+              value={`${meta.diff < 0 ? "-" : "+"}$${Math.abs(meta.diff).toFixed(2)}`}
+              valueClass={
+                meta.diff < 0
+                  ? "text-red-500"
+                  : "text-slate-700 dark:text-slate-200"
+              }
+            />
+          )}
+          {meta.totalRefunds && (
+            <MetricInline
+              icon={IconCoin}
+              label="Refunds"
+              value={`${meta.totalRefunds} txn`}
+              valueClass="text-red-500"
+            />
+          )}
+        </div>
+      )}
+
+      {/* Audit action row */}
+      {meta.audit_hint && (
+        <div className="flex items-start gap-2 border-t border-slate-100 px-4 py-2.5 dark:border-slate-800">
+          <IconCornerDownRight className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+          <p className="text-xs text-slate-600 leading-relaxed dark:text-slate-400 break-words min-w-0">
+            <span className="font-bold uppercase tracking-wider text-muted-foreground mr-1.5">
+              Action
+            </span>
+            {meta.audit_hint}
+          </p>
+        </div>
+      )}
     </div>
   );
 };
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
+
+const RiskBadge = ({
+  level,
+  isHigh,
+  isMedium,
+}: {
+  level: string;
+  isHigh: boolean;
+  isMedium: boolean;
+}) => (
+  <Badge
+    variant="outline"
+    className={cn(
+      "shrink-0 h-4 px-1.5 text-[9px] font-bold uppercase tracking-wider",
+      isHigh &&
+        "border-red-200 bg-red-50 text-red-600 dark:border-red-800 dark:bg-red-950/30 dark:text-red-400",
+      isMedium &&
+        "border-amber-200 bg-amber-50 text-amber-600 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-400",
+      !isHigh &&
+        !isMedium &&
+        "border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+    )}
+  >
+    {level}
+  </Badge>
+);
+
+const MetricInline = ({
+  icon: Icon,
+  label,
+  value,
+  mono = false,
+  valueClass = "",
+}: {
+  icon: any;
+  label: string;
+  value: string;
+  mono?: boolean;
+  valueClass?: string;
+}) => (
+  <div className="flex items-center gap-1.5 min-w-0">
+    <Icon className="h-3 w-3 text-muted-foreground shrink-0" />
+    <span className="text-[10px] uppercase tracking-tight text-muted-foreground font-medium shrink-0">
+      {label}
+    </span>
+    <span
+      className={cn(
+        "text-xs font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[120px]",
+        mono && "font-mono",
+        valueClass
+      )}
+    >
+      {value}
+    </span>
+  </div>
+);

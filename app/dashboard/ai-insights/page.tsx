@@ -52,7 +52,7 @@ import {
   TrendingUp,
   X
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 import { AiInsightCard } from "@/components/modules/AIInsights/AiInsightCard";
@@ -150,7 +150,7 @@ export default function AiInsightsDashboardPage() {
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="w-full max-w-full overflow-hidden space-y-6 p-6">
       {/* Header Section */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
@@ -340,41 +340,46 @@ export default function AiInsightsDashboardPage() {
                     ))}
                   </div>
                   {totalRecommendationPages > 1 && (
-                    <div className="mt-4 text-right">
-                      <Pagination>
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        Showing{" "}
+                        <span className="font-semibold text-foreground">
+                          {(recommendationsPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(recommendationsPage * ITEMS_PER_PAGE, recommendations.length)}
+                        </span>{" "}of{" "}
+                        <span className="font-semibold text-foreground">{recommendations.length}</span> records
+                      </p>
+                      <Pagination className="mx-0 w-auto justify-end">
                         <PaginationContent>
                           <PaginationItem>
                             <PaginationPrevious
                               href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (recommendationsPage > 1) setRecommendationsPage(recommendationsPage - 1);
-                              }}
+                              onClick={(e) => { e.preventDefault(); if (recommendationsPage > 1) setRecommendationsPage(recommendationsPage - 1); }}
                               className={recommendationsPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
-                          {Array.from({ length: totalRecommendationPages }, (_, i) => i + 1).map((p) => (
-                            <PaginationItem key={p}>
-                              <PaginationLink
-                                href="#"
-                                isActive={recommendationsPage === p}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  setRecommendationsPage(p);
-                                }}
-                              >
-                                {p}
-                              </PaginationLink>
-                            </PaginationItem>
-                          ))}
+                          {Array.from({ length: totalRecommendationPages }, (_, i) => i + 1)
+                            .filter((p) => p === 1 || p === totalRecommendationPages || Math.abs(p - recommendationsPage) <= 1)
+                            .map((page, index, arr) => {
+                              const showEllipsis = arr[index - 1] && page - arr[index - 1] > 1;
+                              return (
+                                <React.Fragment key={page}>
+                                  {showEllipsis && <PaginationItem><PaginationEllipsis /></PaginationItem>}
+                                  <PaginationItem>
+                                    <PaginationLink
+                                      href="#"
+                                      isActive={recommendationsPage === page}
+                                      onClick={(e) => { e.preventDefault(); setRecommendationsPage(page); }}
+                                    >
+                                      {page}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                </React.Fragment>
+                              );
+                            })}
                           <PaginationItem>
                             <PaginationNext
                               href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (recommendationsPage < totalRecommendationPages)
-                                  setRecommendationsPage(recommendationsPage + 1);
-                              }}
+                              onClick={(e) => { e.preventDefault(); if (recommendationsPage < totalRecommendationPages) setRecommendationsPage(recommendationsPage + 1); }}
                               className={recommendationsPage === totalRecommendationPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
@@ -387,63 +392,78 @@ export default function AiInsightsDashboardPage() {
             </TabsContent>
 
             <TabsContent value="alerts">
-              <Card className="border-destructive/20 bg-destructive/5 shadow-inner">
+              <Card className="overflow-hidden">
                 <CardHeader>
-                  <CardTitle className="text-destructive flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5" />
-                    Actionable Alerts
-                  </CardTitle>
-                  <CardDescription>Critical issues requiring immediate attention.</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                        Actionable Alerts
+                      </CardTitle>
+                      <CardDescription className="mt-0.5">Critical issues requiring immediate attention.</CardDescription>
+                    </div>
+                    {alerts.length > 0 && (
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {alerts.length} alert{alerts.length !== 1 ? "s" : ""} detected
+                      </span>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="w-full space-y-3">
                     {paginatedAlerts.length > 0 ? (
                       paginatedAlerts.map((alert: any) => (
                         <AiInsightCard key={alert.id} insight={alert} />
                       ))
                     ) : (
-                      <div className="flex flex-col items-center justify-center p-12 text-center bg-white/50 rounded-xl border-2 border-dashed border-slate-200">
-                        <CheckCircle className="h-10 w-10 text-emerald-500 mb-3" />
-                        <p className="font-bold text-slate-800">No Critical Issues</p>
-                        <p className="text-sm text-muted-foreground">Your inventory and sales patterns look healthy.</p>
+                      <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 py-14 text-center dark:border-slate-800">
+                        <CheckCircle className="h-8 w-8 text-slate-300 dark:text-slate-600" />
+                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">No Critical Issues</p>
+                        <p className="text-xs text-muted-foreground">Your inventory and sales patterns look healthy.</p>
                       </div>
                     )}
                   </div>
                   {totalAlertPages > 1 && (
-                    <div className="mt-4 text-right">
-                      <Pagination>
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        Showing{" "}
+                        <span className="font-semibold text-foreground">
+                          {(alertsPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(alertsPage * ITEMS_PER_PAGE, alerts.length)}
+                        </span>{" "}of{" "}
+                        <span className="font-semibold text-foreground">{alerts.length}</span> records
+                      </p>
+                      <Pagination className="mx-0 w-auto justify-end">
                         <PaginationContent>
                           <PaginationItem>
                             <PaginationPrevious
                               href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (alertsPage > 1) setAlertsPage(alertsPage - 1);
-                              }}
+                              onClick={(e) => { e.preventDefault(); if (alertsPage > 1) setAlertsPage(alertsPage - 1); }}
                               className={alertsPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
-                          {Array.from({ length: totalAlertPages }, (_, i) => i + 1).map((p) => (
-                            <PaginationItem key={p}>
-                              <PaginationLink
-                                href="#"
-                                isActive={alertsPage === p}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  setAlertsPage(p);
-                                }}
-                              >
-                                {p}
-                              </PaginationLink>
-                            </PaginationItem>
-                          ))}
+                          {Array.from({ length: totalAlertPages }, (_, i) => i + 1)
+                            .filter((p) => p === 1 || p === totalAlertPages || Math.abs(p - alertsPage) <= 1)
+                            .map((page, index, arr) => {
+                              const showEllipsis = arr[index - 1] && page - arr[index - 1] > 1;
+                              return (
+                                <React.Fragment key={page}>
+                                  {showEllipsis && <PaginationItem><PaginationEllipsis /></PaginationItem>}
+                                  <PaginationItem>
+                                    <PaginationLink
+                                      href="#"
+                                      isActive={alertsPage === page}
+                                      onClick={(e) => { e.preventDefault(); setAlertsPage(page); }}
+                                    >
+                                      {page}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                </React.Fragment>
+                              );
+                            })}
                           <PaginationItem>
                             <PaginationNext
                               href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (alertsPage < totalAlertPages) setAlertsPage(alertsPage + 1);
-                              }}
+                              onClick={(e) => { e.preventDefault(); if (alertsPage < totalAlertPages) setAlertsPage(alertsPage + 1); }}
                               className={alertsPage === totalAlertPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
@@ -502,40 +522,46 @@ export default function AiInsightsDashboardPage() {
                     </Table>
                   </div>
                   {totalPromoPages > 1 && (
-                    <div className="mt-4 flex justify-end">
-                      <Pagination>
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        Showing{" "}
+                        <span className="font-semibold text-foreground">
+                          {(promoPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(promoPage * ITEMS_PER_PAGE, promoSuggestions.length)}
+                        </span>{" "}of{" "}
+                        <span className="font-semibold text-foreground">{promoSuggestions.length}</span> records
+                      </p>
+                      <Pagination className="mx-0 w-auto justify-end">
                         <PaginationContent>
                           <PaginationItem>
                             <PaginationPrevious
                               href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (promoPage > 1) setPromoPage(promoPage - 1);
-                              }}
+                              onClick={(e) => { e.preventDefault(); if (promoPage > 1) setPromoPage(promoPage - 1); }}
                               className={promoPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
-                          {Array.from({ length: totalPromoPages }, (_, i) => i + 1).map((p) => (
-                            <PaginationItem key={p}>
-                              <PaginationLink
-                                href="#"
-                                isActive={promoPage === p}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  setPromoPage(p);
-                                }}
-                              >
-                                {p}
-                              </PaginationLink>
-                            </PaginationItem>
-                          ))}
+                          {Array.from({ length: totalPromoPages }, (_, i) => i + 1)
+                            .filter((p) => p === 1 || p === totalPromoPages || Math.abs(p - promoPage) <= 1)
+                            .map((page, index, arr) => {
+                              const showEllipsis = arr[index - 1] && page - arr[index - 1] > 1;
+                              return (
+                                <React.Fragment key={page}>
+                                  {showEllipsis && <PaginationItem><PaginationEllipsis /></PaginationItem>}
+                                  <PaginationItem>
+                                    <PaginationLink
+                                      href="#"
+                                      isActive={promoPage === page}
+                                      onClick={(e) => { e.preventDefault(); setPromoPage(page); }}
+                                    >
+                                      {page}
+                                    </PaginationLink>
+                                  </PaginationItem>
+                                </React.Fragment>
+                              );
+                            })}
                           <PaginationItem>
                             <PaginationNext
                               href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (promoPage < totalPromoPages) setPromoPage(promoPage + 1);
-                              }}
+                              onClick={(e) => { e.preventDefault(); if (promoPage < totalPromoPages) setPromoPage(promoPage + 1); }}
                               className={promoPage === totalPromoPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                             />
                           </PaginationItem>
