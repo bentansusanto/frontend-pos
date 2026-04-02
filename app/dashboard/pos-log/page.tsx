@@ -5,7 +5,7 @@ import { useGetAllUsersQuery } from "@/store/services/user.service";
 import { useGetBranchesQuery } from "@/store/services/branch.service";
 import { SessionDetailModal } from "@/components/modules/POS/SessionDetailModal";
 import { format } from "date-fns";
-import { Copy, Eye, Loader2, RefreshCw } from "lucide-react";
+import { Copy, Eye, Loader2 } from "lucide-react";
 import React from "react";
 import { toast } from "sonner";
 
@@ -18,6 +18,15 @@ import {
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,11 +47,16 @@ import {
 import { cn } from "@/lib/utils";
 import { formatUSD } from "@/utils/format-rupiah";
 
+import { useGetProfileQuery } from "@/store/services/auth.service";
+import { useRouter } from "next/navigation";
+
 export default function PosLogPage() {
-  const { data: posSessions, isLoading, isFetching, refetch } = useGetPosSessionsQuery();
+  const router = useRouter();
+  const { data: user, isLoading: isLoadingProfile } = useGetProfileQuery();
+  const { data: posSessions, isLoading } = useGetPosSessionsQuery();
   const { data: usersData } = useGetAllUsersQuery();
   const { data: branchesData } = useGetBranchesQuery();
-  
+
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedSessionId, setSelectedSessionId] = React.useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = React.useState(false);
@@ -51,11 +65,11 @@ export default function PosLogPage() {
     if (!selectedSessionId || !posSessions) return null;
     const session = posSessions.find((s: any) => s.id === selectedSessionId);
     if (!session) return null;
-    
+
     // Use the enriched logic or just manual lookup
     const user = session.user?.id ? usersData?.find((u: any) => u.id === session.user.id) : null;
     const branch = session.branch?.id ? branchesData?.find((b: any) => b.id === session.branch.id) : null;
-    
+
     return {
       id: session.id,
       userName: user?.name || "Unknown",
@@ -81,7 +95,7 @@ export default function PosLogPage() {
 
   const filteredSessions = React.useMemo(() => {
     if (!posSessions) return [];
-    
+
     // Enrich sessions with names for filtering and display
     const enriched = posSessions.map((session: any) => {
       const user = session.user?.id ? usersMap.get(session.user.id) : null;
@@ -124,6 +138,26 @@ export default function PosLogPage() {
     toast.success("ID coped to clipboard");
   };
 
+  React.useEffect(() => {
+    if (user && user.role === "cashier") {
+      router.push("/dashboard");
+      toast.error("You are not authorized to view this page.");
+    }
+  }, [user, router]);
+
+  if (isLoadingProfile) {
+    return (
+      <div className="flex h-[70vh] flex-col items-center justify-center gap-4">
+        <Loader2 className="text-primary h-10 w-10 animate-spin" />
+        <p className="text-muted-foreground animate-pulse">Checking permissions...</p>
+      </div>
+    );
+  }
+
+  if (user?.role === "cashier") {
+    return null;
+  }
+
   return (
     <div className="flex-1 space-y-4">
       <div className="flex items-center justify-between space-y-2">
@@ -132,17 +166,6 @@ export default function PosLogPage() {
           <p className="text-muted-foreground">
             Monitoring cashier sessions and cash drawer balances.
           </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="flex items-center gap-2">
-            <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} />
-            Refresh
-          </Button>
         </div>
       </div>
 
@@ -239,9 +262,9 @@ export default function PosLogPage() {
                               : "-"}
                           </TableCell>
                           <TableCell className="text-center">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="h-8 w-8 text-primary hover:text-primary/80 hover:bg-primary/10"
                               onClick={() => {
                                 setSelectedSessionId(session.id);
@@ -257,44 +280,62 @@ export default function PosLogPage() {
                   </TableBody>
                 </Table>
               </div>
-              
-              <div className="flex items-center justify-between px-2 py-4 border-t">
-                <p className="text-sm text-muted-foreground">
-                  Showing <span className="font-medium">{totalItems > 0 ? startIndex + 1 : 0}</span> to{" "}
-                  <span className="font-medium">{endIndex}</span> of{" "}
+
+              <div className="flex flex-col items-center justify-center gap-4 px-2 py-6 border-t">
+                <p className="text-xs text-muted-foreground text-center">
+                  Showing <span className="font-medium">{totalItems > 0 ? startIndex + 1 : 0}–{endIndex}</span> of{" "}
                   <span className="font-medium">{totalItems}</span> sessions
                 </p>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                  >
-                    Previous
-                  </Button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <Button
-                        key={page}
-                        variant={currentPage === page ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handlePageChange(page)}
-                        className="h-8 w-8 p-0"
-                      >
-                        {page}
-                      </Button>
-                    ))}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                  </Button>
-                </div>
+                <Pagination className="mx-0 w-auto">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(currentPage - 1);
+                        }}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                      .map((page, index, arr) => {
+                        const showEllipsis = arr[index - 1] && page - arr[index - 1] > 1;
+                        return (
+                          <React.Fragment key={page}>
+                            {showEllipsis && (
+                              <PaginationItem>
+                                <PaginationEllipsis />
+                              </PaginationItem>
+                            )}
+                            <PaginationItem>
+                              <PaginationLink
+                                href="#"
+                                isActive={currentPage === page}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handlePageChange(page);
+                                }}
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          </React.Fragment>
+                        );
+                      })}
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(currentPage + 1);
+                        }}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               </div>
             </>
           )}
