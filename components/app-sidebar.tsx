@@ -78,7 +78,8 @@ const data = {
           defaultOpen: true,
           items: [
             { title: "New Order", url: "/dashboard/pos/new-order" },
-            { title: "Transactions", url: "/dashboard/pos/transactions" }
+            { title: "Transactions", url: "/dashboard/pos/transactions" },
+            { title: "POS Sessions", url: "/dashboard/pos-log" }
           ],
         },
         {
@@ -145,11 +146,6 @@ const data = {
           title: "AI Insights",
           icon: Sparkles,
           url: "/dashboard/ai-insights",
-        },
-        {
-          title: "POS Log",
-          icon: ClipboardList,
-          url: "/dashboard/pos-log",
         }
       ]
     },
@@ -255,7 +251,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       "/dashboard/purchasing/receiving": ["purchasing:view"],
       "/dashboard/reports/sales-report": ["reports:view"],
       "/dashboard/ai-insights": ["ai_insight:read"],
-      "/dashboard/pos-log": ["pos_log:view"],
+      "/dashboard/pos-log": ["pos_sessions:read"],
       "/dashboard/users": ["system:view"],
       "/dashboard/branches": ["system:view"],
       "/dashboard/settings/roles": ["system:view"],

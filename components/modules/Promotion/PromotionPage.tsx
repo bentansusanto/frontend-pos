@@ -233,7 +233,7 @@ function RuleForm({
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         {/* Condition */}
         <div className="space-y-3">
           <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Condition</Label>
@@ -282,7 +282,7 @@ function RuleForm({
             )}
 
             {rule.conditionType !== "ALWAYS_TRUE" && (
-              <div className="grid grid-cols-2 gap-2 mt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                 <MultiSelect
                   label="Tgt. Variants (Cond)"
                   options={variants.map(v => ({ 
@@ -344,7 +344,7 @@ function RuleForm({
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-2 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
               <MultiSelect
                 label="Tgt. Variants (Action)"
                 options={variants.map(v => ({ 
@@ -407,7 +407,7 @@ function PromotionForm({ formik, isLoading, onCancel, isEditing }: { formik: any
         <div className="space-y-6 pb-6 pt-2">
           {/* Header Info */}
           <section className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="col-span-2 space-y-1.5">
                 <Label htmlFor="name">Promotion Name *</Label>
                 <Input
@@ -435,7 +435,7 @@ function PromotionForm({ formik, isLoading, onCancel, isEditing }: { formik: any
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="startDate">Start Date *</Label>
                 <Input
@@ -497,7 +497,7 @@ function PromotionForm({ formik, isLoading, onCancel, isEditing }: { formik: any
                 Select All
               </Button>
             </div>
-            <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/20 p-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-lg border bg-muted/20 p-3">
               {branches.map((branch: any) => (
                 <div key={branch.id} className="flex items-center space-x-2">
                   <Checkbox
@@ -610,7 +610,7 @@ export function PromotionPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6 min-h-screen bg-transparent">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 min-h-screen bg-transparent">
       {/* Header Section */}
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -629,7 +629,7 @@ export function PromotionPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 xl:grid-cols-4">
         {[
           { label: "Total", value: stats.total, color: "text-violet-600", bg: "bg-violet-500/5", border: "border-violet-100" },
           { label: "Active", value: stats.active, color: "text-emerald-600", bg: "bg-emerald-500/5", border: "border-emerald-100" },
@@ -644,7 +644,7 @@ export function PromotionPage() {
       </div>
 
       {/* Main Table Section */}
-      <div className="bg-card rounded-xl border shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-card rounded-xl border shadow-sm overflow-hidden flex flex-col min-w-0">
         <div className="flex items-center gap-3 p-4 border-b">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -655,18 +655,19 @@ export function PromotionPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Badge variant="secondary" className="h-10 px-3 flex items-center">{filtered.length} items</Badge>
+          <Badge variant="secondary" className="h-10 px-3 flex items-center whitespace-nowrap">{filtered.length} items</Badge>
         </div>
 
-        <Table>
+        <div className="overflow-x-auto">
+          <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Promotion</TableHead>
-              <TableHead>Branches</TableHead>
-              <TableHead>Rules</TableHead>
-              <TableHead>Validity</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="whitespace-nowrap">Promotion</TableHead>
+              <TableHead className="whitespace-nowrap">Branches</TableHead>
+              <TableHead className="whitespace-nowrap">Rules</TableHead>
+              <TableHead className="whitespace-nowrap">Validity</TableHead>
+              <TableHead className="whitespace-nowrap">Status</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -754,6 +755,7 @@ export function PromotionPage() {
             )}
           </TableBody>
         </Table>
+      </div>
       </div>
 
       {/* Form Dialog */}

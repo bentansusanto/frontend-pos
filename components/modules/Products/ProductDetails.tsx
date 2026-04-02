@@ -128,7 +128,7 @@ export const ProductDetails = () => {
   const productStock = typeof product.product_stock === "number" ? product.product_stock : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 lg:p-0 min-w-0">
       <AddVariantDialog
         open={isAddVariantOpen}
         onOpenChange={setIsAddVariantOpen}
@@ -178,8 +178,8 @@ export const ProductDetails = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-6">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] min-w-0">
+        <div className="space-y-6 min-w-0">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Product Overview</CardTitle>
@@ -204,17 +204,17 @@ export const ProductDetails = () => {
               <div className="space-y-3 rounded-xl border p-4">
                 <div>
                   <p className="text-muted-foreground text-sm">SKU</p>
-                  <p className="text-foreground font-mono text-sm font-medium">{product.sku}</p>
+                  <p className="text-foreground font-mono text-sm font-medium break-all">{product.sku}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground text-sm">Slug</p>
-                  <p className="text-foreground font-mono text-sm">{product.slug}</p>
+                  <p className="text-foreground font-mono text-sm break-all">{product.slug}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="min-w-0 overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">Variants</CardTitle>
               {userRole !== "cashier" && (
@@ -225,17 +225,17 @@ export const ProductDetails = () => {
             </CardHeader>
             <CardContent>
               {variants.length > 0 ? (
-                <div className="overflow-hidden rounded-xl border">
+                <div className="overflow-x-auto rounded-xl border">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Thumbnail</TableHead>
-                        <TableHead>Variant</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Cost Price</TableHead>
-                        <TableHead>Stock</TableHead>
-                        <TableHead>Action</TableHead>
+                        <TableHead className="whitespace-nowrap">Thumbnail</TableHead>
+                        <TableHead className="whitespace-nowrap">Variant</TableHead>
+                        <TableHead className="whitespace-nowrap">SKU</TableHead>
+                        <TableHead className="whitespace-nowrap">Price</TableHead>
+                        <TableHead className="whitespace-nowrap">Cost Price</TableHead>
+                        <TableHead className="whitespace-nowrap">Stock</TableHead>
+                        <TableHead className="whitespace-nowrap">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -254,7 +254,7 @@ export const ProductDetails = () => {
                           <TableCell className="text-foreground font-medium">
                             {variant.name_variant}
                           </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
+                          <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                             {variant.sku}
                           </TableCell>
                           <TableCell className="text-muted-foreground text-sm">
@@ -320,7 +320,7 @@ export const ProductDetails = () => {
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0 w-full xl:w-[360px]">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Product Media</CardTitle>

@@ -112,7 +112,7 @@ function ExpenseForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="date">Date *</Label>
           <Input
@@ -153,7 +153,7 @@ function ExpenseForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="amount">Amount *</Label>
           <div className="relative">
@@ -430,9 +430,9 @@ export function ExpensesPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 p-2.5 sm:p-6 min-h-screen bg-transparent">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10">
             <TrendingDown className="h-5 w-5 text-red-600" />
@@ -442,7 +442,7 @@ export function ExpensesPage() {
             <p className="text-muted-foreground text-sm">Track and manage all business expenses</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <AddCategoryDialog
             trigger={
               <Button variant="outline" className="gap-2">
@@ -464,7 +464,7 @@ export function ExpensesPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
             label: "Total Expenses",
@@ -499,8 +499,8 @@ export function ExpensesPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-card rounded-xl border">
-        <div className="flex items-center gap-3 border-b p-4">
+      <div className="bg-card rounded-xl border min-w-0 flex flex-col">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 border-b p-4">
           <div className="relative flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
@@ -511,7 +511,7 @@ export function ExpensesPage() {
             />
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-44">
+            <SelectTrigger className="w-full sm:w-44">
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
             <SelectContent>
@@ -523,19 +523,19 @@ export function ExpensesPage() {
               ))}
             </SelectContent>
           </Select>
-          <Badge variant="secondary">{filtered.length} entries</Badge>
+          <Badge variant="secondary" className="w-fit whitespace-nowrap">{filtered.length} entries</Badge>
         </div>
-
-        <Table>
+        <div className="overflow-x-auto">
+          <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Payment</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="whitespace-nowrap">ID</TableHead>
+              <TableHead className="whitespace-nowrap">Date</TableHead>
+              <TableHead className="whitespace-nowrap">Description</TableHead>
+              <TableHead className="whitespace-nowrap">Category</TableHead>
+              <TableHead className="whitespace-nowrap">Payment</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Amount</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -563,7 +563,7 @@ export function ExpensesPage() {
                       {expense.expense_code}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
+                  <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                     {expense.expense_date ? format(new Date(expense.expense_date), "yyyy-MM-dd") : "-"}
                   </TableCell>
                   <TableCell>
@@ -579,7 +579,7 @@ export function ExpensesPage() {
                       {getCategoryLabel(expense.expense_category_id, categories)}
                     </span>
                   </TableCell>
-                  <TableCell className="text-sm">{expense.payment_method}</TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">{expense.payment_method}</TableCell>
                   <TableCell className="text-right">
                     <span className="font-semibold text-red-600">
                       {formatCurrency(Number(expense.amount))}
@@ -620,10 +620,11 @@ export function ExpensesPage() {
             )}
           </TableBody>
         </Table>
+        </div>
 
         {/* Footer total */}
         {filtered.length > 0 && (
-          <div className="flex items-center justify-between border-t px-4 py-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between border-t px-4 py-3 gap-3">
             <span className="text-muted-foreground text-sm">
               Showing {filtered.length} of {expenses.length} expenses
             </span>

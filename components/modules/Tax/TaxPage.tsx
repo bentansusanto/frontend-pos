@@ -203,8 +203,8 @@ export function TaxPage() {
   const { filtered, isLoading, search, setSearch, handleDelete, stats } = useTaxList();
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-6 p-4 sm:p-6 min-h-screen bg-transparent">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10">
             <Percent className="h-5 w-5 text-amber-600" />
@@ -217,7 +217,7 @@ export function TaxPage() {
         <CreateTaxDialog trigger={<Button className="gap-2"><Plus className="h-4 w-4" />Add Tax</Button>} />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { label: "Total Taxes", value: stats.total, color: "text-blue-600" },
           { label: "Active", value: stats.active, color: "text-green-600" },
@@ -230,21 +230,22 @@ export function TaxPage() {
         ))}
       </div>
 
-      <div className="bg-card rounded-xl border">
+      <div className="bg-card rounded-xl border min-w-0">
         <div className="flex items-center gap-3 border-b p-4">
           <div className="relative flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input className="pl-9" placeholder="Search taxes..." value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
-        <Table>
+        <div className="overflow-x-auto">
+          <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Rate</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="whitespace-nowrap">Name</TableHead>
+              <TableHead className="whitespace-nowrap">Rate</TableHead>
+              <TableHead className="whitespace-nowrap">Type</TableHead>
+              <TableHead className="whitespace-nowrap">Status</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -308,6 +309,7 @@ export function TaxPage() {
                 ))}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );

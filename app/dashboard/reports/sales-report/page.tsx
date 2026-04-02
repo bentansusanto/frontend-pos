@@ -231,11 +231,11 @@ export default function SalesReportPage() {
   // ── Top selling products aggregation ────────────────────────────────────────
   const topProducts = useMemo(() => {
     if (!summaryData?.salesData) return [];
-    
+
     const productMap: Record<string, { id: string; name: string; quantity: number; revenue: number }> = {};
-    
+
     summaryData.salesData.forEach((sale: any) => {
-      // already filtered by success/refunded status in backend summary potentially, 
+      // already filtered by success/refunded status in backend summary potentially,
       // but let's be double sure it's success
       if (sale.status !== "success") return;
       (sale.items || []).forEach((item: any) => {
@@ -253,7 +253,7 @@ export default function SalesReportPage() {
       .slice(0, 5);
   }, [summaryData]);
 
-  const maxQuantity = useMemo(() => 
+  const maxQuantity = useMemo(() =>
     Math.max(...topProducts.map(p => p.quantity), 1)
   , [topProducts]);
 
@@ -403,9 +403,9 @@ export default function SalesReportPage() {
       </div>
 
       {/* ── Main Analysis & Trends Grid (3 Columns) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch lg:h-[480px] lg:overflow-hidden min-h-0">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch xl:h-[480px] xl:overflow-hidden min-h-0">
         {/* ── Sales Trends Chart (Left & Wider) ── */}
-        <Card className="overflow-hidden shadow-sm lg:col-span-2 h-full flex flex-col min-h-[400px] lg:max-h-[480px]">
+        <Card className="overflow-hidden shadow-sm xl:col-span-2 h-full flex flex-col min-h-[400px] xl:max-h-[480px]">
           <Tabs defaultValue="weekly" className="w-full h-full flex flex-col">
             <CardHeader className="border-b bg-muted/20 pb-4">
               <div className="flex items-center justify-between">
@@ -441,10 +441,10 @@ export default function SalesReportPage() {
                         tickFormatter={(v) => format(new Date(v), "dd MMM")}
                         tick={{ fontSize: 11 }}
                       />
-                      <YAxis 
-                        tickLine={false} 
-                        axisLine={false} 
-                        tick={{ fontSize: 11 }} 
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 11 }}
                         tickFormatter={(v) => `$${v}`}
                         domain={[0, 'auto']}
                       />
@@ -477,10 +477,10 @@ export default function SalesReportPage() {
                         tickFormatter={(v) => format(new Date(v), "dd MMM")}
                         tick={{ fontSize: 11 }}
                       />
-                      <YAxis 
-                        tickLine={false} 
-                        axisLine={false} 
-                        tick={{ fontSize: 11 }} 
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 11 }}
                         tickFormatter={(v) => `$${v}`}
                         domain={[0, 'auto']}
                       />
@@ -500,10 +500,10 @@ export default function SalesReportPage() {
                     <BarChart data={yearlySeries}>
                       <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 11 }} />
-                      <YAxis 
-                        tickLine={false} 
-                        axisLine={false} 
-                        tick={{ fontSize: 11 }} 
+                      <YAxis
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 11 }}
                         tickFormatter={(v) => `$${v}`}
                         domain={[0, 'auto']}
                       />
@@ -520,7 +520,7 @@ export default function SalesReportPage() {
         </Card>
 
         {/* ── Right Column (AI + Top Products) ── */}
-        <div className="lg:col-span-1 h-full flex flex-col gap-6 min-h-0 overflow-hidden">
+        <div className="xl:col-span-1 h-full flex flex-col gap-6 min-h-0 overflow-hidden">
           {/* ── AI Insight ── */}
           <Card className="shadow-sm h-fit overflow-hidden min-h-0">
             <CardHeader className="pb-3 border-b bg-muted/10">
@@ -578,8 +578,8 @@ export default function SalesReportPage() {
                         </span>
                       </div>
                       <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
-                        <div 
-                          className="h-full bg-primary transition-all duration-500" 
+                        <div
+                          className="h-full bg-primary transition-all duration-500"
                           style={{ width: `${(product.quantity / maxQuantity) * 100}%` }}
                         />
                       </div>
@@ -603,24 +603,24 @@ export default function SalesReportPage() {
       </div>
 
       {/* ── Transactions table (Full Width) ── */}
-      <Card className="overflow-hidden shadow-sm mt-12">
+      <Card className="overflow-hidden shadow-sm mt-12 min-w-0">
         <CardHeader className="border-b bg-muted/20">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <CardTitle className="text-lg font-bold">Recent Transactions</CardTitle>
               <CardDescription className="text-xs">Detailed log of all sales and refunds</CardDescription>
             </div>
 
             {/* toolbar moved hither */}
-            <div className="flex flex-col gap-4 items-start sm:flex-row sm:items-center sm:justify-end w-full sm:w-auto">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-3 items-start md:flex-row md:items-center md:justify-end w-full md:w-auto">
+              <div className="flex items-center gap-2 w-full md:w-auto">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       size="sm"
                       className={cn(
-                        "w-[240px] justify-start text-left font-normal h-9",
+                        "flex-1 md:w-[340px] justify-start text-left font-normal h-9",
                         !dateRange && "text-muted-foreground"
                       )}
                     >
@@ -670,7 +670,7 @@ export default function SalesReportPage() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm" className="gap-2 bg-primary hover:bg-primary/90 h-9 text-xs">
+                  <Button size="sm" className="w-full md:w-auto gap-2 bg-primary hover:bg-primary/90 h-9 text-xs">
                     <FileDown className="h-3.5 w-3.5" />
                     Export
                     <ChevronDown className="h-3 w-3 opacity-70" />
@@ -704,7 +704,7 @@ export default function SalesReportPage() {
                       (h) => (
                         <TableHead
                           key={h}
-                          className="py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground px-4"
+                          className="py-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground px-4 whitespace-nowrap"
                         >
                           {h}
                         </TableHead>
@@ -754,9 +754,9 @@ export default function SalesReportPage() {
                               {row.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="py-3 text-muted-foreground px-4">{row.branchName}</TableCell>
-                          <TableCell className="py-3 font-medium px-4">{row.cashierName}</TableCell>
-                          <TableCell className="py-3 text-muted-foreground px-4">{row.customerName}</TableCell>
+                          <TableCell className="py-3 text-muted-foreground px-4 whitespace-nowrap">{row.branchName}</TableCell>
+                          <TableCell className="py-3 font-medium px-4 whitespace-nowrap">{row.cashierName}</TableCell>
+                          <TableCell className="py-3 text-muted-foreground px-4 whitespace-nowrap">{row.customerName}</TableCell>
                           <TableCell className="py-3 text-center px-4">
                             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-black">
                               {row.itemsCount}

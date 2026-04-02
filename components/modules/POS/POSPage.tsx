@@ -48,6 +48,8 @@ import { OpenSessionModal } from "./OpenSessionModal";
 import { CloseSessionModal } from "./CloseSessionModal";
 import { useGetActiveSessionQuery } from "@/store/services/pos-session.service";
 import { Lock, AlertTriangle } from "lucide-react";
+import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from "@/components/ui/drawer";
+
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY!);
 
@@ -130,10 +132,10 @@ export const PosPage = () => {
   const [verifyPayment, { isLoading: isVerifyingPayment }] = useVerifyPaymentMutation();
   const { data: activeTaxesData } = useGetActiveTaxesQuery();
   const { data: promotionsData, isLoading: isLoadingPromotions } = useGetPromotionsQuery();
-  
+
   // Filter only non-INACTIVE promotions (let backend status column drive this, not date)
-  const activePromotions = (Array.isArray(promotionsData) 
-    ? promotionsData 
+  const activePromotions = (Array.isArray(promotionsData)
+    ? promotionsData
     : (promotionsData?.datas || promotionsData?.data || []))
     .filter((p: any) => p.status !== "INACTIVE");
 
@@ -378,7 +380,7 @@ export const PosPage = () => {
     try {
       await updateOrder({
         id: currentOrder.id,
-        body: { 
+        body: {
           promotion_id: promotionId,
           customer_id: formik.values.customer_id
         }
@@ -427,155 +429,8 @@ export const PosPage = () => {
     }
   };
 
-  return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        handleProcessPayment();
-      }}
-      className="relative flex h-[calc(100svh-4rem)] flex-col lg:flex-row overflow-hidden -m-6 rounded-none">
-      {/* Left Area: Products */}
-      <div className="flex flex-1 flex-col overflow-hidden border-r border-border bg-muted/5">
-        <div className="flex flex-col gap-4 border-b border-border bg-background p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">New Order</h1>
-              <p className="text-muted-foreground text-xs">
-                Branch: {profileData?.branches?.[0]?.name || (branchId ? "Current Session" : "No branch assigned")}
-              </p>
-            </div>
-            {activeSession && (
-              <Button
-                variant="outline"
-                size="sm"
-                type="button"
-                className="h-8 text-xs text-destructive hover:bg-destructive/5"
-                onClick={() => setIsCloseSessionModalOpen(true)}>
-                Close Session
-              </Button>
-            )}
-          </div>
-
-          <div className="relative">
-            <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-            <Input
-              placeholder="Search products or scan barcode..."
-              className="pl-9 h-11 bg-muted/30 border-none ring-0 focus-visible:ring-1"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-          </div>
-
-          <div className="scrollbar-none flex gap-2 overflow-x-auto pb-1">
-            {categories.map((category: any) => (
-              <Button
-                key={category.id}
-                size="sm"
-                variant={selectedCategory === category.id ? "default" : "outline"}
-                className={`shrink-0 rounded-full h-8 px-4 ${selectedCategory === category.id ? "shadow-md" : ""}`}
-                type="button"
-                onClick={() => setSelectedCategory(category.id)}>
-                {category.name}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-auto p-4 lg:p-6 pb-20 lg:pb-6">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {products.map((product: any) => {
-              const variants = variantsByProductId.get(product.id) || [];
-              const imageSource =
-                product.thumbnail ||
-                (Array.isArray(product.images) ? product.images[0] : null) ||
-                "/placeholder-image.jpg";
-              const hasVariants = variants.length > 0;
-
-              const stock = hasVariants
-                ? variants.reduce((sum: number, v: any) => sum + (Number(v.stock) || 0), 0)
-                : typeof product.product_stock === "number"
-                  ? product.product_stock
-                  : 0;
-
-              const displayPrice = hasVariants
-                ? Math.min(...variants.map((v: any) => Number(v.price) || 0))
-                : Number(product.price || 0);
-
-              const maxPrice = hasVariants
-                ? Math.max(...variants.map((v: any) => Number(v.price) || 0))
-                : displayPrice;
-
-              return (
-                <button
-                  key={product.id}
-                  type="button"
-                  onClick={() => {
-                    if (hasVariants) {
-                      setSelectedProductForVariant(product);
-                    } else {
-                      handleAddToCart(product);
-                    }
-                  }}
-                  className="group flex flex-col items-start rounded-2xl border border-border bg-card p-3 text-left transition-all hover:border-primary/50 hover:shadow-md h-full">
-                  <div className="relative mb-3 aspect-square w-full overflow-hidden rounded-xl bg-muted">
-                    <Image
-                      src={imageSource}
-                      alt={product.name_product}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-110"
-                    />
-                    {stock === 0 && !hasVariants && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs font-bold text-white backdrop-blur-[1px]">
-                        Out of Stock
-                      </div>
-                    )}
-                    {stock > 0 && stock <= 5 && (
-                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-amber-500 text-[10px] font-bold text-white rounded-full shadow-sm">
-                        Low Stock
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col flex-1 w-full gap-1">
-                    <h3 className="text-sm font-semibold text-foreground leading-tight line-clamp-2 min-h-[2.5rem]">
-                      {product.name_product}
-                    </h3>
-                    <div className="flex items-center justify-between mt-auto">
-                      <p className="text-xs text-muted-foreground">
-                        {hasVariants ? `${variants.length} options` : `${stock} pcs`}
-                      </p>
-                      <p className="text-sm font-bold text-primary">
-                        {hasVariants && displayPrice !== maxPrice
-                          ? `$${displayPrice.toFixed(2)}+`
-                          : `$${displayPrice.toFixed(2)}`}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          {!isProductsLoading && products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-              {!branchId ? (
-                <>
-                  <AlertTriangle className="size-10 mb-2 text-amber-500 opacity-50" />
-                  <p className="text-sm font-semibold">No active branch found</p>
-                  <p className="text-xs">Please contact your administrator to assign a branch.</p>
-                </>
-              ) : (
-                <>
-                  <Search className="size-10 mb-2 opacity-20" />
-                  <p className="text-sm">No products found</p>
-                </>
-              )}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {/* Right Area: Cart & Summary */}
-      <div className="flex w-full flex-col lg:w-[380px] xl:w-[420px] bg-background">
+  const renderCartContent = () => (
+    <>
         <div className="flex items-center justify-between border-b border-border px-4 py-4 min-h-[4.5rem]">
           <div>
             <h2 className="text-base font-bold text-foreground">Active Order</h2>
@@ -731,6 +586,181 @@ export const PosPage = () => {
                     Charge ${Number(totalAmount || 0).toFixed(2)}
             </Button>
           </div>
+        </div>
+
+    </>
+  );
+
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        handleProcessPayment();
+      }}
+      className="relative flex h-[calc(100svh-4rem)] flex-col lg:flex-row overflow-hidden">
+      {/* Left Area: Products */}
+      <div className="flex flex-1 flex-col overflow-hidden border-r border-border bg-muted/5">
+        <div className="flex flex-col gap-4 border-b border-border bg-background p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">New Order</h1>
+              <p className="text-muted-foreground text-xs">
+                Branch: {profileData?.branches?.[0]?.name || (branchId ? "Current Session" : "No branch assigned")}
+              </p>
+            </div>
+            {activeSession && (
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                className="h-8 text-xs text-destructive hover:bg-destructive/5"
+                onClick={() => setIsCloseSessionModalOpen(true)}>
+                Close Session
+              </Button>
+            )}
+          </div>
+
+          <div className="relative">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            <Input
+              placeholder="Search products or scan barcode..."
+              className="pl-9 h-11 bg-muted/30 border-none ring-0 focus-visible:ring-1"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </div>
+
+          <div className="scrollbar-none flex gap-2 overflow-x-auto pb-1">
+            {categories.map((category: any) => (
+              <Button
+                key={category.id}
+                size="sm"
+                variant={selectedCategory === category.id ? "default" : "outline"}
+                className={`shrink-0 rounded-full h-8 px-4 ${selectedCategory === category.id ? "shadow-md" : ""}`}
+                type="button"
+                onClick={() => setSelectedCategory(category.id)}>
+                {category.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4 lg:p-6 pb-[100px] lg:pb-6">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {products.map((product: any) => {
+              const variants = variantsByProductId.get(product.id) || [];
+              const imageSource =
+                product.thumbnail ||
+                (Array.isArray(product.images) ? product.images[0] : null) ||
+                "/placeholder-image.jpg";
+              const hasVariants = variants.length > 0;
+
+              const stock = hasVariants
+                ? variants.reduce((sum: number, v: any) => sum + (Number(v.stock) || 0), 0)
+                : typeof product.product_stock === "number"
+                  ? product.product_stock
+                  : 0;
+
+              const displayPrice = hasVariants
+                ? Math.min(...variants.map((v: any) => Number(v.price) || 0))
+                : Number(product.price || 0);
+
+              const maxPrice = hasVariants
+                ? Math.max(...variants.map((v: any) => Number(v.price) || 0))
+                : displayPrice;
+
+              return (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => {
+                    if (hasVariants) {
+                      setSelectedProductForVariant(product);
+                    } else {
+                      handleAddToCart(product);
+                    }
+                  }}
+                  className="group flex flex-col items-start rounded-2xl border border-border bg-card p-3 text-left transition-all hover:border-primary/50 hover:shadow-md h-full">
+                  <div className="relative mb-3 aspect-square w-full overflow-hidden rounded-xl bg-muted">
+                    <Image
+                      src={imageSource}
+                      alt={product.name_product}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-110"
+                    />
+                    {stock === 0 && !hasVariants && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/60 text-xs font-bold text-white backdrop-blur-[1px]">
+                        Out of Stock
+                      </div>
+                    )}
+                    {stock > 0 && stock <= 5 && (
+                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-amber-500 text-[10px] font-bold text-white rounded-full shadow-sm">
+                        Low Stock
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col flex-1 w-full gap-1">
+                    <h3 className="text-sm font-semibold text-foreground leading-tight line-clamp-2 min-h-[2.5rem]">
+                      {product.name_product}
+                    </h3>
+                    <div className="flex items-center justify-between mt-auto">
+                      <p className="text-xs text-muted-foreground">
+                        {hasVariants ? `${variants.length} options` : `${stock} pcs`}
+                      </p>
+                      <p className="text-sm font-bold text-primary">
+                        {hasVariants && displayPrice !== maxPrice
+                          ? `$${displayPrice.toFixed(2)}+`
+                          : `$${displayPrice.toFixed(2)}`}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {!isProductsLoading && products.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+              {!branchId ? (
+                <>
+                  <AlertTriangle className="size-10 mb-2 text-amber-500 opacity-50" />
+                  <p className="text-sm font-semibold">No active branch found</p>
+                  <p className="text-xs">Please contact your administrator to assign a branch.</p>
+                </>
+              ) : (
+                <>
+                  <Search className="size-10 mb-2 opacity-20" />
+                  <p className="text-sm">No products found</p>
+                </>
+              )}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Desktop Right Area: Cart & Summary */}
+      <div className="hidden lg:flex w-[380px] xl:w-[420px] flex-col bg-background border-l border-border z-10">
+        {renderCartContent()}
+      </div>
+
+      {/* Mobile & Tablet Right Area: Bottom Bar with Drawer */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 px-4 pt-3 bg-background border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] z-40 pb-safe">
+        <div className="flex justify-between items-center gap-4 pb-4">
+          <div className="flex flex-col min-w-0">
+            <span className="text-muted-foreground text-xs font-semibold">Total Amount</span>
+            <span className="text-xl font-black text-primary truncate">${Number(totalAmount || 0).toFixed(2)}</span>
+          </div>
+          <Drawer>
+            <DrawerTrigger asChild>
+              <Button className="rounded-xl shrink-0" type="button">
+                Detail Orders ({orderItems.reduce((sum: number, item: any) => sum + Number(item.qty || 0), 0)})
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent className="h-[85vh] px-0 flex flex-col bg-background [&>div:first-child]:hidden">
+              <DrawerTitle className="sr-only">Active Order</DrawerTitle>
+              {renderCartContent()}
+            </DrawerContent>
+          </Drawer>
         </div>
       </div>
 

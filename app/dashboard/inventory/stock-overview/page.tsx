@@ -195,21 +195,21 @@ export default function StockOverviewPage() {
         </Card>
       </div>
 
-      <Card>
+      <Card className="min-w-0">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <CardTitle>Stock Movements</CardTitle>
               <CardDescription>Detailed log of stock changes.</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     size="sm"
                     className={cn(
-                      "justify-start text-left font-normal",
+                      "w-full md:w-auto justify-start text-left font-normal",
                       !dateRange && "text-muted-foreground"
                     )}
                   >
@@ -251,9 +251,9 @@ export default function StockOverviewPage() {
                 </Button>
               )}
 
-              <Button variant="outline" size="sm" onClick={() => refetch()}>
-                <RefreshCcw className="mr-2 h-4 w-4" />
-                Refresh
+               <Button variant="outline" size="sm" onClick={() => refetch()} className="shrink-0">
+                <RefreshCcw className="md:mr-2 h-4 w-4" />
+                <span className="hidden md:inline">Refresh</span>
               </Button>
             </div>
           </div>
@@ -291,18 +291,18 @@ export default function StockOverviewPage() {
             </div>
 
             {/* Table */}
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Variant</TableHead>
-                    <TableHead>Type / Reason</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead>Branch</TableHead>
-                    <TableHead className="text-right">Reference</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    <TableHead className="whitespace-nowrap">Date</TableHead>
+                    <TableHead className="whitespace-nowrap">Product</TableHead>
+                    <TableHead className="whitespace-nowrap">Variant</TableHead>
+                    <TableHead className="whitespace-nowrap">Type / Reason</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Qty</TableHead>
+                    <TableHead className="whitespace-nowrap">Branch</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Reference</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -327,7 +327,7 @@ export default function StockOverviewPage() {
 
                       return (
                         <TableRow key={movement.id}>
-                          <TableCell className="font-medium">
+                          <TableCell className="font-medium whitespace-nowrap">
                             {new Date(movement.createdAt).toLocaleDateString("en-US", {
                               year: "numeric",
                               month: "short",
@@ -336,7 +336,7 @@ export default function StockOverviewPage() {
                               minute: "2-digit"
                             })}
                           </TableCell>
-                          <TableCell>{movement.productName || movement.productVariant?.product?.name_product || "-"}</TableCell>
+                          <TableCell className="whitespace-nowrap">{movement.productName || movement.productVariant?.product?.name_product || "-"}</TableCell>
                            <TableCell>
                             {movement.variantName ? (
                               <Badge variant="outline">
@@ -383,7 +383,7 @@ export default function StockOverviewPage() {
                               : `+${movement.qty}`}
                           </TableCell>
                           <TableCell><BranchName id={movement.branchId} /></TableCell>
-                          <TableCell className="text-muted-foreground text-right font-mono text-xs">
+                          <TableCell className="text-muted-foreground text-right font-mono text-xs whitespace-nowrap">
                             {movement.referenceId}
                           </TableCell>
                           <TableCell className="text-right">
@@ -477,7 +477,7 @@ export default function StockOverviewPage() {
 
             {/* Pagination */}
             {totalItems > 0 && (
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-muted-foreground text-sm">
                   Showing {indexOfFirstItem} to {indexOfLastItem} of {totalItems} entries
                 </div>
