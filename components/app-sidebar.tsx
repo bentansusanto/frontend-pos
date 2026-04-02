@@ -215,7 +215,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setSelectedBranch(branch);
     setCookie("pos_branch_id", branch.id);
     window.location.reload(); // Refresh to update context
-  };  const sidebarUser = user
+  };
+
+  const sidebarUser = user
     ? {
         name: user.name,
         email: user.email,
@@ -267,6 +269,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   };
 
   const isAuthorized = (item: any): boolean => {
+    // Specifically block 'cashier' role from 'pos-log' (Sessions)
+    if (user?.role === "cashier" && item.url === "/dashboard/pos-log") {
+      return false;
+    }
+
     const required = getRequiredPermissions(item);
     
     // If permissions are explicitly required, everyone (including Admins/Owners) 
