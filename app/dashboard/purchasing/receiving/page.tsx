@@ -54,7 +54,7 @@ function ViewReceivingDialog({ open, onOpenChange, receiving }: { open: boolean,
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4 text-sm">
-          <div className="grid grid-cols-2 gap-2 border-b pb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 border-b pb-4">
             <div>
               <p className="text-muted-foreground">Receiving ID</p>
               <p className="font-medium">RCV-{receiving.id.substring(0, 6).toUpperCase()}</p>
@@ -354,8 +354,8 @@ export default function PurchaseReceivingPage() {
   }, [receivings]);
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-6 p-2.5 sm:p-6 min-h-screen bg-transparent">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-xl">
             <PackageCheck className="text-primary h-5 w-5" />
@@ -377,7 +377,7 @@ export default function PurchaseReceivingPage() {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           {
             label: "Total Receivings",
@@ -411,7 +411,7 @@ export default function PurchaseReceivingPage() {
         ))}
       </div>
 
-      <div className="bg-card rounded-xl border">
+      <div className="bg-card rounded-xl border min-w-0 flex flex-col">
         <div className="flex items-center gap-3 border-b p-4">
           <div className="relative flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -422,17 +422,18 @@ export default function PurchaseReceivingPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Badge variant="secondary">{filtered.length} shipments</Badge>
+          <Badge variant="secondary" className="whitespace-nowrap">{filtered.length} shipments</Badge>
         </div>
-        <Table>
+        <div className="overflow-x-auto">
+          <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Shipment Info</TableHead>
-              <TableHead>Original Order</TableHead>
-              <TableHead>Supplier</TableHead>
-              <TableHead>Branch</TableHead>
-              <TableHead className="text-right">Total Items</TableHead>
-              <TableHead className="text-right pr-4">Action</TableHead>
+              <TableHead className="whitespace-nowrap">Shipment Info</TableHead>
+              <TableHead className="whitespace-nowrap">Original Order</TableHead>
+              <TableHead className="whitespace-nowrap">Supplier</TableHead>
+              <TableHead className="whitespace-nowrap">Branch</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Total Items</TableHead>
+              <TableHead className="text-right pr-4 whitespace-nowrap">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -499,8 +500,9 @@ export default function PurchaseReceivingPage() {
             )}
           </TableBody>
         </Table>
+        </div>
         
-        <div className="flex items-center justify-between px-4 py-4 border-t bg-muted/5">
+        <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 border-t bg-muted/5 gap-4">
           <p className="text-sm text-muted-foreground">
             Showing <span className="font-medium text-foreground">{totalItems > 0 ? startIndex + 1 : 0}</span> to{" "}
             <span className="font-medium text-foreground">{endIndex}</span> of{" "}

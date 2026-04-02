@@ -10,7 +10,7 @@ export default function CustomersPage() {
   const customers = customersResponse || [];
 
   return (
-    <div className="flex flex-col gap-5 p-5">
+    <div className="flex flex-col gap-5 px-2 lg:px-6 py-5">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
         <CreateCustomerDialog />

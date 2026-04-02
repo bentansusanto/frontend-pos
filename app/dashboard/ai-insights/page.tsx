@@ -150,7 +150,7 @@ export default function AiInsightsDashboardPage() {
   };
 
   return (
-    <div className="w-full max-w-full overflow-hidden space-y-6 p-6">
+    <div className="w-full space-y-6 p-2.5 sm:p-6 min-w-0">
       {/* Header Section */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
@@ -213,8 +213,8 @@ export default function AiInsightsDashboardPage() {
       ) : (
         <div className="grid gap-6">
           {/* Top Section: AI Summary & Highlights */}
-          <div className="grid gap-6 md:grid-cols-3">
-            <Card className="border-l-primary border-l-4 md:col-span-2">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Card className="border-l-primary border-l-4 col-span-1 lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BrainCircuit className="text-primary h-5 w-5" />
@@ -226,7 +226,7 @@ export default function AiInsightsDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="prose dark:prose-invert max-w-none">
-                  <p className="text-muted-foreground text-lg leading-relaxed">
+                  <p className="text-muted-foreground text-base sm:text-lg leading-relaxed break-words">
                     {summaryMetadata.executive_summary ||
                       "No summary available. Click 'Refresh Analysis' to start."}
                   </p>
@@ -262,7 +262,7 @@ export default function AiInsightsDashboardPage() {
           </div>
 
           <Tabs defaultValue="trends" className="space-y-6">
-            <TabsList className="bg-slate-100 p-1 dark:bg-slate-800">
+            <TabsList className="flex flex-wrap h-auto w-full justify-start gap-1 bg-slate-100 p-1 dark:bg-slate-800 mb-2">
               <TabsTrigger value="trends" className="gap-2">
                 <TrendingUp className="h-4 w-4" />
                 Sales Trends
@@ -289,7 +289,7 @@ export default function AiInsightsDashboardPage() {
                 </CardHeader>
                 <CardContent>
                   {salesTrendsChartData.length > 0 ? (
-                    <ChartContainer config={chartConfig} className="h-[400px] w-full">
+                    <ChartContainer config={chartConfig} className="aspect-auto h-[250px] sm:h-[350px] md:h-[400px] w-full">
                       <AreaChart data={salesTrendsChartData}>
                         <defs>
                           <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
@@ -303,7 +303,7 @@ export default function AiInsightsDashboardPage() {
                           tickFormatter={(value) => new Date(value).toLocaleDateString("en-US", { month: 'short', day: 'numeric' })}
                         />
                         <YAxis tickFormatter={(value) => `$${value}`} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <ChartTooltip content={<ChartTooltipContent hideLabel />} cursor={false} />
                         <Area
                           type="monotone"
                           dataKey="amount"
@@ -329,7 +329,7 @@ export default function AiInsightsDashboardPage() {
                   <CardDescription>AI-driven suggestions for stock management.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 min-w-0">
                     {paginatedRecommendations.map((rec: any) => (
                       <AiInsightCard key={rec.id} insight={rec} compact={true} />
                     ))}
@@ -477,44 +477,18 @@ export default function AiInsightsDashboardPage() {
                   <CardDescription>AI recommendations for increasing conversion.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-md border overflow-hidden">
-                    <Table>
-                      <TableHeader className="bg-slate-50 dark:bg-slate-900">
-                        <TableRow>
-                          <TableHead>Strategy</TableHead>
-                          <TableHead>Reasoning</TableHead>
-                          <TableHead>Confidence</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {paginatedPromos.length > 0 ? (
-                          paginatedPromos.map((promo: any) => (
-                            <TableRow key={promo.id}>
-                              <TableCell className="font-bold text-primary">
-                                {promo.summary}
-                              </TableCell>
-                              <TableCell className="text-sm italic text-muted-foreground">
-                                {promo.metadata?.reason === 'near_expiry' ? 'Near Expiry' : 
-                                 promo.metadata?.reason === 'slow_moving' ? 'Slow Moving Stock' : 
-                                 promo.metadata?.reason === 'overstock' ? 'Overstock Clearance' :
-                                 'Boost Sales'}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="secondary">
-                                  {promo.metadata?.recommended_discount_pct ? `${promo.metadata.recommended_discount_pct}% Discount` : "Special Promo"}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={3} className="h-32 text-center text-muted-foreground">
-                              No promo suggestions available yet.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 min-w-0">
+                    {paginatedPromos.length > 0 ? (
+                      paginatedPromos.map((promo: any) => (
+                        <AiInsightCard key={promo.id} insight={promo} />
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-200 py-14 text-center dark:border-slate-800">
+                        <CheckCircle className="h-8 w-8 text-slate-300 dark:text-slate-600" />
+                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">No Suggestions</p>
+                        <p className="text-xs text-muted-foreground">Promo strategy recommendations will appear here.</p>
+                      </div>
+                    )}
                   </div>
                   {totalPromoPages > 1 && (
                     <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

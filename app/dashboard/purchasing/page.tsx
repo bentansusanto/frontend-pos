@@ -106,16 +106,19 @@ function CreatePurchaseDialog({ trigger }: { trigger: React.ReactNode }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ShoppingCart className="text-primary h-5 w-5" />
-            Create Purchase Order
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[640px] p-0 flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="border-b p-6 pb-4 bg-muted/20">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingCart className="text-primary h-5 w-5" />
+              Create Purchase Order
+            </DialogTitle>
+          </DialogHeader>
+        </div>
 
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="grid gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Supplier *</label>
               <Select value={supplierId} onValueChange={setSupplierId}>
@@ -152,61 +155,65 @@ function CreatePurchaseDialog({ trigger }: { trigger: React.ReactNode }) {
           <div className="space-y-2">
             <label className="text-sm font-medium">Order Items *(Need at least 1)</label>
             {items.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <Select
-                  value={item.product_id}
-                  onValueChange={(val) => {
-                    const newItems = [...items];
-                    newItems[index].product_id = val;
-                    const prod = products?.find((p: any) => p.id === val);
-                    newItems[index].price = prod?.basePrice || 0;
-                    setItems(newItems);
-                  }}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select product..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products?.map((p: any) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name_product}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div key={index} className="flex flex-row items-center gap-2 p-2 rounded-lg border bg-muted/30">
+                <div className="flex-1 min-w-[120px]">
+                  <Select
+                    value={item.product_id}
+                    onValueChange={(val) => {
+                      const newItems = [...items];
+                      newItems[index].product_id = val;
+                      const prod = products?.find((p: any) => p.id === val);
+                      newItems[index].price = prod?.basePrice || 0;
+                      setItems(newItems);
+                    }}>
+                    <SelectTrigger className="w-full h-9">
+                      <SelectValue placeholder="Select product..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products?.map((p: any) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name_product}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                <Input
-                  type="number"
-                  min="1"
-                  className="w-24"
-                  value={item.quantity || ""}
-                  onChange={(e) => {
-                    const newItems = [...items];
-                    newItems[index].quantity = parseInt(e.target.value) || 0;
-                    setItems(newItems);
-                  }}
-                  placeholder="Qty"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    className="w-16 h-9"
+                    value={item.quantity || ""}
+                    onChange={(e) => {
+                      const newItems = [...items];
+                      newItems[index].quantity = parseInt(e.target.value) || 0;
+                      setItems(newItems);
+                    }}
+                    placeholder="Qty"
+                  />
 
-                <Input
-                  type="number"
-                  min="0"
-                  className="w-32"
-                  value={item.price || ""}
-                  onChange={(e) => {
-                    const newItems = [...items];
-                    newItems[index].price = parseInt(e.target.value) || 0;
-                    setItems(newItems);
-                  }}
-                  placeholder="Unit Cost"
-                />
+                  <Input
+                    type="number"
+                    min="0"
+                    className="w-24 h-9"
+                    value={item.price || ""}
+                    onChange={(e) => {
+                      const newItems = [...items];
+                      newItems[index].price = parseInt(e.target.value) || 0;
+                      setItems(newItems);
+                    }}
+                    placeholder="Cost"
+                  />
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive h-9 w-9"
-                  onClick={() => setItems(items.filter((_, i) => i !== index))}>
-                  <X className="h-4 w-4" />
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive h-8 w-8 shrink-0"
+                    onClick={() => setItems(items.filter((_, i) => i !== index))}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
 
@@ -218,15 +225,18 @@ function CreatePurchaseDialog({ trigger }: { trigger: React.ReactNode }) {
               <Plus className="mr-2 h-4 w-4" /> Add Item
             </Button>
           </div>
+          </div>
         </div>
 
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setOpen(false)}>
+        <div className="flex flex-col sm:flex-row justify-end gap-2 p-6 border-t bg-background">
+          <Button variant="outline" className="w-full sm:w-auto order-2 sm:order-1" onClick={() => setOpen(false)}>
             Cancel
           </Button>
           <Button
             onClick={handleCreate}
-            disabled={isLoading || !supplierId || !branchId || items.length === 0}>
+            disabled={isLoading || !supplierId || !branchId || items.length === 0}
+            className="w-full sm:w-auto order-1 sm:order-2 min-w-[100px]"
+          >
             {isLoading ? "Saving..." : "Create PO"}
           </Button>
         </div>
@@ -346,15 +356,18 @@ function EditPurchaseDialog({ open, onOpenChange, order }: { open: boolean, onOp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Edit className="text-primary h-5 w-5" />
-            Edit Purchase Order
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[640px] p-0 flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="border-b p-6 pb-4 bg-muted/20">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="text-primary h-5 w-5" />
+              Edit Purchase Order
+            </DialogTitle>
+          </DialogHeader>
+        </div>
         
-        <div className="grid gap-4 py-4">
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="grid gap-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Supplier *</label>
@@ -392,61 +405,65 @@ function EditPurchaseDialog({ open, onOpenChange, order }: { open: boolean, onOp
           <div className="space-y-2 mt-2">
             <label className="text-sm font-medium">Order Items *(Need at least 1)</label>
             {items.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <Select
-                  value={item.product_id}
-                  onValueChange={(val) => {
-                    const newItems = [...items];
-                    newItems[index].product_id = val;
-                    const prod = products?.find((p: any) => p.id === val);
-                    newItems[index].price = prod?.basePrice || 0;
-                    setItems(newItems);
-                  }}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select product..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products?.map((p: any) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name_product}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div key={index} className="flex flex-row items-center gap-2 p-2 rounded-lg border bg-muted/30">
+                <div className="flex-1 min-w-[120px]">
+                  <Select
+                    value={item.product_id}
+                    onValueChange={(val) => {
+                      const newItems = [...items];
+                      newItems[index].product_id = val;
+                      const prod = products?.find((p: any) => p.id === val);
+                      newItems[index].price = prod?.basePrice || 0;
+                      setItems(newItems);
+                    }}>
+                    <SelectTrigger className="w-full h-9">
+                      <SelectValue placeholder="Select product..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {products?.map((p: any) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name_product}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                <Input
-                  type="number"
-                  min="1"
-                  className="w-24"
-                  value={item.quantity || ""}
-                  onChange={(e) => {
-                    const newItems = [...items];
-                    newItems[index].quantity = parseInt(e.target.value) || 0;
-                    setItems(newItems);
-                  }}
-                  placeholder="Qty"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    className="w-16 h-9"
+                    value={item.quantity || ""}
+                    onChange={(e) => {
+                      const newItems = [...items];
+                      newItems[index].quantity = parseInt(e.target.value) || 0;
+                      setItems(newItems);
+                    }}
+                    placeholder="Qty"
+                  />
 
-                <Input
-                  type="number"
-                  min="0"
-                  className="w-32"
-                  value={item.price || ""}
-                  onChange={(e) => {
-                    const newItems = [...items];
-                    newItems[index].price = parseInt(e.target.value) || 0;
-                    setItems(newItems);
-                  }}
-                  placeholder="Unit Cost"
-                />
+                  <Input
+                    type="number"
+                    min="0"
+                    className="w-24 h-9"
+                    value={item.price || ""}
+                    onChange={(e) => {
+                      const newItems = [...items];
+                      newItems[index].price = parseInt(e.target.value) || 0;
+                      setItems(newItems);
+                    }}
+                    placeholder="Cost"
+                  />
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive h-9 w-9"
-                  onClick={() => setItems(items.filter((_, i) => i !== index))}>
-                  <X className="h-4 w-4" />
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive h-8 w-8 shrink-0"
+                    onClick={() => setItems(items.filter((_, i) => i !== index))}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
 
@@ -458,11 +475,12 @@ function EditPurchaseDialog({ open, onOpenChange, order }: { open: boolean, onOp
               <Plus className="mr-2 h-4 w-4" /> Add Item
             </Button>
           </div>
+          </div>
         </div>
         
-        <div className="flex justify-end gap-2 mt-4">
+        <div className="flex justify-end gap-2 p-6 border-t bg-background">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleUpdate} disabled={isLoading || items.length === 0}>
+          <Button onClick={handleUpdate} disabled={isLoading || items.length === 0} className="min-w-[120px]">
             {isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </div>
@@ -538,8 +556,8 @@ export default function PurchasingPage() {
   }, [purchases]);
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-6 p-2.5 sm:p-6 min-h-screen bg-transparent">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-xl">
             <ShoppingCart className="text-primary h-5 w-5" />
@@ -559,7 +577,7 @@ export default function PurchasingPage() {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           {
             label: "Total Orders",
@@ -593,7 +611,7 @@ export default function PurchasingPage() {
         ))}
       </div>
 
-      <div className="bg-card rounded-xl border">
+      <div className="bg-card rounded-xl border min-w-0 flex flex-col">
         <div className="flex items-center gap-3 border-b p-4">
           <div className="relative flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -604,17 +622,18 @@ export default function PurchasingPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Badge variant="secondary">{filtered.length} orders</Badge>
+          <Badge variant="secondary" className="whitespace-nowrap">{filtered.length} orders</Badge>
         </div>
-        <Table>
+        <div className="overflow-x-auto">
+          <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Order Info</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Branch</TableHead>
-              <TableHead>Items</TableHead>
-              <TableHead className="text-right">Total Amount</TableHead>
-              <TableHead className="text-right pr-4">Action</TableHead>
+              <TableHead className="whitespace-nowrap">Order Info</TableHead>
+              <TableHead className="whitespace-nowrap">Status</TableHead>
+              <TableHead className="whitespace-nowrap">Branch</TableHead>
+              <TableHead className="whitespace-nowrap">Items</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Total Amount</TableHead>
+              <TableHead className="text-right pr-4 whitespace-nowrap">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -649,7 +668,7 @@ export default function PurchasingPage() {
                         <p className="text-sm font-medium">
                           PO-{order.id.substring(0, 6).toUpperCase()}
                         </p>
-                        <p className="text-muted-foreground text-xs">
+                        <p className="text-muted-foreground text-xs whitespace-nowrap">
                           {format(new Date(order.createdAt), "dd MMM yyyy")}
                         </p>
                       </div>
@@ -685,8 +704,9 @@ export default function PurchasingPage() {
             )}
           </TableBody>
         </Table>
+        </div>
         
-        <div className="flex items-center justify-between px-4 py-4 border-t bg-muted/5">
+        <div className="flex flex-col sm:flex-row items-center justify-between px-4 py-4 border-t bg-muted/5 gap-4">
           <p className="text-sm text-muted-foreground">
             Showing <span className="font-medium text-foreground">{totalItems > 0 ? startIndex + 1 : 0}</span> to{" "}
             <span className="font-medium text-foreground">{endIndex}</span> of{" "}

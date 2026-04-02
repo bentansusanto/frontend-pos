@@ -55,7 +55,7 @@ export const AiInsightCard = ({ insight, compact = false }: AiInsightCardProps) 
         </div>
         <div className="flex-1 min-w-0 space-y-0.5">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-semibold leading-snug text-slate-900 dark:text-white truncate">
+            <p className="text-sm font-semibold leading-snug text-slate-900 dark:text-white line-clamp-2">
               {insight.summary}
             </p>
             {riskLevel && (
@@ -105,7 +105,7 @@ export const AiInsightCard = ({ insight, compact = false }: AiInsightCardProps) 
       </div>
 
       {/* Inline metadata row */}
-      {(meta.sessionId || meta.cashierName || meta.diff !== undefined || meta.totalRefunds) && (
+      {(meta.sessionId || meta.cashierName || meta.diff !== undefined || meta.totalRefunds || meta.recommended_discount_pct || meta.reason) && (
         <div className="mx-4 mb-3 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-800/40">
           {meta.sessionId && (
             <MetricInline
@@ -113,6 +113,23 @@ export const AiInsightCard = ({ insight, compact = false }: AiInsightCardProps) 
               label="Session"
               value={`#${meta.sessionId}`}
               mono
+            />
+          )}
+          {meta.recommended_discount_pct && (
+            <MetricInline
+              icon={IconBolt}
+              label="Promo"
+              value={`${meta.recommended_discount_pct}% Off`}
+              valueClass="text-primary"
+            />
+          )}
+          {meta.reason && (
+            <MetricInline
+              icon={IconInfoCircle}
+              label="Reason"
+              value={meta.reason === 'near_expiry' ? 'Near Expiry' : 
+                     meta.reason === 'slow_moving' ? 'Slow Moving' : 
+                     meta.reason === 'overstock' ? 'Overstock' : 'Strategy'}
             />
           )}
           {meta.cashierName && (

@@ -64,8 +64,8 @@ function SupplierFormFields({ formik }: { formik: any }) {
   });
 
   return (
-    <div className="grid grid-cols-2 gap-4">
-      <div className="col-span-2 space-y-1.5">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="col-span-1 lg:col-span-2 space-y-1.5">
         <Label htmlFor="name">Company Name *</Label>
         <Input placeholder="PT Sumber Makmur" {...f("name")} />
         {formik.touched.name && formik.errors.name && (
@@ -114,7 +114,7 @@ function SupplierFormFields({ formik }: { formik: any }) {
           <p className="text-destructive text-xs">{formik.errors.postalCode}</p>
         )}
       </div>
-      <div className="col-span-2 space-y-1.5">
+      <div className="col-span-1 md:col-span-2 space-y-1.5">
         <Label htmlFor="address">Address *</Label>
         <Input placeholder="Jl. Sudirman No. 1" {...f("address")} />
         {formik.touched.address && formik.errors.address && (
@@ -133,17 +133,21 @@ function CreateSupplierDialog({ trigger }: { trigger: React.ReactNode }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-[520px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Truck className="text-primary h-5 w-5" />Add New Supplier
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={formik.handleSubmit} className="space-y-4 pt-2">
-          <SupplierFormFields formik={formik} />
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={formik.isSubmitting || isLoading}>
+      <DialogContent className="sm:max-w-[520px] p-0 flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="border-b p-6 pb-4 bg-muted/20">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="text-primary h-5 w-5" />Add New Supplier
+            </DialogTitle>
+          </DialogHeader>
+        </div>
+        <form onSubmit={formik.handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <SupplierFormFields formik={formik} />
+          </div>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 p-6 border-t bg-background">
+            <Button type="button" variant="outline" className="w-full sm:w-auto order-2 sm:order-1" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={formik.isSubmitting || isLoading} className="w-full sm:w-auto order-1 sm:order-2">
               {formik.isSubmitting ? "Saving..." : "Add Supplier"}
             </Button>
           </div>
@@ -161,17 +165,21 @@ function EditSupplierDialog({ supplier, trigger }: { supplier: Supplier; trigger
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-[520px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Truck className="text-primary h-5 w-5" />Edit Supplier
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={formik.handleSubmit} className="space-y-4 pt-2">
-          <SupplierFormFields formik={formik} />
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={formik.isSubmitting || isLoading}>
+      <DialogContent className="sm:max-w-[520px] p-0 flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="border-b p-6 pb-4 bg-muted/20">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="text-primary h-5 w-5" />Edit Supplier
+            </DialogTitle>
+          </DialogHeader>
+        </div>
+        <form onSubmit={formik.handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <SupplierFormFields formik={formik} />
+          </div>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 p-6 border-t bg-background">
+            <Button type="button" variant="outline" className="w-full sm:w-auto order-2 sm:order-1" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={formik.isSubmitting || isLoading} className="w-full sm:w-auto order-1 sm:order-2">
               {formik.isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
           </div>
@@ -231,8 +239,8 @@ export function SupplierPage() {
   const { filtered, isLoading, search, setSearch, handleDelete, stats } = useSupplierList();
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-6 p-2.5 sm:p-6 min-h-screen bg-transparent">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-xl">
             <Truck className="text-primary h-5 w-5" />
@@ -251,7 +259,7 @@ export function SupplierPage() {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
           { label: "Total Suppliers", value: stats.total, color: "text-blue-600", bg: "bg-blue-500/10" },
           { label: "Active", value: stats.active, color: "text-green-600", bg: "bg-green-500/10" },
@@ -267,7 +275,7 @@ export function SupplierPage() {
         ))}
       </div>
 
-      <div className="bg-card rounded-xl border">
+      <div className="bg-card rounded-xl border min-w-0 flex flex-col">
         <div className="flex items-center gap-3 border-b p-4">
           <div className="relative flex-1">
             <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -278,16 +286,17 @@ export function SupplierPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Badge variant="secondary">{filtered.length} suppliers</Badge>
+          <Badge variant="secondary" className="whitespace-nowrap">{filtered.length} suppliers</Badge>
         </div>
-        <Table>
+        <div className="overflow-x-auto">
+          <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Supplier</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>City</TableHead>
-              <TableHead>Province</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="whitespace-nowrap">Supplier</TableHead>
+              <TableHead className="whitespace-nowrap">Phone</TableHead>
+              <TableHead className="whitespace-nowrap">City</TableHead>
+              <TableHead className="whitespace-nowrap">Province</TableHead>
+              <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -383,6 +392,7 @@ export function SupplierPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </div>
     </div>
   );
