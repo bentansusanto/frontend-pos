@@ -213,6 +213,7 @@ export default function SalesReportPage() {
         subtotal:         sale.subtotal        || 0,
         taxAmount:        sale.taxAmount       || 0,
         discountAmount:   sale.discountAmount  || 0,
+        promotionName:    sale.promotionName   || "-",
       }))
       .sort((a: any, b: any) =>
         new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime()
@@ -700,7 +701,7 @@ export default function SalesReportPage() {
               <Table>
                 <TableHeader className="bg-muted/30">
                   <TableRow className="hover:bg-transparent">
-                    {["Order ID", "Date", "Amount", "Method", "Status", "Branch", "Staff", "Customer", "Items", ""].map(
+                    {["Order ID", "Date", "Amount", "Method", "Status", "Branch", "Staff", "Customer", "Promotion", "Items", ""].map(
                       (h) => (
                         <TableHead
                           key={h}
@@ -757,6 +758,15 @@ export default function SalesReportPage() {
                           <TableCell className="py-3 text-muted-foreground px-4 whitespace-nowrap">{row.branchName}</TableCell>
                           <TableCell className="py-3 font-medium px-4 whitespace-nowrap">{row.cashierName}</TableCell>
                           <TableCell className="py-3 text-muted-foreground px-4 whitespace-nowrap">{row.customerName}</TableCell>
+                          <TableCell className="py-3 px-4">
+                            {row.promotionName !== "-" ? (
+                              <Badge variant="outline" className="text-[10px] bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-800">
+                                {row.promotionName}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
                           <TableCell className="py-3 text-center px-4">
                             <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[10px] font-black">
                               {row.itemsCount}
@@ -777,7 +787,7 @@ export default function SalesReportPage() {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={10} className="py-12 text-center text-sm text-muted-foreground">
+                      <TableCell colSpan={11} className="py-12 text-center text-sm text-muted-foreground">
                         No sales data available.
                       </TableCell>
                     </TableRow>

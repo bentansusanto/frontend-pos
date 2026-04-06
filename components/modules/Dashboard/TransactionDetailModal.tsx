@@ -215,7 +215,12 @@ export function TransactionDetailModal({ sale, open, onClose }: TransactionDetai
             )}
             {sale.discountAmount != null && sale.discountAmount > 0 && (
               <div className="flex justify-between text-sm text-rose-600">
-                <span>Discount</span>
+                <div className="flex flex-col">
+                  <span>Discount</span>
+                  {sale.promotionName && (
+                    <span className="text-[10px] opacity-70 italic">({sale.promotionName})</span>
+                  )}
+                </div>
                 <span className="font-medium">-{formatCurrency(sale.discountAmount)}</span>
               </div>
             )}

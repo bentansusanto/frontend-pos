@@ -106,7 +106,8 @@ export default function TransactionsPage() {
         discountAmount: sale.discountAmount || 0,
         refundReason: sale.refundReason,
         refundedAt: sale.refundedAt,
-        invoiceNumber: sale.invoiceNumber || sale.orderId
+        invoiceNumber: sale.invoiceNumber || sale.orderId,
+        promotionName: sale.promotionName || "-"
       }))
       .filter((sale: any) => {
         if (activeTab === "all") return true;
@@ -269,6 +270,7 @@ export default function TransactionsPage() {
                       <TableHead>Branch</TableHead>
                       <TableHead>Cashier</TableHead>
                       <TableHead>Customer</TableHead>
+                      <TableHead>Promotion</TableHead>
                       <TableHead className="text-right">Items</TableHead>
                       <TableHead className="text-right">Action</TableHead>
                     </TableRow>
@@ -313,6 +315,15 @@ export default function TransactionsPage() {
                           <TableCell>{row.branchName}</TableCell>
                           <TableCell>{row.cashierName}</TableCell>
                           <TableCell>{row.customerName}</TableCell>
+                          <TableCell>
+                            {row.promotionName !== "-" ? (
+                              <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
+                                {row.promotionName}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-right">{row.itemsCount}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">
@@ -432,7 +443,7 @@ export default function TransactionsPage() {
                                             <TableCell
                                               colSpan={3}
                                               className="text-destructive text-right">
-                                              Discount
+                                              Discount {row.promotionName !== "-" && `(${row.promotionName})`}
                                             </TableCell>
                                             <TableCell className="text-destructive text-right">
                                               -{formatCurrency(row.discountAmount)}
@@ -473,7 +484,7 @@ export default function TransactionsPage() {
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={10} className="text-muted-foreground text-center">
+                        <TableCell colSpan={12} className="text-muted-foreground text-center">
                           No transactions found.
                         </TableCell>
                       </TableRow>

@@ -226,10 +226,12 @@ export default function AiInsightsDashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="prose dark:prose-invert max-w-none">
-                  <p className="text-muted-foreground text-base sm:text-lg leading-relaxed break-words">
-                    {summaryMetadata.executive_summary ||
-                      "No summary available. Click 'Refresh Analysis' to start."}
-                  </p>
+                  <div className="rounded-xl bg-primary/5 p-4 sm:p-6 border border-primary/10">
+                    <p className="text-slate-700 dark:text-slate-300 text-base sm:text-lg leading-relaxed break-words whitespace-pre-line font-medium">
+                      {summaryMetadata.executive_summary ||
+                        "No summary available. Click 'Refresh Analysis' to start."}
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
