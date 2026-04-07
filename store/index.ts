@@ -27,6 +27,7 @@ import { productBatchService } from "./services/product-batch.service";
 import { promotionService } from "./services/promotion.service";
 import { reasonCategoryService } from "./services/reason-category.service";
 import { notificationService } from "./services/notification.service";
+import { loyaltySettingsApi } from "./services/loyalty-settings.service";
 
 export const store = configureStore({
   reducer: {
@@ -55,7 +56,8 @@ export const store = configureStore({
     [productBatchService.reducerPath]: productBatchService.reducer,
     [promotionService.reducerPath]: promotionService.reducer,
     [reasonCategoryService.reducerPath]: reasonCategoryService.reducer,
-    [notificationService.reducerPath]: notificationService.reducer
+    [notificationService.reducerPath]: notificationService.reducer,
+    [loyaltySettingsApi.reducerPath]: loyaltySettingsApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
@@ -84,7 +86,8 @@ export const store = configureStore({
       productBatchService.middleware,
       promotionService.middleware,
       reasonCategoryService.middleware,
-      notificationService.middleware
+      notificationService.middleware,
+      loyaltySettingsApi.middleware,
     )
 });
 
@@ -117,7 +120,8 @@ export const allApis = [
   productBatchService,
   promotionService,
   reasonCategoryService,
-  notificationService
+  notificationService,
+  loyaltySettingsApi
 ];
 
 export const resetAllApiStates = (dispatch: AppDispatch) => {

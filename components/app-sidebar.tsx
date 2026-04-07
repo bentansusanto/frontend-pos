@@ -115,6 +115,7 @@ const data = {
           defaultOpen: false,
           items: [
             { title: "Promotions", url: "/dashboard/finance/promotions" },
+            { title: "Loyalty Program", url: "/dashboard/marketing/loyalty" },
             { title: "Taxes", url: "/dashboard/finance/taxes" }
           ],
         },
@@ -245,6 +246,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       "/dashboard/inventory/stock-overview": ["inventory:view"],
       "/dashboard/inventory/stock-take": ["inventory:view"],
       "/dashboard/finance/promotions": ["marketing:view"],
+      "/dashboard/marketing/loyalty": ["loyalti:read"],
       "/dashboard/finance/taxes": ["marketing:view"],
       "/dashboard/finance/expenses": ["finance:view"],
       "/dashboard/customers": ["customers:read"],
