@@ -171,7 +171,7 @@ export default function CreateBatchDialog({ onBatchAdded }: { onBatchAdded?: () 
                     <FormItem>
                       <FormLabel className="text-xs font-bold text-slate-500 uppercase tracking-wider">Batch Identifier</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. BTC-2024-001" {...field} className="bg-slate-50/50 border-slate-200" />
+                        <Input placeholder="e.g. BATCH-001 or JAN-2027" {...field} className="bg-slate-50/50 border-slate-200" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

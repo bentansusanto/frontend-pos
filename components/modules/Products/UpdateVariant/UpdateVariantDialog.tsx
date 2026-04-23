@@ -37,35 +37,8 @@ export const UpdateVariantDialog = ({
     }
   });
 
-  const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
-  const readFileAsDataUrl = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsDataURL(file);
-    });
 
-  const handleThumbnailFiles = async (files: FileList | null) => {
-    if (!files || !files.length) {
-      return;
-    }
-    const dataUrl = await readFileAsDataUrl(files[0]);
-    await formik.setFieldValue("thumbnail", dataUrl);
-    await formik.setFieldValue("thumbnailFile", files[0]);
-  };
-
-  const isValidImageSrc = (value: string) =>
-    value.startsWith("data:") ||
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("/") ||
-    value.startsWith("blob:");
-
-  const thumbnailPreview = isValidImageSrc(formik.values.thumbnail || "")
-    ? formik.values.thumbnail
-    : "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,41 +127,6 @@ export const UpdateVariantDialog = ({
             )}
           </div>
 
-
-          <div className="space-y-2">
-            <Label>Thumbnail (Optional)</Label>
-            <div className="flex flex-col gap-3">
-              {thumbnailPreview && (
-                <div className="relative h-40 w-full overflow-hidden rounded-xl border">
-                  <Image
-                    src={thumbnailPreview}
-                    alt="Variant thumbnail"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              )}
-
-              <div
-                className="text-muted-foreground flex min-h-24 cursor-pointer items-center justify-center rounded-xl border border-dashed text-sm hover:bg-slate-50"
-                onClick={() => thumbnailInputRef.current?.click()}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  void handleThumbnailFiles(event.dataTransfer.files);
-                }}>
-                Drag & drop thumbnail or click to upload
-              </div>
-
-              <input
-                ref={thumbnailInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => void handleThumbnailFiles(event.target.files)}
-              />
-            </div>
-          </div>
 
           <div className="flex justify-end gap-3 pt-4">
             <Button

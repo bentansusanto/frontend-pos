@@ -6,6 +6,7 @@ import { useGetSuppliersQuery } from "@/store/services/supplier.service";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { format } from "date-fns";
 import { toast } from "sonner";
 import { createBatchSchema, CreateBatchValues } from "./schema";
 
@@ -70,7 +71,12 @@ export const useCreateBatch = ({ onSuccess }: { onSuccess?: () => void } = {}) =
 
   const onSubmit = async (values: CreateBatchValues) => {
     try {
-      await createProductBatch(values).unwrap();
+      const payload = {
+        ...values,
+        expiryDate: values.expiryDate ? format(values.expiryDate, "yyyy-MM-dd") : undefined,
+        receivedDate: values.receivedDate ? format(values.receivedDate, "yyyy-MM-dd") : undefined,
+      };
+      await createProductBatch(payload).unwrap();
       toast.success("Product batch created successfully");
       form.reset();
       if (onSuccess) onSuccess();

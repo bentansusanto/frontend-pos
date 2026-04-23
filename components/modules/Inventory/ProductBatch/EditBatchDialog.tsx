@@ -45,7 +45,6 @@ const editBatchSchema = z.object({
   batchNumber: z.string().min(1, "Batch number is required"),
   costPrice: z.coerce.number().min(0, "Cost price cannot be negative"),
   expiryDate: z.date().optional(),
-  manufacturingDate: z.date().optional(),
   receivedDate: z.date().optional(),
   status: z.enum(["active", "expired", "hold", "sold_out"]),
 });
@@ -90,9 +89,6 @@ export default function EditBatchDialog({
         costPrice: Number(batch.costPrice) || 0,
         status: batch.status || "active",
         expiryDate: batch.expiryDate ? parseISO(batch.expiryDate) : undefined,
-        manufacturingDate: batch.manufacturingDate
-          ? parseISO(batch.manufacturingDate)
-          : undefined,
         receivedDate: batch.receivedDate
           ? parseISO(batch.receivedDate)
           : undefined,
@@ -105,9 +101,8 @@ export default function EditBatchDialog({
       const payload = {
         ...values,
         // Convert Date objects back to ISO strings for the API
-        expiryDate: values.expiryDate?.toISOString(),
-        manufacturingDate: values.manufacturingDate?.toISOString(),
-        receivedDate: values.receivedDate?.toISOString(),
+        expiryDate: values.expiryDate ? format(values.expiryDate, "yyyy-MM-dd") : undefined,
+        receivedDate: values.receivedDate ? format(values.receivedDate, "yyyy-MM-dd") : undefined,
       };
       await updateBatch({ id: batch.id, body: payload }).unwrap();
       toast.success("Batch updated successfully");
@@ -170,7 +165,7 @@ export default function EditBatchDialog({
                       Batch Number
                     </FormLabel>
                     <FormControl>
-                      <Input {...field} className="bg-muted/30" />
+                      <Input {...field} placeholder="e.g. BATCH-001 or JAN-2027" className="bg-muted/30" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -233,7 +228,7 @@ export default function EditBatchDialog({
             />
 
             {/* Date Fields */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {/* Expiry Date */}
               <FormField
                 control={form.control}
@@ -242,44 +237,6 @@ export default function EditBatchDialog({
                   <FormItem className="flex flex-col">
                     <FormLabel className="text-xs font-bold uppercase text-muted-foreground">
                       Expiry Date
-                    </FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full text-left font-normal bg-muted/30",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? format(field.value, "dd MMM yyyy") : "Select date"}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Manufacturing Date */}
-              <FormField
-                control={form.control}
-                name="manufacturingDate"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel className="text-xs font-bold uppercase text-muted-foreground">
-                      Mfg. Date
                     </FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>

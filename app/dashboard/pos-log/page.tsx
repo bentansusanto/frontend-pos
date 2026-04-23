@@ -281,8 +281,9 @@ export default function PosLogPage() {
                 </Table>
               </div>
 
-              <div className="flex flex-col items-center justify-center gap-4 px-2 py-6 border-t">
-                <p className="text-xs text-muted-foreground text-center">
+              {/* Desktop: info left, pagination right | Mobile: stacked centered */}
+              <div className="flex flex-col items-center gap-4 px-2 py-4 border-t md:flex-row md:items-center md:justify-between">
+                <p className="text-xs text-muted-foreground text-center md:text-left">
                   Showing <span className="font-medium">{totalItems > 0 ? startIndex + 1 : 0}–{endIndex}</span> of{" "}
                   <span className="font-medium">{totalItems}</span> sessions
                 </p>

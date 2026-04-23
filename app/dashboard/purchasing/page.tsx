@@ -27,7 +27,7 @@ import {
   TableRow
 } from "@/components/ui/table";
 import { useGetBranchesQuery } from "@/store/services/branch.service";
-import { useGetProductsQuery } from "@/store/services/product.service";
+import { useGetVariantProductsQuery } from "@/store/services/product.service";
 import {
   useCreatePurchaseMutation,
   useGetPurchasesQuery,
@@ -69,20 +69,24 @@ function CreatePurchaseDialog({ trigger }: { trigger: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const { data: suppliers } = useGetSuppliersQuery();
   const { data: branches } = useGetBranchesQuery();
-  const { data: products } = useGetProductsQuery();
+  const { data: variants } = useGetVariantProductsQuery();
   const [createPurchase, { isLoading }] = useCreatePurchaseMutation();
 
   const [supplierId, setSupplierId] = useState("");
   const [branchId, setBranchId] = useState("");
-  const [items, setItems] = useState<{ product_id: string; quantity: number; price: number }[]>([]);
+  const [items, setItems] = useState<{ product_variant_id: string; quantity: number; price: number }[]>([]);
 
   const handleCreate = async () => {
     if (!supplierId || !branchId || items.length === 0) return;
+    if (items.some(i => !i.product_variant_id)) {
+      toast.error("Please select a variant for all items before submitting.");
+      return;
+    }
     try {
-      const mappedItems = items.map((item) => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: item.price
+      const mappedItems = items.map((item: any) => ({
+        product_variant_id: item.product_variant_id,
+        quantity: Number(item.quantity),
+        price: Number(item.price)
       }));
       const totalCost = mappedItems.reduce((acc, curr) => acc + curr.quantity * curr.price, 0);
 
@@ -158,21 +162,24 @@ function CreatePurchaseDialog({ trigger }: { trigger: React.ReactNode }) {
               <div key={index} className="flex flex-row items-center gap-2 p-2 rounded-lg border bg-muted/30">
                 <div className="flex-1 min-w-[120px]">
                   <Select
-                    value={item.product_id}
+                    value={item.product_variant_id}
                     onValueChange={(val) => {
                       const newItems = [...items];
-                      newItems[index].product_id = val;
-                      const prod = products?.find((p: any) => p.id === val);
-                      newItems[index].price = prod?.basePrice || 0;
+                      newItems[index].product_variant_id = val;
+                      const variant = (variants as any)?.find((v: any) => v.id === val);
+                      newItems[index].price = Number(variant?.cost_price || variant?.price || 0);
                       setItems(newItems);
                     }}>
                     <SelectTrigger className="w-full h-9">
-                      <SelectValue placeholder="Select product..." />
+                      <SelectValue placeholder="Select variant..." />
                     </SelectTrigger>
-                    <SelectContent>
-                      {products?.map((p: any) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name_product}
+                    <SelectContent position="popper">
+                      {!(variants as any)?.length && (
+                        <div className="px-2 py-4 text-sm text-center text-muted-foreground">No variants found. Add products first.</div>
+                      )}
+                      {(variants as any)?.map((v: any) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.display_name || `${v.product_name || v.product?.name_product} - ${v.name_variant}`}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -221,7 +228,7 @@ function CreatePurchaseDialog({ trigger }: { trigger: React.ReactNode }) {
               variant="outline"
               size="sm"
               className="mt-2 w-full"
-              onClick={() => setItems([...items, { product_id: "", quantity: 1, price: 0 }])}>
+              onClick={() => setItems([...items, { product_variant_id: "", quantity: 1, price: 0 }])}>
               <Plus className="mr-2 h-4 w-4" /> Add Item
             </Button>
           </div>
@@ -281,7 +288,7 @@ function ViewPurchaseDialog({ open, onOpenChange, order }: { open: boolean, onOp
               <Table>
                 <TableHeader className="bg-muted/50">
                   <TableRow>
-                    <TableHead>Product ID</TableHead>
+                    <TableHead>Product & Variant</TableHead>
                     <TableHead className="text-right">Qty</TableHead>
                     <TableHead className="text-right">Unit Cost</TableHead>
                     <TableHead className="text-right">Total</TableHead>
@@ -290,7 +297,10 @@ function ViewPurchaseDialog({ open, onOpenChange, order }: { open: boolean, onOp
                 <TableBody>
                   {order.purchaseItems?.map((item: any) => (
                     <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.product_id?.substring(0,8)}...</TableCell>
+                      <TableCell className="font-medium">
+                        <div>{item.productVariant?.product?.name_product || item.productVariant?.product?.name || "Product"}</div>
+                        <div className="text-muted-foreground text-[10px]">{item.productVariant?.name_variant}</div>
+                      </TableCell>
                       <TableCell className="text-right">{item.quantity}</TableCell>
                       <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(item.total)}</TableCell>
@@ -312,27 +322,31 @@ function ViewPurchaseDialog({ open, onOpenChange, order }: { open: boolean, onOp
 function EditPurchaseDialog({ open, onOpenChange, order }: { open: boolean, onOpenChange: (open: boolean) => void, order: any }) {
   const { data: suppliers } = useGetSuppliersQuery();
   const { data: branches } = useGetBranchesQuery();
-  const { data: products } = useGetProductsQuery();
+  const { data: variants } = useGetVariantProductsQuery();
   const [updatePurchase, { isLoading }] = useUpdatePurchaseMutation();
 
   const [supplierId, setSupplierId] = useState(order?.supplier_id || "");
   const [branchId, setBranchId] = useState(order?.branch?.id || "");
   const [note, setNote] = useState(order?.note || "");
   
-  const [items, setItems] = useState<{ product_id: string; quantity: number; price: number }[]>(
+  const [items, setItems] = useState<{ product_variant_id: string; quantity: number; price: number }[]>(
     order?.purchaseItems?.map((i: any) => ({
-      product_id: i.product_id,
+      product_variant_id: i.product_variant_id,
       quantity: i.quantity,
       price: i.price
     })) || []
   );
 
   const handleUpdate = async () => {
+    if (items.some(i => !i.product_variant_id)) {
+      toast.error("Please select a variant for all items before submitting.");
+      return;
+    }
     try {
-      const mappedItems = items.map((item) => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: item.price
+      const mappedItems = items.map((item: any) => ({
+        product_variant_id: item.product_variant_id,
+        quantity: Number(item.quantity),
+        price: Number(item.price)
       }));
       
       await updatePurchase({
@@ -408,21 +422,24 @@ function EditPurchaseDialog({ open, onOpenChange, order }: { open: boolean, onOp
               <div key={index} className="flex flex-row items-center gap-2 p-2 rounded-lg border bg-muted/30">
                 <div className="flex-1 min-w-[120px]">
                   <Select
-                    value={item.product_id}
+                    value={item.product_variant_id}
                     onValueChange={(val) => {
                       const newItems = [...items];
-                      newItems[index].product_id = val;
-                      const prod = products?.find((p: any) => p.id === val);
-                      newItems[index].price = prod?.basePrice || 0;
+                      newItems[index].product_variant_id = val;
+                      const variant = (variants as any)?.find((v: any) => v.id === val);
+                      newItems[index].price = Number(variant?.cost_price || variant?.price || 0);
                       setItems(newItems);
                     }}>
                     <SelectTrigger className="w-full h-9">
-                      <SelectValue placeholder="Select product..." />
+                      <SelectValue placeholder="Select variant..." />
                     </SelectTrigger>
-                    <SelectContent>
-                      {products?.map((p: any) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name_product}
+                    <SelectContent position="popper">
+                      {!(variants as any)?.length && (
+                        <div className="px-2 py-4 text-sm text-center text-muted-foreground">No variants found. Add products first.</div>
+                      )}
+                      {(variants as any)?.map((v: any) => (
+                        <SelectItem key={v.id} value={v.id}>
+                          {v.display_name || `${v.product_name || v.product?.name_product} - ${v.name_variant}`}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -471,7 +488,7 @@ function EditPurchaseDialog({ open, onOpenChange, order }: { open: boolean, onOp
               variant="outline"
               size="sm"
               className="mt-2 w-full"
-              onClick={() => setItems([...items, { product_id: "", quantity: 1, price: 0 }])}>
+              onClick={() => setItems([...items, { product_variant_id: "", quantity: 1, price: 0 }])}>
               <Plus className="mr-2 h-4 w-4" /> Add Item
             </Button>
           </div>

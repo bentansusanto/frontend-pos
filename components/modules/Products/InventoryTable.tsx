@@ -212,14 +212,6 @@ export function InventoryTable({
                       <TableCell></TableCell>
                       <TableCell className="pl-10">
                         <div className="flex items-center gap-3">
-                           <div className="relative size-8 overflow-hidden rounded-md border bg-background">
-                            <Image
-                              src={variant.thumbnail || "/placeholder-image.jpg"}
-                              alt={variant.name_variant}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
                           <div className="flex flex-col">
                             <span className="text-xs font-medium text-foreground">
                               {variant.name_variant}

@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +45,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useGetProfileQuery } from "@/store/services/auth.service";
+import { useGetBranchesQuery } from "@/store/services/branch.service";
 import {
   useCreateExpenseMutation,
   useDeleteExpenseMutation,
@@ -44,6 +56,7 @@ import {
 } from "@/store/services/expense.service";
 import { format } from "date-fns";
 import {
+  Eye,
   Loader2,
   MoreHorizontal,
   Pencil,
@@ -218,10 +231,38 @@ function AddExpenseDialog({
 }) {
   const [open, setOpen] = useState(false);
   const { data: profileData } = useGetProfileQuery();
+  const { data: allBranches } = useGetBranchesQuery();
   const [createExpense, { isLoading }] = useCreateExpenseMutation();
-  const branchId = profileData?.branches?.[0]?.id;
+
+  const userRole = profileData?.role;
+  const userBranches = profileData?.branches || [];
+
+  // Owner/super_admin: all branches; others: only their assigned branches
+  const availableBranches = useMemo(() => {
+    if (!allBranches) return [];
+    if (userRole === "owner" || userRole === "super_admin") return allBranches;
+    return allBranches.filter((b: any) =>
+      userBranches.some((ub: any) => ub.id === b.id)
+    );
+  }, [allBranches, userRole, userBranches]);
+
+  const needsBranchSelect = userRole === "owner" || userRole === "super_admin";
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+
+  // For non-owner: auto-use their first branch
+  const branchId = needsBranchSelect
+    ? selectedBranchId
+    : userBranches[0]?.id;
 
   const handleSubmit = async (values: ExpenseFormValues) => {
+    if (!branchId) {
+      toast.error(
+        needsBranchSelect
+          ? "Please select a branch."
+          : "No branch available. Please contact your administrator."
+      );
+      return;
+    }
     try {
       await createExpense({
         expense_date: new Date(values.date).toISOString(),
@@ -229,10 +270,11 @@ function AddExpenseDialog({
         expense_category_id: values.category,
         amount: parseFloat(values.amount) || 0,
         payment_method: values.paidBy,
-        notes: values.notes || undefined,
+        notes: values.notes || "",
         branch_id: branchId
       }).unwrap();
       toast.success("Expense added successfully");
+      setSelectedBranchId("");
       setOpen(false);
     } catch (error) {
       toast.error("Failed to add expense");
@@ -249,6 +291,26 @@ function AddExpenseDialog({
             Add New Expense
           </DialogTitle>
         </DialogHeader>
+
+        {/* Branch selector — only visible to owner / super_admin */}
+        {needsBranchSelect && (
+          <div className="space-y-1.5 pt-2">
+            <Label htmlFor="expense-branch">Branch *</Label>
+            <Select value={selectedBranchId} onValueChange={setSelectedBranchId}>
+              <SelectTrigger id="expense-branch">
+                <SelectValue placeholder="Select branch" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableBranches.map((b: any) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <ExpenseForm
           onSubmit={handleSubmit}
           onCancel={() => setOpen(false)}
@@ -319,6 +381,162 @@ function EditExpenseDialog({
         />
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ── View Detail Dialog ───────────────────────────────────────────────────────
+function ViewExpenseDialog({
+  expense,
+  trigger,
+  categories
+}: {
+  expense: any;
+  trigger: React.ReactNode;
+  categories: any[];
+}) {
+  const [open, setOpen] = useState(false);
+
+  const categoryName = getCategoryLabel(expense.expense_category_id, categories);
+
+  const fields = [
+    { label: "Expense Code", value: expense.expense_code, mono: true },
+    {
+      label: "Date",
+      value: expense.expense_date
+        ? format(new Date(expense.expense_date), "dd MMM yyyy")
+        : "-"
+    },
+    { label: "Category", value: categoryName },
+    { label: "Payment Method", value: expense.payment_method },
+    {
+      label: "Amount",
+      value: formatCurrency(Number(expense.amount)),
+      highlight: true
+    },
+    { label: "Description", value: expense.description, full: true },
+    { label: "Notes", value: expense.notes || "-", full: true }
+  ];
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden">
+        {/* Accent top bar */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-400 via-red-500 to-red-400" />
+
+        <DialogHeader className="px-6 pt-7 pb-4">
+          <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50">
+              <Receipt className="h-4 w-4 text-red-500" />
+            </div>
+            Expense Detail
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="px-6 pb-6 space-y-3">
+          {/* Code badge */}
+          <div className="flex items-center justify-between rounded-xl border bg-slate-50/70 px-4 py-3">
+            <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Expense ID</span>
+            <Badge variant="outline" className="font-mono text-xs">
+              {expense.expense_code}
+            </Badge>
+          </div>
+
+          {/* Grid of fields */}
+          <div className="grid grid-cols-2 gap-3">
+            {fields.slice(1, 5).map((f) => (
+              <div
+                key={f.label}
+                className="rounded-xl border bg-slate-50/50 px-4 py-3 space-y-1"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  {f.label}
+                </p>
+                <p
+                  className={`text-sm font-semibold truncate ${
+                    f.highlight ? "text-red-600" : "text-foreground"
+                  } ${f.mono ? "font-mono" : ""}`}
+                >
+                  {f.value}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Description */}
+          <div className="rounded-xl border bg-slate-50/50 px-4 py-3 space-y-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Description</p>
+            <p className="text-sm font-medium text-foreground">{expense.description || "-"}</p>
+          </div>
+
+          {/* Notes */}
+          <div className="rounded-xl border bg-slate-50/50 px-4 py-3 space-y-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Notes</p>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {expense.notes || <span className="italic">No notes provided.</span>}
+            </p>
+          </div>
+
+          {/* Timestamps */}
+          <div className="flex gap-3 text-xs text-muted-foreground pt-1">
+            <span>Created: {expense.createdAt ? format(new Date(expense.createdAt), "dd MMM yyyy, HH:mm") : "-"}</span>
+            {expense.updatedAt && expense.updatedAt !== expense.createdAt && (
+              <span>· Updated: {format(new Date(expense.updatedAt), "dd MMM yyyy, HH:mm")}</span>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Delete Confirm Dialog ────────────────────────────────────────────────────
+function DeleteExpenseDialog({
+  expense,
+  onDelete
+}: {
+  expense: any;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <DropdownMenuItem
+          className="text-destructive focus:text-destructive"
+          onSelect={(e) => e.preventDefault()}
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete
+        </DropdownMenuItem>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/10">
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </div>
+            Delete Expense
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-sm text-muted-foreground pt-1">
+            Are you sure you want to delete expense{" "}
+            <span className="font-semibold text-foreground font-mono">
+              {expense.expense_code}
+            </span>
+            ? This action <span className="font-semibold text-destructive">cannot be undone</span>.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-white hover:bg-destructive/90"
+            onClick={() => onDelete(expense.id)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -419,13 +637,11 @@ export function ExpensesPage() {
   }, [byCat]);
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this expense?")) {
-      try {
-        await deleteExpense(id).unwrap();
-        toast.success("Expense deleted successfully");
-      } catch (error) {
-        toast.error("Failed to delete expense");
-      }
+    try {
+      await deleteExpense(id).unwrap();
+      toast.success("Expense deleted successfully");
+    } catch (error) {
+      toast.error("Failed to delete expense");
     }
   };
 
@@ -596,6 +812,16 @@ export function ExpensesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <ViewExpenseDialog
+                          expense={expense}
+                          categories={categories}
+                          trigger={
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Detail
+                            </DropdownMenuItem>
+                          }
+                        />
                         <EditExpenseDialog
                           expense={expense}
                           categories={categories}
@@ -606,12 +832,10 @@ export function ExpensesPage() {
                             </DropdownMenuItem>
                           }
                         />
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => handleDelete(expense.id)}>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
+                        <DeleteExpenseDialog
+                          expense={expense}
+                          onDelete={handleDelete}
+                        />
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

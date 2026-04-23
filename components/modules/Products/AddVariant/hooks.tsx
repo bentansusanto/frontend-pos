@@ -32,9 +32,7 @@ export const useAddVariant = ({ productId, onSuccess }: UseAddVariantProps) => {
       name_variant: "",
       price: 0,
       cost_price: 0,
-      thumbnail: "",
       barcode: "",
-      thumbnailFile: undefined
     },
     validate: (values) => {
       const result = addVariantSchema.safeParse(values);
@@ -45,24 +43,15 @@ export const useAddVariant = ({ productId, onSuccess }: UseAddVariantProps) => {
     },
     onSubmit: async (values, { resetForm }) => {
       try {
-        const formData = new FormData();
-        formData.append("productId", productId);
-        formData.append("name_variant", values.name_variant);
-        formData.append("price", String(values.price));
-        if (values.cost_price !== undefined) {
-          formData.append("cost_price", String(values.cost_price));
-        }
-        if (values.barcode) {
-          formData.append("barcode", values.barcode);
-        }
+        const payload = {
+          productId,
+          name_variant: values.name_variant,
+          price: Number(values.price),
+          cost_price: values.cost_price !== undefined ? Number(values.cost_price) : undefined,
+          barcode: values.barcode || undefined,
+        };
 
-        if (values.thumbnailFile) {
-          formData.append("thumbnail", values.thumbnailFile);
-        } else if (values.thumbnail) {
-          formData.append("thumbnail", values.thumbnail);
-        }
-
-        await createVariantProduct(formData).unwrap();
+        await createVariantProduct(payload).unwrap();
 
         toast.success("Variant created successfully");
         resetForm();

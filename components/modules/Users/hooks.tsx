@@ -38,11 +38,11 @@ export const useAddUser = ({ onSuccess }: UseAddUserProps) => {
     },
     onSubmit: async (values, { setSubmitting, resetForm }) => {
       try {
-        // Jangan kirim role_code ke API
+        // Do not send role_code to the API
         const { role_code, ...payload } = values;
 
-        // Jika cashier: kirim pin, hapus username & password
-        // Jika non-cashier: kirim username + password, hapus pin
+        // If cashier: send pin, remove username & password
+        // If non-cashier: send username + password, remove pin
         if (role_code === "cashier") {
           delete payload.username;
           delete payload.password;

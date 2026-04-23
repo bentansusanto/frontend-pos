@@ -4,7 +4,7 @@ import {
   useVerifyAccountMutation
 } from "@/store/services/auth.service";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 export const HookVerifyAccount = () => {
@@ -12,54 +12,51 @@ export const HookVerifyAccount = () => {
   const searchParams = useSearchParams();
   const token = searchParams.get("verify_token");
 
-  const [verifyAccount, { isLoading: isVerifying }] = useVerifyAccountMutation();
-  const [resendVerifyAccount, { isLoading: isResending }] = useResendVerifyAccountMutation();
+  const [verifyAccount, { 
+    isLoading: isVerifying, 
+    isSuccess: verificationSuccess, 
+    isError: isVerificationError,
+    error: verificationError,
+    reset: resetVerify
+  }] = useVerifyAccountMutation({
+    fixedCacheKey: 'verify-account',
+  });
 
-  const [verificationStatus, setVerificationStatus] = useState<"loading" | "success" | "error">(
-    "loading"
-  );
-  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [resendVerifyAccount, { isLoading: isResending }] = useResendVerifyAccountMutation();
 
   useEffect(() => {
     const verify = async () => {
-      if (!token) {
-        setVerificationStatus("error");
-        setErrorMessage("Invalid verification token.");
-        return;
-      }
+      if (!token) return;
 
       try {
         await verifyAccount(token).unwrap();
-        setVerificationStatus("success");
         toast.success("Account verified successfully!");
       } catch (err: any) {
         console.error("Verification error:", err);
-        setVerificationStatus("error");
-        const msg =
-          (err as any)?.data?.Error?.body || (err as any)?.data?.message || "Verification failed.";
-        setErrorMessage(msg);
+        // Only show toast if it's the first time we hit this error
+        const msg = (err as any)?.data?.Error?.body || (err as any)?.data?.message || "Verification failed.";
         toast.error(msg);
       }
     };
 
-    if (token) {
+    // Only trigger if we have a token and haven't tried yet in this cache session
+    if (token && !verificationSuccess && !isVerificationError && !isVerifying) {
       verify();
-    } else {
-      setVerificationStatus("error");
-      setErrorMessage("No verification token found.");
     }
-  }, [token, verifyAccount]);
+  }, [token, verifyAccount, verificationSuccess, isVerificationError, isVerifying]);
 
   const handleResendVerification = async () => {
     const email = localStorage.getItem("user_email");
 
     if (!email) {
       toast.error("Email not found.");
+      return;
     }
 
     try {
       await resendVerifyAccount({ email }).unwrap();
       toast.success("Verification email resent successfully!");
+      resetVerify(); // Allow retrying verification after resending
     } catch (err: any) {
       console.error("Resend verification error:", err);
       const msg =
@@ -70,8 +67,13 @@ export const HookVerifyAccount = () => {
     }
   };
 
+  // Map RTK error to display message
+  const errorMessage = isVerificationError 
+    ? (verificationError as any)?.data?.Error?.body || (verificationError as any)?.data?.message || "Verification failed."
+    : "";
+
   return {
-    verificationStatus,
+    verificationStatus: isVerifying ? "loading" : verificationSuccess ? "success" : isVerificationError ? "error" : "loading",
     errorMessage,
     isVerifying,
     isResending,

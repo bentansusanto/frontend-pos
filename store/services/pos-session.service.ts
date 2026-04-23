@@ -4,7 +4,7 @@ import { baseQuery } from "./baseQuery";
 export const posSessionApi = createApi({
   reducerPath: "posSessionApi",
   baseQuery,
-  tagTypes: ["PosSession"],
+  tagTypes: ["PosSession", "ActiveSession"],
   endpoints: (builder) => ({
     getPosSessions: builder.query<any, void>({
       query: () => "/pos-sessions",
@@ -13,7 +13,10 @@ export const posSessionApi = createApi({
     }),
     getActiveSession: builder.query<any, void>({
       query: () => "/pos-sessions/active",
-      providesTags: ["PosSession"],
+      // Use a separate tag so it doesn't get polluted by other session mutations
+      providesTags: ["ActiveSession"],
+      // Never keep stale cache: always re-fetch from server on mount
+      keepUnusedDataFor: 0,
       transformResponse: (res: any) => (res && res.data !== undefined ? res.data : res),
     }),
     openSession: builder.mutation<any, { branch_id: string; openingBalance: number; notes?: string }>({
@@ -22,7 +25,8 @@ export const posSessionApi = createApi({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["PosSession"],
+      // Invalidate both tags to trigger a fresh fetch of active session
+      invalidatesTags: ["PosSession", "ActiveSession"],
     }),
     closeSession: builder.mutation<any, { 
       id: string; 
@@ -35,7 +39,8 @@ export const posSessionApi = createApi({
         method: "PATCH",
         body,
       }),
-      invalidatesTags: ["PosSession"],
+      // Invalidate both tags to trigger a fresh fetch of active session
+      invalidatesTags: ["PosSession", "ActiveSession"],
     }),
     getSessionSummary: builder.query<any, string>({
       query: (id) => `/pos-sessions/${id}/summary`,
