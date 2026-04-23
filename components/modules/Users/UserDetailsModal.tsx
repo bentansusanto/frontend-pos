@@ -192,16 +192,16 @@ export function UserDetailsModal({ isOpen, onClose, userId }: UserDetailsModalPr
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2 text-lg">
                         <KeyRound className="text-primary/70 h-5 w-5" />
-                        {user.role_code === "cashier" ? "Cashier PIN Access" : "Login Credentials"}
+                        {user.role === "cashier" ? "Cashier PIN Access" : "Login Credentials"}
                       </CardTitle>
                       <CardDescription>
-                        {user.role_code === "cashier"
-                          ? "Manage the 4-8 digit numeric PIN used for POS access."
+                        {user.role === "cashier"
+                          ? "Manage the 6-digit numeric PIN used for POS access."
                           : "Update system username and password for this account."}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {user.role_code === "cashier" ? (
+                      {user.role === "cashier" ? (
                         <UpdatePinForm userId={userId as string} currentPin={user.pin} onSuccess={refetch} />
                       ) : (
                         <UpdateCredentialsForm
@@ -240,8 +240,8 @@ function UpdatePinForm({
     initialValues: { pin: "" },
     validate: (values) => {
       const errors: Record<string, string> = {};
-      if (!values.pin) errors.pin = "PIN wajib diisi";
-      else if (!/^\d{4,8}$/.test(values.pin)) errors.pin = "PIN harus 4–8 digit angka";
+      if (!values.pin) errors.pin = "PIN is required";
+      else if (!/^\d{6}$/.test(values.pin)) errors.pin = "PIN must be 6 digits";
       return errors;
     },
     onSubmit: async (values, { resetForm }) => {
@@ -251,7 +251,7 @@ function UpdatePinForm({
         resetForm();
         onSuccess();
       } catch (err: any) {
-        toast.error(err?.data?.message || "Gagal memperbarui PIN");
+        toast.error(err?.data?.message || "Failed to update PIN");
       }
     }
   });
@@ -261,19 +261,19 @@ function UpdatePinForm({
       {currentPin && (
         <p className="text-muted-foreground flex items-center gap-1.5 text-sm">
           <CheckCircle2 className="h-4 w-4 text-green-500" />
-          PIN sudah di-set
+          PIN has been set
         </p>
       )}
       <div className="max-w-xs space-y-1.5">
         <Label htmlFor="pin">
-          {currentPin ? "Ganti PIN" : "Set PIN"}
-          <span className="text-muted-foreground ml-1.5 text-xs">(4–8 digit angka)</span>
+          {currentPin ? "Change PIN" : "Set PIN"}
+          <span className="text-muted-foreground ml-1.5 text-xs">(6 digits)</span>
         </Label>
         <Input
           id="pin"
           type="password"
           inputMode="numeric"
-          maxLength={8}
+          maxLength={6}
           placeholder="••••••"
           value={formik.values.pin}
           onChange={(e) => formik.setFieldValue("pin", e.target.value.replace(/\D/g, ""))}
@@ -286,7 +286,7 @@ function UpdatePinForm({
       </div>
       <Button type="submit" disabled={isLoading} size="sm">
         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Simpan PIN
+        Save PIN
       </Button>
     </form>
   );
@@ -318,20 +318,20 @@ function UpdateCredentialsForm({
     validate: (values) => {
       const errors: Record<string, string> = {};
       if (!values.username || values.username.trim() === "") {
-        errors.username = "Username wajib diisi";
+        errors.username = "Username is required";
       }
       if (values.password) {
-        if (values.password.length < 8) errors.password = "Password minimal 8 karakter";
+        if (values.password.length < 8) errors.password = "Password must be at least 8 characters";
         else if (!/(?=.*[a-z])/.test(values.password))
-          errors.password = "Harus mengandung huruf kecil";
+          errors.password = "Must contain lowercase letter";
         else if (!/(?=.*[A-Z])/.test(values.password))
-          errors.password = "Harus mengandung huruf kapital";
-        else if (!/(?=.*\d)/.test(values.password)) errors.password = "Harus mengandung angka";
+          errors.password = "Must contain uppercase letter";
+        else if (!/(?=.*\d)/.test(values.password)) errors.password = "Must contain a number";
         else if (!/(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?])/.test(values.password))
-          errors.password = "Harus mengandung karakter spesial";
+          errors.password = "Must contain a special character";
 
         if (values.confirmPassword !== values.password)
-          errors.confirmPassword = "Password tidak sama";
+          errors.confirmPassword = "Passwords do not match";
       }
       return errors;
     },
@@ -345,7 +345,7 @@ function UpdateCredentialsForm({
         resetForm({ values: { username: values.username, password: "", confirmPassword: "" } });
         onSuccess();
       } catch (err: any) {
-        toast.error(err?.data?.message || "Gagal memperbarui kredensial");
+        toast.error(err?.data?.message || "Failed to update credentials");
       }
     }
   });
@@ -368,11 +368,11 @@ function UpdateCredentialsForm({
 
       <div className="border-t pt-4">
         <p className="text-muted-foreground mb-3 text-sm">
-          Isi kolom di bawah hanya jika ingin mengganti password:
+          Fill in the fields below only if you want to change the password:
         </p>
         <div className="space-y-3">
           <div className="max-w-sm space-y-1.5">
-            <Label htmlFor="cred-password">Password Baru</Label>
+            <Label htmlFor="cred-password">New Password</Label>
             <div className="relative">
               <Input
                 id="cred-password"
@@ -396,7 +396,7 @@ function UpdateCredentialsForm({
             )}
           </div>
           <div className="max-w-sm space-y-1.5">
-            <Label htmlFor="cred-confirm">Konfirmasi Password</Label>
+            <Label htmlFor="cred-confirm">Confirm Password</Label>
             <div className="relative">
               <Input
                 id="cred-confirm"
@@ -426,7 +426,7 @@ function UpdateCredentialsForm({
 
       <Button type="submit" disabled={isLoading} size="sm">
         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Simpan Perubahan
+        Save Changes
       </Button>
     </form>
   );
@@ -458,8 +458,8 @@ function UpdateProfileForm({
     },
     validate: (values) => {
       const errors: Record<string, string> = {};
-      if (!values.address.trim()) errors.address = "Alamat wajib diisi";
-      if (!values.phone.trim()) errors.phone = "Nomor telepon wajib diisi";
+      if (!values.address.trim()) errors.address = "Address is required";
+      if (!values.phone.trim()) errors.phone = "Phone number is required";
       return errors;
     },
     onSubmit: async (values) => {
@@ -469,10 +469,10 @@ function UpdateProfileForm({
         } else {
           await createProfile({ ...values, user_id: userId }).unwrap();
         }
-        toast.success("Profile berhasil diperbarui");
+        toast.success("Profile updated successfully");
         onSuccess();
       } catch (err: any) {
-        toast.error(err?.data?.message || "Gagal memperbarui profile");
+        toast.error(err?.data?.message || "Failed to update profile");
       }
     }
   });
@@ -481,7 +481,7 @@ function UpdateProfileForm({
     <form onSubmit={formik.handleSubmit} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="prof-address">Alamat</Label>
+          <Label htmlFor="prof-address">Address</Label>
           <Input
             id="prof-address"
             placeholder="Jl. Contoh No. 1"
@@ -493,7 +493,7 @@ function UpdateProfileForm({
           )}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="prof-phone">No. Telepon</Label>
+          <Label htmlFor="prof-phone">Phone Number</Label>
           <Input
             id="prof-phone"
             type="tel"
@@ -508,7 +508,7 @@ function UpdateProfileForm({
       </div>
       <Button type="submit" disabled={isLoading} size="sm">
         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {profileId ? "Simpan Profile" : "Buat Profile"}
+        {profileId ? "Save Profile" : "Create Profile"}
       </Button>
     </form>
   );

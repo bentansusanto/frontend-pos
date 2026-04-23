@@ -37,9 +37,7 @@ export const useUpdateVariant = ({
       name_variant: initialData?.name_variant || "",
       price: initialData?.price ? parseFloat(initialData.price) : 0,
       cost_price: initialData?.cost_price ? parseFloat(initialData.cost_price) : 0,
-      thumbnail: initialData?.thumbnail || "",
-      barcode: initialData?.barcode || "",
-      thumbnailFile: undefined
+      barcode: initialData?.barcode || ""
     },
     enableReinitialize: true,
     validate: (values) => {
@@ -63,9 +61,6 @@ export const useUpdateVariant = ({
           formData.append("barcode", values.barcode);
         }
 
-        if (values.thumbnailFile) {
-          formData.append("thumbnail", values.thumbnailFile);
-        }
 
         await updateVariantProduct({ id: variantId, body: formData }).unwrap();
 

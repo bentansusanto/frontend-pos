@@ -85,7 +85,16 @@ export const PosPage = () => {
   const [verifiedOrder, setVerifiedOrder] = useState<any | null>(null);
 
   const branchId = profileData?.branches?.[0]?.id || getCookie("pos_branch_id");
-  const { data: activeSessionData, isLoading: isActiveSessionLoading, refetch: refetchActiveSession } = useGetActiveSessionQuery();
+  const {
+    data: activeSessionData,
+    isLoading: isActiveSessionLoading,
+    isFetching: isActiveSessionFetching,
+    isError: isActiveSessionError,
+    refetch: refetchActiveSession
+  } = useGetActiveSessionQuery(undefined, {
+    // Always refetch fresh from server on mount (not from stale cache)
+    refetchOnMountOrArgChange: true,
+  });
   const { data: frozenData, isLoading: isCheckingFrozen } = useCheckBranchFrozenQuery(branchId || "", {
     skip: !branchId,
     pollingInterval: 10000, // Re-check every 10 seconds
@@ -94,17 +103,27 @@ export const PosPage = () => {
   const activeSession = activeSessionData;
   const isFrozen = frozenData?.isFrozen;
 
+  // Determine if we are still waiting for a definitive answer about the session
+  const isSessionCheckPending = isActiveSessionLoading || isActiveSessionFetching || isCheckingFrozen;
+
   useEffect(() => {
-    if (!isCheckingFrozen) {
-      if (isFrozen) {
-        // Frozen: ensure Open Session modal is hidden
-        setIsOpenSessionModalOpen(false);
-      } else if (!isActiveSessionLoading && !activeSession) {
-        // Not frozen and no active session: show Open Session modal
-        setIsOpenSessionModalOpen(true);
-      }
+    // Wait until all checks are complete before making a decision
+    if (isSessionCheckPending) return;
+
+    // If there was a network/auth error, do not show Open Session modal
+    if (isActiveSessionError) return;
+
+    if (isFrozen) {
+      // Branch frozen: hide modal
+      setIsOpenSessionModalOpen(false);
+    } else if (activeSession) {
+      // Session confirmed active: hide modal
+      setIsOpenSessionModalOpen(false);
+    } else {
+      // Definitively no active session: show modal
+      setIsOpenSessionModalOpen(true);
     }
-  }, [activeSession, isActiveSessionLoading, isFrozen, isCheckingFrozen]);
+  }, [activeSession, isSessionCheckPending, isActiveSessionError, isFrozen]);
 
   const { data: productsData, isLoading: isProductsLoading } = useGetProductsQuery(
     branchId ? { branch_id: branchId } : undefined

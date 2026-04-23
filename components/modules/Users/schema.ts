@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Schema dinamis berdasarkan role: cashier → pin required, non-cashier → username + password
+// Dynamic schema based on role: cashier → pin required, non-cashier → username + password
 export const userSchema = z
   .object({
     name: z.string().min(1, { message: "Name is required" }),
@@ -8,19 +8,19 @@ export const userSchema = z
       .string()
       .email({ message: "Invalid email address" })
       .min(1, { message: "Email is required" }),
-    // password wajib jika bukan cashier
+    // password required if not cashier
     password: z.string().optional(),
-    // username wajib jika bukan cashier
+    // username required if not cashier
     username: z.string().optional(),
-    // pin wajib jika cashier
+    // pin required if cashier
     pin: z
       .string()
       .optional()
-      .refine((val) => val === undefined || val === "" || /^\d{4,8}$/.test(val), {
-        message: "PIN must be 4-8 digits"
+      .refine((val) => val === undefined || val === "" || /^\d{6}$/.test(val), {
+        message: "PIN must be exactly 6 digits"
       }),
     role_id: z.string().min(1, { message: "Role is required" }),
-    // code role dibutuhkan untuk validasi kondisional, tidak dikirim ke API
+    // role code needed for conditional validation, not sent to API
     role_code: z.string().optional(),
     branch_id: z.string().optional()
   })
@@ -28,16 +28,16 @@ export const userSchema = z
     const isCashier = data.role_code === "cashier";
 
     if (isCashier) {
-      // Kasir: pin wajib
+      // Cashier: pin required
       if (!data.pin || data.pin.trim() === "") {
         ctx.addIssue({
           path: ["pin"],
           code: z.ZodIssueCode.custom,
-          message: "PIN wajib diisi untuk kasir"
+          message: "PIN is required for cashier"
         });
       }
     } else {
-      // Non-kasir: username & password wajib
+      // Non-cashier: username & password required
       if (!data.username || data.username.trim() === "") {
         ctx.addIssue({
           path: ["username"],

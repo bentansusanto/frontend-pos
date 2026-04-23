@@ -113,7 +113,6 @@ export const HooksAddProduct = () => {
           }
           
           void formik.setFieldValue("product.id", productId);
-          toast.info("Product created, setting up variants...");
         } else {
           toast.info("Product exists, resuming variant configuration...");
         }
@@ -123,23 +122,16 @@ export const HooksAddProduct = () => {
           toast.warning("Branch ID not found. Stock will not be initialized.");
         }
 
-        for (const [index, variant] of values.variants.entries()) {
-          const variantFormData = new FormData();
-          variantFormData.append("productId", String(productId));
-          variantFormData.append("name_variant", variant.name_variant);
-          variantFormData.append("price", String(variant.price));
-          if (variant.cost_price !== undefined) {
-             variantFormData.append("cost_price", String(variant.cost_price));
-          }
-          if (variant.barcode) {
-             variantFormData.append("barcode", variant.barcode);
-          }
-          
-          await createVariantProduct(variantFormData).unwrap();
-          
-          if (values.variants.length > 1) {
-             toast.info(`Configured variant ${index + 1} of ${values.variants.length}...`);
-          }
+        for (const variant of values.variants) {
+          const variantPayload = {
+            productId: String(productId),
+            name_variant: variant.name_variant,
+            price: Number(variant.price),
+            cost_price: variant.cost_price !== undefined ? Number(variant.cost_price) : undefined,
+            barcode: variant.barcode || undefined,
+          };
+
+          await createVariantProduct(variantPayload).unwrap();
         }
 
         toast.success("Product and variants created successfully");

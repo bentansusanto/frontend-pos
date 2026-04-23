@@ -34,7 +34,7 @@ export const AddUserDialog = () => {
   const { data: branchesData } = useGetBranchesQuery();
   const branches = branchesData || [];
 
-  // Deteksi apakah role yang dipilih adalah cashier
+  // Detect if the selected role is cashier
   const selectedRole = roles.find((r: any) => r.id === formik.values.role_id);
   const isCashier = selectedRole?.code === "cashier";
 
@@ -42,7 +42,7 @@ export const AddUserDialog = () => {
     const role = roles.find((r: any) => r.id === value);
     formik.setFieldValue("role_id", value);
     formik.setFieldValue("role_code", role?.code || "");
-    // Reset field yang tidak relevan agar tidak ada sisa nilai
+    // Reset irrelevant fields to avoid stale values
     if (role?.code === "cashier") {
       formik.setFieldValue("username", "");
       formik.setFieldValue("password", "");
@@ -122,13 +122,13 @@ export const AddUserDialog = () => {
             )}
           </div>
 
-          {/* ── Conditional: PIN (Kasir) atau Username + Password (non-Kasir) ── */}
+          {/* ── Conditional: PIN (Cashier) or Username + Password (non-Cashier) ── */}
           {isCashier ? (
-            /* ── PIN untuk Kasir ── */
+            /* ── PIN for Cashier ── */
             <div className="flex flex-col gap-2">
               <Label htmlFor="pin">
-                PIN Kasir
-                <span className="ml-1.5 text-xs text-muted-foreground">(6 digit angka)</span>
+                Cashier PIN
+                <span className="ml-1.5 text-xs text-muted-foreground">(6 digits)</span>
               </Label>
               <Input
                 id="pin"
@@ -136,10 +136,10 @@ export const AddUserDialog = () => {
                 type="password"
                 inputMode="numeric"
                 maxLength={6}
-                placeholder="Masukkan PIN kasir"
+                placeholder="Enter cashier PIN"
                 value={formik.values.pin}
                 onChange={(e) => {
-                  // Hanya angka
+                  // Numbers only
                   const val = e.target.value.replace(/\D/g, "");
                   formik.setFieldValue("pin", val);
                 }}
@@ -152,13 +152,13 @@ export const AddUserDialog = () => {
             </div>
           ) : (
             <>
-              {/* ── Username untuk non-Kasir ── */}
+              {/* ── Username for non-Cashier ── */}
               <div className="flex flex-col gap-2">
                 <Label htmlFor="username">Username</Label>
                 <Input
                   id="username"
                   name="username"
-                  placeholder="contoh: john_doe"
+                  placeholder="e.g. john_doe"
                   value={formik.values.username}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -171,7 +171,7 @@ export const AddUserDialog = () => {
                 )}
               </div>
 
-              {/* ── Password untuk non-Kasir ── */}
+              {/* ── Password for non-Cashier ── */}
               <div className="flex flex-col gap-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">

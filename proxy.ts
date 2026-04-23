@@ -37,7 +37,10 @@ const PUBLIC_PATHS = [
   "/verify-account",
   "/resend-verify-account",
   "/forgot-password",
-  "/reset-password"
+  "/reset-password",
+  "/manifest.json",
+  "/icon-192x192.png",
+  "/icon-512x512.png"
 ];
 
 export async function proxy(request: NextRequest) {
@@ -135,5 +138,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|images).*)"]
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|images|manifest.json|icon-192x192.png|icon-512x512.png).*)"]
 };

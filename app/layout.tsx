@@ -1,5 +1,5 @@
 import { Inter } from "next/font/google";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 
 import Providers from "@/components/providers";
 import "./globals.css";
@@ -7,11 +7,26 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "POS App",
-  description: "Point of Sale Application",
+  title: "Nexus POS",
+  description: "Premium Point of Sale Application",
+  manifest: "/manifest.json",
   icons: {
     icon: "/logo-pos.svg",
+    apple: "/icon-192x192.png",
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Nexus POS",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#007DFC",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

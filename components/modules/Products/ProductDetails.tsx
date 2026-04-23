@@ -229,7 +229,6 @@ export const ProductDetails = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="whitespace-nowrap">Thumbnail</TableHead>
                         <TableHead className="whitespace-nowrap">Variant</TableHead>
                         <TableHead className="whitespace-nowrap">SKU</TableHead>
                         <TableHead className="whitespace-nowrap">Price</TableHead>
@@ -241,16 +240,6 @@ export const ProductDetails = () => {
                     <TableBody>
                       {variants.map((variant: any) => (
                         <TableRow key={variant.id}>
-                          <TableCell>
-                            <div className="relative h-12 w-12 overflow-hidden rounded-lg border">
-                              <Image
-                                src={variant.thumbnail || "/placeholder.svg"}
-                                alt={variant.name_variant}
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                          </TableCell>
                           <TableCell className="text-foreground font-medium">
                             {variant.name_variant}
                           </TableCell>

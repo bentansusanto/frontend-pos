@@ -156,10 +156,10 @@ export default function PurchaseReceivingPage() {
     const [selectedPO, setSelectedPO] = useState<string>("");
     const [items, setItems] = useState<
       {
-        original_product_id: string;
         product_variant_id: string;
         receive_qty: number;
         name: string;
+        variant_name: string;
       }[]
     >([]);
 
@@ -170,9 +170,9 @@ export default function PurchaseReceivingPage() {
       if (po && po.purchaseItems) {
         setItems(
           po.purchaseItems.map((pi: any) => ({
-            original_product_id: pi.product_id,
-            name: pi.product_id, // we don't have product name natively in this DTO, MVP placeholder
-            product_variant_id: "",
+            product_variant_id: pi.product_variant_id,
+            name: pi.productVariant?.product?.name_product || pi.productVariant?.product?.name || "Product",
+            variant_name: pi.productVariant?.name_variant || "",
             receive_qty: pi.quantity
           }))
         );
@@ -242,42 +242,14 @@ export default function PurchaseReceivingPage() {
 
             {selectedPO && items.length > 0 && (
               <div className="bg-muted/20 mt-4 space-y-3 rounded-lg border p-4">
-                <h4 className="mb-2 text-sm font-semibold">Map Order Items to Received Variants</h4>
+                <h4 className="mb-2 text-sm font-semibold">Ordered Items & Receive Quantities</h4>
                 {items.map((item, index) => (
                   <div key={index} className="grid grid-cols-12 items-center gap-2 text-sm">
-                    <div className="text-muted-foreground col-span-3 truncate">
-                      Product ID: {item.original_product_id.substring(0, 8)}...
+                    <div className="col-span-8 flex flex-col">
+                      <span className="font-medium truncate">{item.name}</span>
+                      <span className="text-muted-foreground text-[10px]">{item.variant_name}</span>
                     </div>
-                    <div className="col-span-1 text-center">
-                      <ArrowRight className="text-muted-foreground mx-auto h-4 w-4" />
-                    </div>
-                    <div className="col-span-5">
-                      <Select
-                        value={item.product_variant_id}
-                        onValueChange={(val) => {
-                          const newItems = [...items];
-                          newItems[index].product_variant_id = val;
-                          setItems(newItems);
-                        }}>
-                        <SelectTrigger className="h-8">
-                          <SelectValue placeholder="Select variant..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {variants
-                            ?.filter(
-                              (v: any) =>
-                                v.productId === item.original_product_id ||
-                                v.product?.id === item.original_product_id
-                            )
-                            ?.map((v: any) => (
-                              <SelectItem key={v.id} value={v.id}>
-                                {v.name_variant}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="col-span-3 flex items-center gap-2">
+                    <div className="col-span-4 flex items-center gap-2">
                       <span className="text-muted-foreground text-xs whitespace-nowrap">
                         Rcv Qty:
                       </span>

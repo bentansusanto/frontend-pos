@@ -51,9 +51,8 @@ export const ProductPage = () => {
   const userRole = profileData?.role;
   const userBranches = profileData?.branches || [];
 
-  const [selectedBranchId, setSelectedBranchId] = useState<string>(() => {
-    return getCookie("pos_branch_id") || "all";
-  });
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("all");
+  const [isMounted, setIsMounted] = useState(false);
 
   const availableBranches = useMemo(() => {
     if (!branchesData) return [];
@@ -66,6 +65,14 @@ export const ProductPage = () => {
     );
     return filtered;
   }, [branchesData, userRole, userBranches]);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const savedBranchId = getCookie("pos_branch_id");
+    if (savedBranchId) {
+      setSelectedBranchId(savedBranchId);
+    }
+  }, []);
 
   useEffect(() => {
     if (availableBranches.length > 0) {
@@ -155,9 +162,10 @@ export const ProductPage = () => {
   };
 
   const selectedBranchName = useMemo(() => {
+    if (!isMounted) return "All Branches";
     if (selectedBranchId === "all") return "All Branches";
     return availableBranches.find((b: any) => b.id === selectedBranchId)?.name || "Branch";
-  }, [selectedBranchId, availableBranches]);
+  }, [selectedBranchId, availableBranches, isMounted]);
 
   const stockStats = useMemo(() => {
     const counts = products.reduce(
@@ -300,8 +308,14 @@ export const ProductPage = () => {
                 {products.length.toLocaleString()}
               </p>
               <p className="text-xs text-slate-500">
-                {products.reduce((acc: number, p: any) => acc + (p.variants?.length || 0), 0)}{" "}
-                variants in {selectedBranchName}
+                {isMounted ? (
+                  <>
+                    {products.reduce((acc: number, p: any) => acc + (p.variants?.length || 0), 0)}{" "}
+                    variants in {selectedBranchName}
+                  </>
+                ) : (
+                  "Loading inventory stats..."
+                )}
               </p>
             </div>
           </CardContent>
