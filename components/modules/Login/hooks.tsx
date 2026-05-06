@@ -1,9 +1,9 @@
 "use client";
-import { useLoginMutation } from "@/store/services/auth.service";
+import { useState, useEffect } from "react";
+import { useLoginMutation, useGetCsrfTokenQuery } from "@/store/services/auth.service";
 import { setCookie } from "@/utils/cookies";
 import { useFormik } from "formik";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { toast } from "sonner";
 import { resetAllApiStates } from "@/store";
 import { useAppDispatch } from "@/store/hooks";
@@ -19,9 +19,16 @@ export type LoginMode = "staff" | "cashier";
 export const HooksLogin = () => {
   const router = useRouter();
   const [login, { isLoading }] = useLoginMutation();
+  const { data: csrfData } = useGetCsrfTokenQuery();
   const dispatch = useAppDispatch();
   const [showPassword, setShowPassword] = useState(false);
   const [loginMode, setLoginMode] = useState<LoginMode>("staff");
+
+  useEffect(() => {
+    if (csrfData?.csrfToken) {
+      setCookie("pos_csrf_token", csrfData.csrfToken, { expires: 1 });
+    }
+  }, [csrfData]);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
