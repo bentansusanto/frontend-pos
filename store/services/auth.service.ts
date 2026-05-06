@@ -97,6 +97,10 @@ export const baseAuth = createApi({
         method: "POST",
         body: data
       })
+    }),
+    // get csrf token
+    getCsrfToken: builder.query<{ csrfToken: string }, void>({
+      query: () => "/auth/csrf-token"
     })
   })
 });
@@ -110,5 +114,6 @@ export const {
   useGetProfileQuery,
   useRefreshTokenMutation,
   useForgotPasswordMutation,
-  useResetPasswordMutation
+  useResetPasswordMutation,
+  useGetCsrfTokenQuery
 } = baseAuth;
